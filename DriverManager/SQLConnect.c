@@ -1042,6 +1042,7 @@ int __connect_part_one( DMHDBC connection, char *driver_lib, char *driver_name, 
      */
 
     lt_dlinit();
+    lt_dlsetsearchpath(MODULEDIR);
 
     /*
      * open the lib

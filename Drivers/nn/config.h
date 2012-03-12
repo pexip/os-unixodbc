@@ -20,6 +20,7 @@
 
 #  include	<stdlib.h>
 #  include	<errno.h>
+#  include	<string.h>
 #  include	<sys/types.h>
 
 #  define	MEM_ALLOC(size) (malloc((size_t)(size)))

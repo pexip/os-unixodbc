@@ -1083,6 +1083,7 @@ void dManageAutoTest::Add()
          */
 
         lt_dlinit();
+        lt_dlsetsearchpath(MODULEDIR);
 
         lt_dlhandle handle = lt_dlopen( path.ascii());
 

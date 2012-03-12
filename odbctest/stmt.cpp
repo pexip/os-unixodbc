@@ -1580,7 +1580,7 @@ void dParamOption::Ok()
     Handle *hand = odbctest->extract_handle_list( SQL_HANDLE_STMT, handles );
 	SQLHANDLE in_handle = SQL_NULL_HANDLE;
 	SQLULEN *pirow_ptr, pirow;
-    SQLUINTEGER crow;
+    SQLULEN crow;
 
 	if ( hand )
 		in_handle = hand -> getHandle();

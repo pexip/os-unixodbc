@@ -66,12 +66,15 @@ static void cInc( void )
     printf( "#ifndef HAVE_LONG_LONG\n #define HAVE_LONG_LONG\n#endif\n" );
 #endif
 
+#define xstr(s) str(s)
+#define str(s) #s
+
 #ifdef ODBCINT64
-    printf( "#ifndef ODBCINT64\n #define ODBCINT64\n#endif\n" );
+    printf( "#ifndef ODBCINT64\n #define ODBCINT64 %s\n#endif\n", xstr(ODBCINT64) );
 #endif
 
 #ifdef UODBCINT64
-    printf( "#ifndef UODBCINT64\n #define UODBCINT64\n#endif\n" );
+    printf( "#ifndef UODBCINT64\n #define UODBCINT64 %s\n#endif\n", xstr(UODBCINT64) );
 #endif
 
 #ifdef DISABLE_INI_CACHING

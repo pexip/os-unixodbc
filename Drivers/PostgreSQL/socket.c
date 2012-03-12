@@ -199,17 +199,9 @@ SOCK_connect_to_unix(SocketClass *self, unsigned short port, char *path )
         return !SOCK_connect_to_unix_port( self, port, path );
     }
 
-    if ( !SOCK_connect_to_unix_port( self, port, "/tmp/.s.PGSQL" ))
+    if ( !SOCK_connect_to_unix_port( self, port, "/var/run/postgresql/.s.PGSQL" ))
     {
-        if ( SOCK_connect_to_unix_port( self, port, "/var/run/postgresql/.s.PGSQL" ))
-        {
-            SOCK_clear_error(self);
-            return 1;
-        }
-        else
-        {
-            return 0;
-        }
+        return 0;
     }
     else
     {

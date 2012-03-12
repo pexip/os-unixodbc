@@ -445,7 +445,7 @@ void Syntax()
     if ( cVerbose != 0 )
         return;
 
-    printf( szSyntax );
+    printf( "%s", szSyntax );
 }
 
 void PrintConfigInfo()

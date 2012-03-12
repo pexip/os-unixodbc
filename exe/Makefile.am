@@ -1,4 +1,7 @@
-bin_PROGRAMS = isql dltest odbcinst iusql odbc_config
+bin_PROGRAMS = isql odbcinst iusql odbc_config
+if WITHLT
+bin_PROGRAMS += dltest
+endif
 
 INCLUDES = -I@top_srcdir@/include $(LTDLINCL) \
 	-DPREFIX=\"@prefix@\" \

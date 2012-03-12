@@ -78,7 +78,7 @@ int main( int argc, char *argv[] )
 
     if ( argc < 2 )
     {
-        fprintf( stderr, szSyntax );
+        fprintf( stderr, "%s", szSyntax );
         exit( 1 );
     }
 
@@ -135,7 +135,7 @@ int main( int argc, char *argv[] )
                     break;
 #endif
                 default:
-                    fprintf( stderr, szSyntax );
+                    fprintf( stderr, "%s", szSyntax );
                     exit( 1 );
             }
             continue;
@@ -748,9 +748,9 @@ void UWriteHeaderNormal( SQLHSTMT hStmt, SQLTCHAR *szSepLine )
     strcat((char*) szSepLine, "+\n" );
     strcat((char*) szHdrLine, "|\n" );
 
-    printf((char*) szSepLine );
-    printf((char*) szHdrLine );
-    printf((char*) szSepLine );
+    printf("%s", (char*) szSepLine );
+    printf("%s", (char*) szHdrLine );
+    printf("%s", (char*) szSepLine );
 
 }
 
@@ -838,7 +838,7 @@ void UWriteFooterNormal( SQLHSTMT hStmt, SQLTCHAR   *szSepLine, SQLLEN nRows )
 {
     SQLLEN  nRowsAffected   = -1;
 
-    printf( (char*)szSepLine );
+    printf( "%s", (char*)szSepLine );
 
     SQLRowCount( hStmt, &nRowsAffected );
     printf( "SQLRowCount returns %d\n", nRowsAffected );

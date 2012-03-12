@@ -23,6 +23,7 @@ CDLL::CDLL( char *szFileName )
      */
 
     lt_dlinit();
+    lt_dlsetsearchpath(MODULEDIR);
 
 	hDLL = lt_dlopen( szFileName );
 	if ( !hDLL )
