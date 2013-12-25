@@ -1,3 +1,9 @@
+unixodbc (2.2.14p2-5ubuntu3pexip1) pexip; urgency=low
+
+  * Prepare Pexip packaging
+
+ -- John-Mark Bell <jmb@pexip.com>  Wed, 25 Dec 2013 05:02:51 +0000
+
 unixodbc (2.2.14p2-5ubuntu3) precise; urgency=low
 
   * Re-add the Breaks: libiodbc2 to odbcinst1debian2, now that soprano is
