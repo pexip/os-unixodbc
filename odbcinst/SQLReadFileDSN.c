@@ -8,6 +8,7 @@
  * -----------------------------------------------
  * Peter Harvey		- pharvey@codebydesign.com
  **************************************************/
+#include <config.h>
 #include <odbcinstext.h>
 
 static void GetEntries( HINI    hIni,
@@ -56,7 +57,6 @@ static void GetSections(    HINI    hIni,
                             int     nRetBuffer
                        )
 {
-    int     nStrToCopy;
     char    szObjectName[INI_MAX_OBJECT_NAME+1];
 
     *pRetBuffer = '\0';
@@ -90,8 +90,6 @@ BOOL SQLReadFileDSN(            LPCSTR  pszFileName,
     int     nBufPos         = 0;
     char    szValue[INI_MAX_PROPERTY_VALUE+1];
     char    szFileName[ODBC_FILENAME_MAX+1];
-    UWORD   nConfigMode;
-    int     ini_done = 0;
 
     inst_logClear();
 

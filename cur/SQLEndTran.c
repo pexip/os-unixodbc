@@ -3,7 +3,7 @@
  * unixODBC Cursor Library
  *
  * Created by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * copyright (c) 1999 Nick Gorham
  *
@@ -23,9 +23,15 @@
  *
  **********************************************************************
  *
- * $Id: SQLEndTran.c,v 1.1.1.1 2001/10/17 16:40:15 lurcher Exp $
+ * $Id: SQLEndTran.c,v 1.3 2009/02/18 17:59:17 lurcher Exp $
  *
  * $Log: SQLEndTran.c,v $
+ * Revision 1.3  2009/02/18 17:59:17  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
+ * Revision 1.2  2009/02/17 09:47:45  lurcher
+ * Clear up a number of bugs
+ *
  * Revision 1.1.1.1  2001/10/17 16:40:15  lurcher
  *
  * First upload to SourceForge
@@ -42,6 +48,7 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "cursorlibrary.h"
 
 SQLRETURN CLEndTran( SQLSMALLINT handle_type,
@@ -54,6 +61,7 @@ SQLRETURN CLEndTran( SQLSMALLINT handle_type,
         /*
          * the driver manager will not call this
          */
+        return SQL_ERROR;
         break;
 
       case SQL_HANDLE_DBC:

@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,15 @@
  *
  **********************************************************************
  *
- * $Id: SQLGetConnectAttrW.c,v 1.12 2008/08/29 08:01:38 lurcher Exp $
+ * $Id: SQLGetConnectAttrW.c,v 1.14 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLGetConnectAttrW.c,v $
+ * Revision 1.14  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
+ * Revision 1.13  2009/02/17 09:47:44  lurcher
+ * Clear up a number of bugs
+ *
  * Revision 1.12  2008/08/29 08:01:38  lurcher
  * Alter the way W functions are passed to the driver
  *
@@ -111,6 +117,7 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
 static char const rcsid[]= "$RCSfile: SQLGetConnectAttrW.c,v $";
@@ -214,11 +221,11 @@ SQLRETURN SQLGetConnectAttrW( SQLHDBC connection_handle,
     if ( log_info.log_flag )
     {
         sprintf( connection -> msg, "\n\t\tEntry:\
-            \n\t\t\tConnection = %p\
-            \n\t\t\tAttribute = %s\
-            \n\t\t\tValue = %p\
-            \n\t\t\tBuffer Length = %d\
-            \n\t\t\tStrLen = %p",
+\n\t\t\tConnection = %p\
+\n\t\t\tAttribute = %s\
+\n\t\t\tValue = %p\
+\n\t\t\tBuffer Length = %d\
+\n\t\t\tStrLen = %p",
                 connection,
                 __con_attr_as_string( s1, attribute ),
                 value, 
@@ -260,12 +267,6 @@ SQLRETURN SQLGetConnectAttrW( SQLHDBC connection_handle,
           case SQL_ATTR_TRACE:
           case SQL_ATTR_TRACEFILE:
           case SQL_ATTR_ASYNC_ENABLE:
-          case SQL_ATTR_AUTO_IPD:
-          case SQL_ATTR_CONNECTION_TIMEOUT:
-          case SQL_ATTR_METADATA_ID:
-          case SQL_ATTR_PACKET_SIZE:
-          case SQL_ATTR_QUIET_MODE:
-          case SQL_ATTR_TXN_ISOLATION:
             break;
 
           default:
@@ -331,7 +332,7 @@ SQLRETURN SQLGetConnectAttrW( SQLHDBC connection_handle,
         break;
 
       case SQL_ATTR_ODBC_CURSORS:
-        *((SQLINTEGER*)value) = connection -> cursors;
+        *((SQLULEN*)value) = connection -> cursors;
         type = 1;
         break;
 
@@ -355,7 +356,7 @@ SQLRETURN SQLGetConnectAttrW( SQLHDBC connection_handle,
         }
         else
         {
-            *((SQLINTEGER*)value) = connection -> async_enable;
+            *((SQLULEN*)value) = connection -> async_enable;
             type = 1;
         }
         break;
@@ -570,7 +571,7 @@ SQLRETURN SQLGetConnectAttrW( SQLHDBC connection_handle,
         {
             if ( !CHECK_SQLGETCONNECTATTR( connection ))
             {
-                if ( ret = CHECK_SQLGETCONNECTOPTION( connection ))
+                if (( ret = CHECK_SQLGETCONNECTOPTION( connection )))
                 {
                     SQLCHAR *as1 = NULL;
 

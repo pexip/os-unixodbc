@@ -6,6 +6,9 @@
  * be careful about removing any properties. - PAH
  *
  *  $Log: tdsS.c,v $
+ *  Revision 1.4  2009/02/18 17:59:08  lurcher
+ *  Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  *  Revision 1.3  2003/11/13 15:12:53  lurcher
  *
  *  small change to ODBCConfig to have the password field in the driver
@@ -28,6 +31,7 @@
  *
  */
 
+#include <config.h>
 #include <odbcinstext.h>
 
 static const char *aYesNo[] =

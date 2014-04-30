@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLBindCol.c,v 1.7 2007/03/05 09:49:23 lurcher Exp $
+ * $Id: SQLBindCol.c,v 1.8 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLBindCol.c,v $
+ * Revision 1.8  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.7  2007/03/05 09:49:23  lurcher
  * Get it to build on VMS again
  *
@@ -122,12 +125,20 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
-static char const rcsid[]= "$RCSfile: SQLBindCol.c,v $ $Revision: 1.7 $";
+static char const rcsid[]= "$RCSfile: SQLBindCol.c,v $ $Revision: 1.8 $";
 
 int check_target_type( int c_type ) 
 {
+    /*
+     * driver defined types
+     */
+    if ( c_type >= 0x4000 && c_type <= 0x7FFF ) {
+        return 1;
+    }
+
 	switch( c_type ) {
 		case SQL_C_CHAR:
 		case SQL_C_LONG:
@@ -207,12 +218,12 @@ SQLRETURN SQLBindCol( SQLHSTMT statement_handle,
     if ( log_info.log_flag )
     {
         sprintf( statement -> msg, "\n\t\tEntry:\
-            \n\t\t\tStatement = %p\
-            \n\t\t\tColumn Number = %d\
-            \n\t\t\tTarget Type = %d %s\
-            \n\t\t\tTarget Value = %p\
-            \n\t\t\tBuffer Length = %d\
-            \n\t\t\tStrLen Or Ind = %p", 
+\n\t\t\tStatement = %p\
+\n\t\t\tColumn Number = %d\
+\n\t\t\tTarget Type = %d %s\
+\n\t\t\tTarget Value = %p\
+\n\t\t\tBuffer Length = %d\
+\n\t\t\tStrLen Or Ind = %p", 
                 statement,
                 column_number,
                 target_type,
@@ -277,9 +288,10 @@ SQLRETURN SQLBindCol( SQLHSTMT statement_handle,
 
 	/*
 	 * check valid C_TYPE
+     * Its possible to call with the indicator and buffer NULL to unbind without setting the type
 	 */
 
-	if ( !check_target_type( target_type ))
+	if (( target_value || strlen_or_ind ) && !check_target_type( target_type ))
 	{
         dm_log_write( __FILE__, 
                 __LINE__, 

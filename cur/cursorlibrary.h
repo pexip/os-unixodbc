@@ -1,12 +1,20 @@
 #ifndef _CURSORLIBRARY_H
 #define _CURSORLIBRARY_H
 
-#define ODBCVER 0x0351
+#ifndef ODBCVER
+#define ODBCVER 0x0380
+#endif
 
+#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
+#endif
+#ifdef HAVE_PWD_H
 #include <pwd.h>
+#endif
 #include <ltdl.h>
+#ifdef HAVE_STRING_H
 #include <string.h>
+#endif
 
 #include <sqlext.h>                     /* THIS WILL BRING IN sql.h and
                                            sqltypes.h AS WELL AS PROVIDE
@@ -75,7 +83,7 @@ typedef struct cl_statement
     SQLUINTEGER         rowset_size;
     SQLUINTEGER         simulate_cursor;
     SQLUINTEGER         use_bookmarks;
-    SQLUINTEGER         *rows_fetched_ptr;
+    SQLULEN	            *rows_fetched_ptr;
     SQLUSMALLINT        *row_status_ptr;
     SQLCHAR             cursor_name[ MAX_CURSOR_NAME + 1 ];
     CLBCOL              *bound_columns;
@@ -531,4 +539,7 @@ SQLRETURN do_fetch_scroll( CLHSTMT cl_statement,
             SQLUSMALLINT *row_status_ptr,
             SQLULEN *rows_fetched_ptr,
 			int ext_fetch );
+SQLRETURN get_column_names( CLHSTMT cl_statement );
+SQLRETURN complete_rowset( CLHSTMT cl_statement, int complete_to );
+SQLRETURN fetch_row( CLHSTMT cl_statement, int row_number, int offset );
 #endif

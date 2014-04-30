@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLSetDescField.c,v 1.6 2007/05/25 16:42:32 lurcher Exp $
+ * $Id: SQLSetDescField.c,v 1.7 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLSetDescField.c,v $
+ * Revision 1.7  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.6  2007/05/25 16:42:32  lurcher
  * Sync up
  *
@@ -112,9 +115,10 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
-static char const rcsid[]= "$RCSfile: SQLSetDescField.c,v $ $Revision: 1.6 $";
+static char const rcsid[]= "$RCSfile: SQLSetDescField.c,v $ $Revision: 1.7 $";
 
 SQLRETURN SQLSetDescFieldA( SQLHDESC descriptor_handle,
            SQLSMALLINT rec_number, 
@@ -166,11 +170,11 @@ SQLRETURN SQLSetDescField( SQLHDESC descriptor_handle,
     if ( log_info.log_flag )
     {
         sprintf( descriptor -> msg, "\n\t\tEntry:\
-            \n\t\t\tDescriptor = %p\
-            \n\t\t\tRec Number = %d\
-            \n\t\t\tField Ident = %s\
-            \n\t\t\tValue = %p\
-            \n\t\t\tBuffer Length = %d",
+\n\t\t\tDescriptor = %p\
+\n\t\t\tRec Number = %d\
+\n\t\t\tField Ident = %s\
+\n\t\t\tValue = %p\
+\n\t\t\tBuffer Length = %d",
                 descriptor,
                 rec_number,
                 __desc_attr_as_string( s1, field_identifier ),
@@ -188,6 +192,29 @@ SQLRETURN SQLSetDescField( SQLHDESC descriptor_handle,
 
     if ( descriptor -> connection -> state < STATE_C4 )
     {
+        dm_log_write( __FILE__, 
+                __LINE__, 
+                LOG_INFO, 
+                LOG_INFO, 
+                "Error: HY010" );
+
+        __post_internal_error( &descriptor -> error,
+                ERROR_HY010, NULL,
+                descriptor -> connection -> environment -> requested_version );
+
+        return function_return( SQL_HANDLE_DESC, descriptor, SQL_ERROR );
+    }
+
+    /*
+     * check status of statements associated with this descriptor
+     */
+
+    if( __check_stmt_from_desc( descriptor, STATE_S8 ) ||
+        __check_stmt_from_desc( descriptor, STATE_S9 ) ||
+        __check_stmt_from_desc( descriptor, STATE_S10 ) ||
+        __check_stmt_from_desc( descriptor, STATE_S11 ) ||
+        __check_stmt_from_desc( descriptor, STATE_S12 )) {
+
         dm_log_write( __FILE__, 
                 __LINE__, 
                 LOG_INFO, 

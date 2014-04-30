@@ -10,6 +10,7 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "driver.h"
 
 SQLRETURN SQLBindCol(	SQLHSTMT        hDrvStmt,
@@ -26,7 +27,7 @@ SQLRETURN SQLBindCol(	SQLHSTMT        hDrvStmt,
     if( NULL == hStmt )
         return SQL_INVALID_HANDLE;
 
-	sprintf((char*) hStmt->szSqlMsg, "hStmt=$%08lX nCol=%5d", hStmt, nCol );
+	sprintf((char*) hStmt->szSqlMsg, "hStmt=$%08lX nCol=%5d", (long) hStmt, nCol );
     logPushMsg( hStmt->hLog, __FILE__, __FILE__, __LINE__, LOG_INFO, LOG_INFO,(char*) hStmt->szSqlMsg );
 
 	if ( hStmt->hStmtExtras->nRows == 0 )
@@ -37,7 +38,7 @@ SQLRETURN SQLBindCol(	SQLHSTMT        hDrvStmt,
 
 	if ( nCol < 1 || nCol > hStmt->hStmtExtras->nCols )
 	{
-		sprintf((char*) hStmt->szSqlMsg, "SQL_ERROR Column %d is out of range. Range is 1 - %s", nCol, hStmt->hStmtExtras->nCols );
+		sprintf((char*) hStmt->szSqlMsg, "SQL_ERROR Column %d is out of range. Range is 1 - %d", nCol, hStmt->hStmtExtras->nCols );
 		logPushMsg( hStmt->hLog, __FILE__, __FILE__, __LINE__, LOG_WARNING, LOG_WARNING,(char*) hStmt->szSqlMsg );
 		return SQL_ERROR;
 	}

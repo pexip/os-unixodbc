@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,15 @@
  *
  **********************************************************************
  *
- * $Id: SQLTablePrivileges.c,v 1.7 2006/07/26 16:29:48 lurcher Exp $
+ * $Id: SQLTablePrivileges.c,v 1.9 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLTablePrivileges.c,v $
+ * Revision 1.9  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
+ * Revision 1.8  2009/02/17 09:47:44  lurcher
+ * Clear up a number of bugs
+ *
  * Revision 1.7  2006/07/26 16:29:48  lurcher
  * Fix unicode translation for SQLTablePrivileges
  *
@@ -120,9 +126,10 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
-static char const rcsid[]= "$RCSfile: SQLTablePrivileges.c,v $ $Revision: 1.7 $";
+static char const rcsid[]= "$RCSfile: SQLTablePrivileges.c,v $ $Revision: 1.9 $";
 
 SQLRETURN SQLTablePrivilegesA(
     SQLHSTMT           statement_handle,
@@ -175,10 +182,10 @@ SQLRETURN SQLTablePrivileges(
     if ( log_info.log_flag )
     {
         sprintf( statement -> msg, "\n\t\tEntry:\
-            \n\t\t\tStatement = %p\
-            \n\t\t\tCatalog Name = %s\
-            \n\t\t\tSchema Name = %s\
-            \n\t\t\tTable Name = %s", 
+\n\t\t\tStatement = %p\
+\n\t\t\tCatalog Name = %s\
+\n\t\t\tSchema Name = %s\
+\n\t\t\tTable Name = %s", 
                 statement,
                 __string_with_length( s1, sz_catalog_name, cb_catalog_name ), 
                 __string_with_length( s2, sz_schema_name, cb_schema_name ), 
@@ -219,12 +226,9 @@ SQLRETURN SQLTablePrivileges(
             statement -> state == STATE_S6 ||
             statement -> state == STATE_S7 )
 #else
-    if ( statement -> state == STATE_S6 ||
+    if (( statement -> state == STATE_S6 && statement -> eod == 0 ) ||
             statement -> state == STATE_S7 )
 #endif
-    if ( statement -> state == STATE_S5 ||
-            statement -> state == STATE_S6 ||
-            statement -> state == STATE_S7 )
     {
         dm_log_write( __FILE__, 
                 __LINE__, 

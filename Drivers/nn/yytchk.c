@@ -13,7 +13,8 @@
     GNU General Public License for more details.
 **/
 
-#include	<config.h>
+#include <config.h>
+#include	<nnconfig.h>
 #include	<yystmt.h>
 #include	<yylex.h>
 #include	<nncol.h>

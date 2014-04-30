@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLPrimaryKeysW.c,v 1.8 2008/08/29 08:01:39 lurcher Exp $
+ * $Id: SQLPrimaryKeysW.c,v 1.9 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLPrimaryKeysW.c,v $
+ * Revision 1.9  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.8  2008/08/29 08:01:39  lurcher
  * Alter the way W functions are passed to the driver
  *
@@ -79,6 +82,7 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
 static char const rcsid[]= "$RCSfile: SQLPrimaryKeysW.c,v $";
@@ -149,10 +153,10 @@ SQLRETURN SQLPrimaryKeysW(
     if ( log_info.log_flag )
     {
         sprintf( statement -> msg, "\n\t\tEntry:\
-            \n\t\t\tStatement = %p\
-            \n\t\t\tCatalog Name = %s\
-            \n\t\t\tSchema Name = %s\
-            \n\t\t\tTable Type = %s", 
+\n\t\t\tStatement = %p\
+\n\t\t\tCatalog Name = %s\
+\n\t\t\tSchema Name = %s\
+\n\t\t\tTable Type = %s", 
                 statement,
                 __wstring_with_length( s1, sz_catalog_name, cb_catalog_name ), 
                 __wstring_with_length( s2, sz_schema_name, cb_schema_name ), 
@@ -193,7 +197,7 @@ SQLRETURN SQLPrimaryKeysW(
             statement -> state == STATE_S6 ||
             statement -> state == STATE_S7 )
 #else
-    if ( statement -> state == STATE_S6 ||
+    if (( statement -> state == STATE_S6 && statement -> eod == 0 ) ||
             statement -> state == STATE_S7 )
 #endif
     {
@@ -243,6 +247,21 @@ SQLRETURN SQLPrimaryKeysW(
 
             return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
         }
+    }
+
+    if ( sz_table_name == NULL ) 
+    {
+        dm_log_write( __FILE__, 
+                __LINE__, 
+                LOG_INFO, 
+                LOG_INFO, 
+                "Error: HY009" );
+
+        __post_internal_error( &statement -> error,
+                ERROR_HY009, NULL,
+                statement -> connection -> environment -> requested_version );
+
+        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
 
     /*
@@ -327,7 +346,7 @@ SQLRETURN SQLPrimaryKeysW(
 
         if ( ret == SQL_SUCCESS_WITH_INFO )
         {
-            function_return_ex( SQL_HANDLE_STMT, statement, ret, TRUE );
+            function_return_ex( IGNORE_THREAD, statement, ret, TRUE );
         }
 
         SQLNUMRESULTCOLS( statement -> connection,

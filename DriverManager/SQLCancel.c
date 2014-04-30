@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLCancel.c,v 1.3 2003/10/30 18:20:45 lurcher Exp $
+ * $Id: SQLCancel.c,v 1.4 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLCancel.c,v $
+ * Revision 1.4  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.3  2003/10/30 18:20:45  lurcher
  *
  * Fix broken thread protection
@@ -94,9 +97,10 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
-static char const rcsid[]= "$RCSfile: SQLCancel.c,v $ $Revision: 1.3 $";
+static char const rcsid[]= "$RCSfile: SQLCancel.c,v $ $Revision: 1.4 $";
 
 SQLRETURN SQLCancel( SQLHSTMT statement_handle )
 {
@@ -124,7 +128,7 @@ SQLRETURN SQLCancel( SQLHSTMT statement_handle )
     if ( log_info.log_flag )
     {
         sprintf( statement -> msg, "\n\t\tEntry:\
-            \n\t\t\tStatement = %p",
+\n\t\t\tStatement = %p",
                 statement );
 
         dm_log_write( __FILE__, 
@@ -134,7 +138,14 @@ SQLRETURN SQLCancel( SQLHSTMT statement_handle )
                 statement -> msg );
     }
 
-    thread_protect( SQL_HANDLE_STMT, statement );
+    /*
+     * Allow this past the thread checks if the driver is at all thread safe, as SQLCancel can 
+     * be called across threads
+     */
+    if ( statement -> connection -> protection_level == 3 ) 
+    {
+        thread_protect( SQL_HANDLE_STMT, statement ); 
+    }
 
     /*
      * check states
@@ -152,7 +163,14 @@ SQLRETURN SQLCancel( SQLHSTMT statement_handle )
                 ERROR_IM001, NULL,
                 statement -> connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+        if ( statement -> connection -> protection_level == 3 ) 
+        {
+            return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+        }
+        else 
+        {
+            return function_return( IGNORE_THREAD, statement, SQL_ERROR );
+        }
     }
 
     ret = SQLCANCEL( statement -> connection,
@@ -187,10 +205,12 @@ SQLRETURN SQLCancel( SQLHSTMT statement_handle )
                         statement -> interupted_state == STATE_S7 )
                 {
                     statement -> state = STATE_S6;
+                    statement -> eod = 0;
                 }
                 else
                 {
                     statement -> state = STATE_S6;
+                    statement -> eod = 0;
                 }
             }
             else if ( statement -> interupted_func ==
@@ -200,6 +220,7 @@ SQLRETURN SQLCancel( SQLHSTMT statement_handle )
                         statement -> interupted_state == STATE_S6 )
                 {
                     statement -> state = STATE_S6;
+                    statement -> eod = 0;
                 }
                 else if ( statement -> interupted_state == STATE_S7 )
                 {
@@ -227,5 +248,12 @@ SQLRETURN SQLCancel( SQLHSTMT statement_handle )
                 statement -> msg );
     }
 
-    return function_return( SQL_HANDLE_STMT, statement, ret );
+    if ( statement -> connection -> protection_level == 3 ) 
+    {
+        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+    }
+    else 
+    {
+        return function_return( IGNORE_THREAD, statement, ret );
+    }
 }

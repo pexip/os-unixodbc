@@ -2,8 +2,6 @@ lib_LTLIBRARIES = libtemplate.la
 
 INCLUDES = -I@top_srcdir@/include -I. $(LTDLINCL)
 
-DEFS = -DUNIXODBC @DEFS@
-
 libtemplate_la_LDFLAGS = -no-undefined  -version-info 1:0:0 
 
 EXTRA_DIST = \
@@ -15,7 +13,7 @@ libtemplate_la_LIBADD = \
 	../../log/libloglc.la \
 	../../ini/libinilc.la \
 	../../odbcinst/libodbcinstlc.la \
-	$(LIBLTDL) $(LIBADD_DL) 
+	$(LIBLTDL) 
 
 libtemplate_la_SOURCES = \
 	SQLAllocConnect.c \

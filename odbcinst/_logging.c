@@ -1,7 +1,7 @@
 /*********************************************************************
  *
  * Written by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * copyright (c) 1999 Nick Gorham
  *
@@ -21,9 +21,12 @@
  *
  **********************************************************************
  *
- * $Id: _logging.c,v 1.4 2008/05/12 13:07:21 lurcher Exp $
+ * $Id: _logging.c,v 1.5 2009/02/18 17:59:27 lurcher Exp $
  *
  * $Log: _logging.c,v $
+ * Revision 1.5  2009/02/18 17:59:27  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.4  2008/05/12 13:07:21  lurcher
  * Push a couple of small changes back into CVS, ready for new release
  *
@@ -47,6 +50,7 @@
  *
  *********************************************************************/
 
+#include <config.h>
 #include <odbcinstext.h>
 #include <log.h>
 

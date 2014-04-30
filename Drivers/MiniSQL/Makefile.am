@@ -3,9 +3,6 @@ lib_LTLIBRARIES = libodbcmini.la
 
 INCLUDES = -I@top_srcdir@/include -I. -I@msql_headers@ -I${LTDLINCL}
 
-# PAH - Redundant?
-# DEFS = -DUNIXODBC @DEFS@ -DDRIVER_NAME=\"odbcminisql\"
-
 libodbcmini_la_SOURCES = \
 	SQLAllocConnect.c \
 	SQLAllocEnv.c \

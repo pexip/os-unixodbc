@@ -1,7 +1,7 @@
 /*********************************************************************
  *
  * Written, as part of unixODBC by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * copyright (c) 2004 Nick Gorham
  *
@@ -21,9 +21,25 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include <stdio.h>
+
+#ifdef HAVE_STDLIB_H
 #include <stdlib.h>
+#endif
+
+#ifdef HAVE_STRING_H
 #include <string.h>
+#endif
+
+#ifdef HAVE_STRINGS_H
+#include <strings.h>
+#endif
+
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+
 #include <sql.h>
 
 static void usage( void )
@@ -66,15 +82,12 @@ static void cInc( void )
     printf( "#ifndef HAVE_LONG_LONG\n #define HAVE_LONG_LONG\n#endif\n" );
 #endif
 
-#define xstr(s) str(s)
-#define str(s) #s
-
-#ifdef ODBCINT64
-    printf( "#ifndef ODBCINT64\n #define ODBCINT64 %s\n#endif\n", xstr(ODBCINT64) );
+#ifdef ODBCINT64_TYPE
+    printf( "#ifndef ODBCINT64\n #define ODBCINT64 %s\n#endif\n", ODBCINT64_TYPE );
 #endif
 
-#ifdef UODBCINT64
-    printf( "#ifndef UODBCINT64\n #define UODBCINT64 %s\n#endif\n", xstr(UODBCINT64) );
+#ifdef UODBCINT64_TYPE
+    printf( "#ifndef UODBCINT64\n #define UODBCINT64 %s\n#endif\n", UODBCINT64_TYPE );
 #endif
 
 #ifdef DISABLE_INI_CACHING
@@ -95,6 +108,10 @@ static void cInc( void )
 
 #ifdef DO_YOU_KNOW_WHAT_YOUR_ARE_DOING
     printf( "#ifndef DO_YOU_KNOW_WHAT_YOUR_ARE_DOING\n #define DO_YOU_KNOW_WHAT_YOUR_ARE_DOING\n#endif\n" );
+#endif
+
+#ifdef BUILD_LEGACY_64_BIT_MODE
+    printf( "#ifndef BUILD_LEGACY_64_BIT_MODE\n #define BUILD_LEGACY_64_BIT_MODE\n#endif\n" );
 #endif
 }
 
@@ -152,6 +169,10 @@ static void cflags( void )
     printf( "-DDO_YOU_KNOW_WHAT_YOUR_ARE_DOING " );
 #endif
 
+#ifdef BUILD_LEGACY_64_BIT_MODE
+    printf( "-DBUILD_LEGACY_64_BIT_MODE " );
+#endif
+
 #ifdef INCLUDE_PREFIX
 	printf( "-I%s ", INCLUDE_PREFIX );
 #else
@@ -163,7 +184,7 @@ static void cflags( void )
 
 static void ulen( void )
 {
-	printf( "-DSIZEOF_SQLULEN=%d\n", sizeof( SQLULEN ));
+	printf( "-DSIZEOF_SQLULEN=%d\n", (int)sizeof( SQLULEN ));
 }
 
 int main( int argc, char **argv )

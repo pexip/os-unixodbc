@@ -20,6 +20,7 @@
  * -----------------------------------------------
  * Peter Harvey		- pharvey@codebydesign.com
  **************************************************/
+#include <config.h>
 #include <odbcinstext.h>
 
 BOOL SQLInstallDriverEx(		LPCSTR	pszDriver,

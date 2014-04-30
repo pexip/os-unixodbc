@@ -13,6 +13,7 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "driver.h"
 
 SQLRETURN sqlFreeEnv( SQLHENV hDrvEnv )

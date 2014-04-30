@@ -17,6 +17,7 @@
  * Peter Harvey		- pharvey@codebydesign.com
  **************************************************/
 
+#include <config.h>
 #include "ini.h"
 
 int __iniDebug( HINI hIni )
@@ -34,7 +35,7 @@ int __iniDebug( HINI hIni )
         iniPropertyFirst( hIni );
         while ( iniPropertyEOL( hIni ) == FALSE )
         {
-            printf( "%s\t\t%c %s\n", hIni->hCurProperty->szName, hIni->cEqual, hIni->hCurProperty->szValue );
+            printf( "%s%c%s\n", hIni->hCurProperty->szName, hIni->cEqual, hIni->hCurProperty->szValue );
             iniPropertyNext( hIni );
         }
         printf( "\n" );
@@ -70,7 +71,7 @@ int _iniDump( HINI hIni, FILE *hStream )
             if ( hIni->iniFileType == 0 )
             {
 #endif
-                uo_fprintf( hStream, "%s\t\t%c %s\n", hIni->hCurProperty->szName, hIni->cEqual, hIni->hCurProperty->szValue );
+                uo_fprintf( hStream, "%s%c%s\n", hIni->hCurProperty->szName, hIni->cEqual, hIni->hCurProperty->szValue );
 #ifdef __OS2__
             }
             else

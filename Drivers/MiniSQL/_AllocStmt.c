@@ -10,6 +10,7 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "driver.h"
 
 SQLRETURN _AllocStmt(   SQLHDBC     hDrvDbc,
@@ -60,7 +61,7 @@ SQLRETURN _AllocStmt(   SQLHDBC     hDrvDbc,
 	/* ADD TO DBCs STATEMENT LIST */
 	
 	/* start logging		*/
-    if ( logOpen( &(*phStmt)->hLog, DRIVER_NAME, NULL, 50 ) )
+    if ( logOpen( &(*phStmt)->hLog, SQL_DRIVER_NAME, NULL, 50 ) )
 	{
 		logOn( (*phStmt)->hLog, 1 );
 		logPushMsg( (*phStmt)->hLog, __FILE__, __FILE__, __LINE__, LOG_WARNING, LOG_WARNING, "Statement logging allocated ok" );

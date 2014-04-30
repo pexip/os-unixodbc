@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,15 @@
  *
  **********************************************************************
  *
- * $Id: SQLGetConnectOptionW.c,v 1.8 2008/08/29 08:01:38 lurcher Exp $
+ * $Id: SQLGetConnectOptionW.c,v 1.10 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLGetConnectOptionW.c,v $
+ * Revision 1.10  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
+ * Revision 1.9  2009/02/17 09:47:44  lurcher
+ * Clear up a number of bugs
+ *
  * Revision 1.8  2008/08/29 08:01:38  lurcher
  * Alter the way W functions are passed to the driver
  *
@@ -83,6 +89,7 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
 static char const rcsid[]= "$RCSfile: SQLGetConnectOptionW.c,v $";
@@ -180,9 +187,9 @@ SQLRETURN SQLGetConnectOptionW( SQLHDBC connection_handle,
     if ( log_info.log_flag )
     {
         sprintf( connection -> msg, "\n\t\tEntry:\
-            \n\t\t\tConnection = %p\
-            \n\t\t\tOption = %s\
-            \n\t\t\tValue = %p",
+\n\t\t\tConnection = %p\
+\n\t\t\tOption = %s\
+\n\t\t\tValue = %p",
                 connection,
                 __con_attr_as_string( s1, option ),
                 value );
@@ -270,6 +277,22 @@ SQLRETURN SQLGetConnectOptionW( SQLHDBC connection_handle,
         *((SQLINTEGER*)value) = connection -> cursors;
         type = 1;
         break;
+
+      case SQL_ATTR_LOGIN_TIMEOUT:
+        /*
+         * if connected, call the driver
+         */
+        if ( connection -> state != STATE_C2 )
+        {
+            type = 0;
+        }
+        else
+        {
+            *((SQLINTEGER*)value) = connection -> login_timeout;
+            type = 1;
+        }
+        break;
+
 
       default:
         break;
@@ -365,7 +388,7 @@ SQLRETURN SQLGetConnectOptionW( SQLHDBC connection_handle,
         }
         else
         {
-            if ( ret = CHECK_SQLGETCONNECTOPTION( connection ))
+            if (( ret = CHECK_SQLGETCONNECTOPTION( connection )))
             {
                 SQLCHAR *as1 = NULL;
 

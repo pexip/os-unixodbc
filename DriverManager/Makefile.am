@@ -1,13 +1,7 @@
 lib_LTLIBRARIES = libodbc.la
 
 INCLUDES = -I@top_srcdir@/include \
-		$(LTDLINCL) \
-		-DSHLIBEXT=\"@SHLIBEXT@\" \
-		-DSYSTEM_FILE_PATH=\"@sysconfdir@\" \
-		-DSYSTEM_LIB_PATH=\"@libdir@\" \
-		-DUNICODE_ENCODING=\"@ICONV_UNICODE_ENCODING@\" \
-		-DUNIXODBC_SOURCE \
-		-DASCII_ENCODING=\"@ICONV_CHAR_ENCODING@\" 
+		$(LTDLINCL) 
 
 EXTRA_DIST = \
 	drivermanager.h \
@@ -20,7 +14,7 @@ libodbc_la_LIBADD = \
     ../log/libloglc.la \
 	../ini/libinilc.la \
 	../odbcinst/libodbcinstlc.la \
-	$(LIBLTDL) $(LIBADD_DL) \
+	$(LIBLTDL) \
 	$(LIBICONV)
 
 libodbc_la_LDFLAGS = \
@@ -29,19 +23,11 @@ libodbc_la_LDFLAGS = \
 	-export-dynamic \
 	-export-symbols @srcdir@/DriverManager.exp
 
-if WITHLT
-libodbc_la_DEPENDENCIES = $(LIBLTDL) \
+libodbc_la_DEPENDENCIES = $(LTDLDEPS) \
 	../lst/liblstlc.la \
     ../log/libloglc.la \
     ../ini/libinilc.la \
     ../odbcinst/libodbcinstlc.la 
-else
-libodbc_la_DEPENDENCIES = \
-	../lst/liblstlc.la \
-    ../log/libloglc.la \
-    ../ini/libinilc.la \
-    ../odbcinst/libodbcinstlc.la 
-endif
 
 libodbc_la_SOURCES = \
 	SQLAllocConnect.c \
@@ -55,6 +41,7 @@ libodbc_la_SOURCES = \
 	SQLBrowseConnect.c \
 	SQLBulkOperations.c \
 	SQLCancel.c \
+	SQLCancelHandle.c \
 	SQLCloseCursor.c \
 	SQLColAttribute.c \
 	SQLColAttributes.c \

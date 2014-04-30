@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLDisconnect.c,v 1.8 2004/02/18 15:47:44 lurcher Exp $
+ * $Id: SQLDisconnect.c,v 1.9 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLDisconnect.c,v $
+ * Revision 1.9  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.8  2004/02/18 15:47:44  lurcher
  *
  * Fix a leak in the iconv code
@@ -165,9 +168,10 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
-static char const rcsid[]= "$RCSfile: SQLDisconnect.c,v $ $Revision: 1.8 $";
+static char const rcsid[]= "$RCSfile: SQLDisconnect.c,v $ $Revision: 1.9 $";
 
 extern int pooling_enabled;
 
@@ -197,7 +201,7 @@ SQLRETURN SQLDisconnect( SQLHDBC connection_handle )
     if ( log_info.log_flag )
     {
         sprintf( connection -> msg, "\n\t\tEntry:\
-            \n\t\t\tConnection = %p",
+\n\t\t\tConnection = %p",
                 connection );
 
         dm_log_write( __FILE__, 
@@ -237,6 +241,25 @@ SQLRETURN SQLDisconnect( SQLHDBC connection_handle )
 
         __post_internal_error( &connection -> error,
                 ERROR_08003, NULL,
+                connection -> environment -> requested_version );
+
+        return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+    }
+
+    /*
+     * any statemnts that are in in SQL_NEED_DATA
+     */
+
+    if( __check_stmt_from_dbc( connection, STATE_S8 )) {
+
+        dm_log_write( __FILE__, 
+                __LINE__, 
+                LOG_INFO, 
+                LOG_INFO, 
+                "Error: HY010" );
+
+        __post_internal_error( &connection -> error,
+                ERROR_HY010, NULL,
                 connection -> environment -> requested_version );
 
         return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
@@ -321,7 +344,7 @@ SQLRETURN SQLDisconnect( SQLHDBC connection_handle )
 
         if ( ret == SQL_SUCCESS_WITH_INFO )
 	    {
-	        function_return_ex( SQL_HANDLE_DBC, connection, ret, TRUE );
+	        function_return_ex( IGNORE_THREAD, connection, ret, TRUE );
         }
         
         /*

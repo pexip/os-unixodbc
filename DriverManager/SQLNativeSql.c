@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLNativeSql.c,v 1.8 2008/09/29 14:02:45 lurcher Exp $
+ * $Id: SQLNativeSql.c,v 1.9 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLNativeSql.c,v $
+ * Revision 1.9  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.8  2008/09/29 14:02:45  lurcher
  * Fix missing dlfcn group option
  *
@@ -128,9 +131,10 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
-static char const rcsid[]= "$RCSfile: SQLNativeSql.c,v $ $Revision: 1.8 $";
+static char const rcsid[]= "$RCSfile: SQLNativeSql.c,v $ $Revision: 1.9 $";
 
 SQLRETURN SQLNativeSqlA(
     SQLHDBC            hdbc,
@@ -198,11 +202,11 @@ SQLRETURN SQLNativeSql(
         }
 
         sprintf( connection -> msg, "\n\t\tEntry:\
-            \n\t\t\tConnection = %p\
-            \n\t\t\tSQL In = %s\
-            \n\t\t\tSQL Out = %p\
-            \n\t\t\tSQL Out Len = %d\
-            \n\t\t\tSQL Len Ptr = %p",
+\n\t\t\tConnection = %p\
+\n\t\t\tSQL In = %s\
+\n\t\t\tSQL Out = %p\
+\n\t\t\tSQL Out Len = %d\
+\n\t\t\tSQL Len Ptr = %p",
                 connection,
                 __string_with_length( s1, sz_sql_str_in, cb_sql_str_in ),
                 sz_sql_str,
@@ -372,10 +376,10 @@ SQLRETURN SQLNativeSql(
 
         sprintf( connection -> msg, 
                 "\n\t\tExit:[%s]\
-                \n\t\t\tSQL Out = %s",
+\n\t\t\tSQL Out = %s",
                     __get_return_status( ret, s2 ),
-                    __data_as_string( s1, SQL_CHAR, 
-                        (SQLLEN*)pcb_sql_str, sz_sql_str ));
+                    __idata_as_string( s1, SQL_CHAR, 
+                        pcb_sql_str, sz_sql_str ));
 
         free( s1 );
 

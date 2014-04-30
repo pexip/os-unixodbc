@@ -3,7 +3,7 @@
  * unixODBC Cursor Library
  *
  * Created by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * copyright (c) 1999 Nick Gorham
  *
@@ -23,9 +23,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLFetchScroll.c,v 1.6 2007/11/29 12:00:36 lurcher Exp $
+ * $Id: SQLFetchScroll.c,v 1.7 2009/02/18 17:59:17 lurcher Exp $
  *
  * $Log: SQLFetchScroll.c,v $
+ * Revision 1.7  2009/02/18 17:59:17  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.6  2007/11/29 12:00:36  lurcher
  * Add 64 bit type changes to SQLExtendedFetch etc
  *
@@ -63,6 +66,7 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "cursorlibrary.h"
 
 SQLRETURN CLFetchScroll( SQLHSTMT statement_handle,

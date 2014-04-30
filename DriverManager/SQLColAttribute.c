@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,15 @@
  *
  **********************************************************************
  *
- * $Id: SQLColAttribute.c,v 1.17 2008/09/29 14:02:43 lurcher Exp $
+ * $Id: SQLColAttribute.c,v 1.19 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLColAttribute.c,v $
+ * Revision 1.19  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
+ * Revision 1.18  2009/02/17 09:47:44  lurcher
+ * Clear up a number of bugs
+ *
  * Revision 1.17  2008/09/29 14:02:43  lurcher
  * Fix missing dlfcn group option
  *
@@ -176,9 +182,10 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
-static char const rcsid[]= "$RCSfile: SQLColAttribute.c,v $ $Revision: 1.17 $";
+static char const rcsid[]= "$RCSfile: SQLColAttribute.c,v $ $Revision: 1.19 $";
 
 SQLINTEGER map_ca_odbc3_to_2( SQLINTEGER field_identifier )
 {
@@ -267,13 +274,13 @@ SQLRETURN SQLColAttribute ( SQLHSTMT statement_handle,
     if ( log_info.log_flag )
     {
         sprintf( statement -> msg, "\n\t\tEntry:\
-            \n\t\t\tStatement = %p\
-            \n\t\t\tColumn Number = %d\
-            \n\t\t\tField Identifier = %s\
-            \n\t\t\tCharacter Attr = %p\
-            \n\t\t\tBuffer Length = %d\
-            \n\t\t\tString Length = %p\
-            \n\t\t\tNumeric Attribute = %p",
+\n\t\t\tStatement = %p\
+\n\t\t\tColumn Number = %d\
+\n\t\t\tField Identifier = %s\
+\n\t\t\tCharacter Attr = %p\
+\n\t\t\tBuffer Length = %d\
+\n\t\t\tString Length = %p\
+\n\t\t\tNumeric Attribute = %p",
                 statement,
                 column_number,
                 __col_attr_as_string( s1, field_identifier ),
@@ -411,7 +418,7 @@ SQLRETURN SQLColAttribute ( SQLHSTMT statement_handle,
     {
         if ( !CHECK_SQLCOLATTRIBUTEW( statement -> connection ))
         {
-            if ( ret = CHECK_SQLCOLATTRIBUTESW( statement -> connection ))
+            if (( ret = CHECK_SQLCOLATTRIBUTESW( statement -> connection )))
             {
                 SQLWCHAR *s1 = NULL;
 

@@ -12,7 +12,7 @@
  * default to 3.51 declare something else before here and you get a whole new ball of wax
  ***************************/
 #ifndef ODBCVER
-#define ODBCVER 0x0351
+#define ODBCVER 0x0380
 #endif
 
 #ifndef __SQLTYPES_H
@@ -391,6 +391,10 @@ extern "C" {
 #define SQL_API_SQLTABLES              54
 #define SQL_API_SQLTRANSACT            23
 
+#if (ODBCVER >= 0x0380)
+#define SQL_API_SQLCANCELHANDLE      1022
+#endif
+
 /* Information requested by SQLGetInfo() */
 #if (ODBCVER >= 0x0300)
 #define SQL_MAX_DRIVER_CONNECTIONS           0
@@ -594,15 +598,22 @@ extern "C" {
 
     SQLRETURN  SQL_API SQLCancel(SQLHSTMT StatementHandle);
 
+#if (ODBCVER >= 0x0380)
+SQLRETURN  SQL_API SQLCancelHandle(SQLSMALLINT HandleType, SQLHANDLE InputHandle);
+#endif 
+
+
 #if (ODBCVER >= 0x0300)
     SQLRETURN  SQL_API SQLCloseCursor(SQLHSTMT StatementHandle);
 
     SQLRETURN  SQL_API SQLColAttribute(SQLHSTMT StatementHandle,
                                         SQLUSMALLINT ColumnNumber, SQLUSMALLINT FieldIdentifier,
                                         SQLPOINTER CharacterAttribute, SQLSMALLINT BufferLength,
-                                        SQLSMALLINT *StringLength, SQLLEN *NumericAttribute 
-										/* spec says (SQLPOINTER) not (SQLEN*) - PAH */ );
-										/* Ms now say SQLLEN* http://msdn.microsoft.com/library/en-us/odbc/htm/dasdkodbcoverview_64bit.asp - NG */
+                                        SQLSMALLINT *StringLength, SQLLEN *NumericAttribute );
+
+										/* spec says (SQLPOINTER) not (SQLEN*) - PAH */
+										/* Ms now say SQLLEN* 
+                                           http://msdn.microsoft.com/library/en-us/odbc/htm/dasdkodbcoverview_64bit.asp - NG */
 										
 #endif
 

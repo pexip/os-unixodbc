@@ -14,6 +14,7 @@
  * Peter Harvey		- pharvey@codebydesign.com
  **************************************************/
 
+#include <config.h>
 #include "ini.h"
 
 int iniAppend( HINI hIni, char *pszFileName )

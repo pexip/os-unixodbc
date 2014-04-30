@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLErrorW.c,v 1.8 2008/05/20 13:43:47 lurcher Exp $
+ * $Id: SQLErrorW.c,v 1.9 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLErrorW.c,v $
+ * Revision 1.9  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.8  2008/05/20 13:43:47  lurcher
  * Vms fixes
  *
@@ -82,6 +85,7 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
 static char const rcsid[]= "$RCSfile: SQLErrorW.c,v $";
@@ -254,12 +258,12 @@ SQLRETURN SQLErrorW( SQLHENV environment_handle,
         {
             sprintf( statement -> msg, 
                 "\n\t\tEntry:\
-                \n\t\t\tStatement = %p\
-                \n\t\t\tSQLState = %p\
-                \n\t\t\tNative = %p\
-                \n\t\t\tMessage Text = %p\
-                \n\t\t\tBuffer Length = %d\
-                \n\t\t\tText Len Ptr = %p",
+\n\t\t\tStatement = %p\
+\n\t\t\tSQLState = %p\
+\n\t\t\tNative = %p\
+\n\t\t\tMessage Text = %p\
+\n\t\t\tBuffer Length = %d\
+\n\t\t\tText Len Ptr = %p",
                     statement,
                     sqlstate,
                     native_error,
@@ -289,9 +293,9 @@ SQLRETURN SQLErrorW( SQLHENV environment_handle,
 
                 sprintf( statement -> msg, 
                     "\n\t\tExit:[%s]\
-                    \n\t\t\tSQLState = %s\
-                    \n\t\t\tNative = %s\
-                    \n\t\t\tMessage Text = %s",
+\n\t\t\tSQLState = %s\
+\n\t\t\tNative = %s\
+\n\t\t\tMessage Text = %s",
                         __get_return_status( ret, s2 ),
                         ( ts1 = unicode_to_ansi_alloc( sqlstate, SQL_NTS, statement -> connection )),
                         __iptr_as_string( s0, native_error ),
@@ -374,12 +378,12 @@ SQLRETURN SQLErrorW( SQLHENV environment_handle,
         {
             sprintf( connection -> msg, 
                 "\n\t\tEntry:\
-                \n\t\t\tConnection = %p\
-                \n\t\t\tSQLState = %p\
-                \n\t\t\tNative = %p\
-                \n\t\t\tMessage Text = %p\
-                \n\t\t\tBuffer Length = %d\
-                \n\t\t\tText Len Ptr = %p",
+\n\t\t\tConnection = %p\
+\n\t\t\tSQLState = %p\
+\n\t\t\tNative = %p\
+\n\t\t\tMessage Text = %p\
+\n\t\t\tBuffer Length = %d\
+\n\t\t\tText Len Ptr = %p",
                     connection,
                     sqlstate,
                     native_error,
@@ -409,9 +413,9 @@ SQLRETURN SQLErrorW( SQLHENV environment_handle,
 
                 sprintf( connection -> msg, 
                     "\n\t\tExit:[%s]\
-                    \n\t\t\tSQLState = %s\
-                    \n\t\t\tNative = %s\
-                    \n\t\t\tMessage Text = %s",
+\n\t\t\tSQLState = %s\
+\n\t\t\tNative = %s\
+\n\t\t\tMessage Text = %s",
                         __get_return_status( ret, s2 ),
                         ts1 = unicode_to_ansi_alloc( sqlstate, SQL_NTS, connection ),
                         __iptr_as_string( s0, native_error ),
@@ -458,12 +462,12 @@ SQLRETURN SQLErrorW( SQLHENV environment_handle,
         {
             sprintf( environment -> msg, 
                 "\n\t\tEntry:\
-                \n\t\t\tEnvironment = %p\
-                \n\t\t\tSQLState = %p\
-                \n\t\t\tNative = %p\
-                \n\t\t\tMessage Text = %p\
-                \n\t\t\tBuffer Length = %d\
-                \n\t\t\tText Len Ptr = %p",
+\n\t\t\tEnvironment = %p\
+\n\t\t\tSQLState = %p\
+\n\t\t\tNative = %p\
+\n\t\t\tMessage Text = %p\
+\n\t\t\tBuffer Length = %d\
+\n\t\t\tText Len Ptr = %p",
                     environment,
                     sqlstate,
                     native_error,
@@ -493,9 +497,9 @@ SQLRETURN SQLErrorW( SQLHENV environment_handle,
 
                 sprintf( environment -> msg, 
                     "\n\t\tExit:[%s]\
-                    \n\t\t\tSQLState = %s\
-                    \n\t\t\tNative = %s\
-                    \n\t\t\tMessage Text = %s",
+\n\t\t\tSQLState = %s\
+\n\t\t\tNative = %s\
+\n\t\t\tMessage Text = %s",
                         __get_return_status( ret, s2 ),
                         ts1 = unicode_to_ansi_alloc( sqlstate, SQL_NTS, NULL ),
                         __iptr_as_string( s0, native_error ),

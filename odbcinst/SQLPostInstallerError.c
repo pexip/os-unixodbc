@@ -16,6 +16,7 @@
  * -----------------------------------------------
  * Peter Harvey		- pharvey@codebydesign.com
  **************************************************/
+#include <config.h>
 #include <odbcinstext.h>
 
 RETCODE SQLPostInstallerError(	DWORD	nErrorCode,

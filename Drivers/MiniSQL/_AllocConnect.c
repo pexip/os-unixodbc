@@ -10,6 +10,7 @@
  * Peter Harvey		- pharvey@codebydesign.com
  **************************************************/
 
+#include <config.h>
 #include "driver.h"
 
 SQLRETURN _AllocConnect(	SQLHENV    hDrvEnv,
@@ -58,7 +59,7 @@ SQLRETURN _AllocConnect(	SQLHENV    hDrvEnv,
     (*phDbc)->hEnv			= (SQLPOINTER)hEnv;
 
 	/* start logging		*/
-    if ( !logOpen( &(*phDbc)->hLog, DRIVER_NAME, NULL, 50 ) )
+    if ( !logOpen( &(*phDbc)->hLog, SQL_DRIVER_NAME, NULL, 50 ) )
 		(*phDbc)->hLog = NULL;
 	logOn( (*phDbc)->hLog, 1 );
 

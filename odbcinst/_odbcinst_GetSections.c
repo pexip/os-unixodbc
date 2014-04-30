@@ -9,6 +9,7 @@
  * -----------------------------------------------
  * Peter Harvey		- pharvey@codebydesign.com
  **************************************************/
+#include <config.h>
 #include <odbcinstext.h>
 
 int _odbcinst_GetSections(	HINI	hIni,

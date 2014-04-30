@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLSetParam.c,v 1.6 2005/04/26 08:40:35 lurcher Exp $
+ * $Id: SQLSetParam.c,v 1.7 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLSetParam.c,v $
+ * Revision 1.7  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.6  2005/04/26 08:40:35  lurcher
  *
  * Add data type mapping for SQLSetPos.
@@ -129,9 +132,10 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
-static char const rcsid[]= "$RCSfile: SQLSetParam.c,v $ $Revision: 1.6 $";
+static char const rcsid[]= "$RCSfile: SQLSetParam.c,v $ $Revision: 1.7 $";
 
 SQLRETURN SQLSetParam( SQLHSTMT statement_handle,
            SQLUSMALLINT parameter_number,
@@ -166,14 +170,14 @@ SQLRETURN SQLSetParam( SQLHSTMT statement_handle,
     if ( log_info.log_flag )
     {
         sprintf( statement -> msg, "\n\t\tEntry:\
-            \n\t\t\tStatement = %p\
-            \n\t\t\tParam Number = %d\
-            \n\t\t\tValue Type = %d %s\
-            \n\t\t\tParameter Type = %d %s\
-            \n\t\t\tLength Precision = %d\
-            \n\t\t\tParameter Scale = %d\
-            \n\t\t\tParameter Value = %p\
-            \n\t\t\tStrLen Or Ind = %p", 
+\n\t\t\tStatement = %p\
+\n\t\t\tParam Number = %d\
+\n\t\t\tValue Type = %d %s\
+\n\t\t\tParameter Type = %d %s\
+\n\t\t\tLength Precision = %d\
+\n\t\t\tParameter Scale = %d\
+\n\t\t\tParameter Value = %p\
+\n\t\t\tStrLen Or Ind = %p", 
                 statement,
                 parameter_number,
                 value_type,
@@ -204,6 +208,22 @@ SQLRETURN SQLSetParam( SQLHSTMT statement_handle,
 
         __post_internal_error_api( &statement -> error,
                 ERROR_07009, NULL,
+                statement -> connection -> environment -> requested_version,
+                SQL_API_SQLSETPARAM );
+
+        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+    }
+
+    if ( value_type == 0 )
+    {
+        dm_log_write( __FILE__, 
+                __LINE__, 
+                LOG_INFO, 
+                LOG_INFO, 
+                "Error: HY003" );
+
+        __post_internal_error_api( &statement -> error,
+                ERROR_HY003, NULL,
                 statement -> connection -> environment -> requested_version,
                 SQL_API_SQLSETPARAM );
 

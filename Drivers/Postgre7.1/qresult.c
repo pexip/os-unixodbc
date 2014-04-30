@@ -18,6 +18,10 @@
  *
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "qresult.h"
 #include "misc.h"
 #include <stdio.h>

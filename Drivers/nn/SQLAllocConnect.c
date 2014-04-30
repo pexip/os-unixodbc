@@ -13,6 +13,7 @@
     GNU General Public License for more details.
 **/
 
+#include <config.h>
 #include "driver.h"
 
 RETCODE SQL_API SQLAllocConnect(

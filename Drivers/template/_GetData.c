@@ -9,6 +9,7 @@
  * -----------------------------------------------
  * Peter Harvey		- pharvey@codebydesign.com
  **************************************************/
+#include <config.h>
 #include "driver.h"
 
 SQLRETURN _GetData(		SQLHSTMT      hDrvStmt,
@@ -89,7 +90,7 @@ SQLRETURN _GetData(		SQLHSTMT      hDrvStmt,
 			break;
 
 		case SQL_C_FLOAT:
-			sscanf( pSourceData, "%g", pTarget );
+			sscanf( pSourceData, "%g", (float*)pTarget );
 			if ( NULL != pnLengthOrIndicator )
 				*pnLengthOrIndicator = sizeof( float );
 			break;

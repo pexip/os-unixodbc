@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLBindParameter.c,v 1.11 2007/03/05 09:49:23 lurcher Exp $
+ * $Id: SQLBindParameter.c,v 1.12 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLBindParameter.c,v $
+ * Revision 1.12  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.11  2007/03/05 09:49:23  lurcher
  * Get it to build on VMS again
  *
@@ -147,9 +150,10 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
-static char const rcsid[]= "$RCSfile: SQLBindParameter.c,v $ $Revision: 1.11 $";
+static char const rcsid[]= "$RCSfile: SQLBindParameter.c,v $ $Revision: 1.12 $";
 
 SQLRETURN SQLBindParameter(
     SQLHSTMT           statement_handle,
@@ -186,16 +190,16 @@ SQLRETURN SQLBindParameter(
     if ( log_info.log_flag )
     {
         sprintf( statement -> msg, "\n\t\tEntry:\
-            \n\t\t\tStatement = %p\
-            \n\t\t\tParam Number = %d\
-            \n\t\t\tParam Type = %d\
-            \n\t\t\tC Type = %d %s\
-            \n\t\t\tSQL Type = %d %s\
-            \n\t\t\tCol Def = %d\
-            \n\t\t\tScale = %d\
-            \n\t\t\tRgb Value = %p\
-            \n\t\t\tValue Max = %d\
-            \n\t\t\tStrLen Or Ind = %p", 
+\n\t\t\tStatement = %p\
+\n\t\t\tParam Number = %d\
+\n\t\t\tParam Type = %d\
+\n\t\t\tC Type = %d %s\
+\n\t\t\tSQL Type = %d %s\
+\n\t\t\tCol Def = %d\
+\n\t\t\tScale = %d\
+\n\t\t\tRgb Value = %p\
+\n\t\t\tValue Max = %d\
+\n\t\t\tStrLen Or Ind = %p", 
                 statement,
                 ipar,
                 f_param_type,
@@ -286,7 +290,7 @@ SQLRETURN SQLBindParameter(
 	/*
 	 * Alter the types, this is a special to cope with a AllBase bug...
 	 */
-	if ( f_c_type == SQL_C_SLONG  && 0  ) 
+	if ( f_c_type == SQL_C_SLONG && 0 ) 
 	{
         dm_log_write( __FILE__, 
                 __LINE__, 

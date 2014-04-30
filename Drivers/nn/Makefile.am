@@ -4,10 +4,8 @@ INCLUDES = -I@top_srcdir@/include -I.
 
 libnn_la_LDFLAGS = -no-undefined  -version-info 1:0:0 -module
 
-DEFS = -DUNIXODBC @DEFS@
-
 EXTRA_DIST = \
-	config.h \
+	nnconfig.h \
 	connect.h \
 	convert.h \
 	driver.h \
@@ -66,7 +64,7 @@ libnn_la_SOURCES = \
 	execute.c \
 	herr.c \
 	prepare.c \
-	yyparse.c \
+	yyparse.y \
 	yylex.c \
 	yystmt.c \
 	yyerr.c \

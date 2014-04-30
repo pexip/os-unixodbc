@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,15 @@
  *
  **********************************************************************
  *
- * $Id: SQLFreeHandle.c,v 1.10 2007/12/17 13:13:03 lurcher Exp $
+ * $Id: SQLFreeHandle.c,v 1.12 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLFreeHandle.c,v $
+ * Revision 1.12  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
+ * Revision 1.11  2009/02/17 09:47:44  lurcher
+ * Clear up a number of bugs
+ *
  * Revision 1.10  2007/12/17 13:13:03  lurcher
  * Fix a couple of descriptor typo's
  *
@@ -167,13 +173,14 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 #if defined ( COLLECT_STATS ) && defined( HAVE_SYS_SEM_H )
 #include "__stats.h"
 #include <uodbc_stats.h>
 #endif
 
-static char const rcsid[]= "$RCSfile: SQLFreeHandle.c,v $ $Revision: 1.10 $";
+static char const rcsid[]= "$RCSfile: SQLFreeHandle.c,v $ $Revision: 1.12 $";
 
 SQLRETURN __SQLFreeHandle( SQLSMALLINT handle_type,
         SQLHANDLE handle )
@@ -231,8 +238,6 @@ SQLRETURN __SQLFreeHandle( SQLSMALLINT handle_type,
                 __post_internal_error( &environment -> error,
                         ERROR_HY010, NULL,
                         environment -> requested_version );
-
-            	thread_release( SQL_HANDLE_ENV, environment );
 
                 return function_return( SQL_HANDLE_ENV, environment, SQL_ERROR );
             }
@@ -298,8 +303,6 @@ SQLRETURN __SQLFreeHandle( SQLSMALLINT handle_type,
                 __post_internal_error( &connection -> error,
                         ERROR_HY010, NULL,
                         connection -> environment -> requested_version );
-
-            	thread_release( SQL_HANDLE_ENV, environment );
 
                 return function_return( SQL_HANDLE_ENV, environment, SQL_ERROR );
             }
@@ -402,8 +405,6 @@ SQLRETURN __SQLFreeHandle( SQLSMALLINT handle_type,
                           ERROR_HY010, NULL,
                           statement -> connection -> environment -> requested_version );
 
-                thread_release( SQL_HANDLE_STMT, statement );
-				
                 return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
             }
 
@@ -439,6 +440,16 @@ SQLRETURN __SQLFreeHandle( SQLSMALLINT handle_type,
 
             if ( SQL_SUCCEEDED( ret ))
             {
+                /*
+                 * break any association
+                 */
+
+                if ( statement -> ard ) {
+                    statement -> ard -> associated_with = NULL;
+                }
+                if ( statement -> apd ) {
+                    statement -> apd -> associated_with = NULL;
+                }
                 /*
                  * release the implicit descriptors, 
 				 * this matches the tests in SQLAllocHandle
@@ -492,7 +503,6 @@ SQLRETURN __SQLFreeHandle( SQLSMALLINT handle_type,
             DMHDESC descriptor = (DMHDESC)handle;
             DMHDBC connection;
             SQLRETURN ret;
-            SQLCHAR s0[ 20 ];
 
             /*
              * check descriptor
@@ -532,7 +542,7 @@ SQLRETURN __SQLFreeHandle( SQLSMALLINT handle_type,
 						ERROR_HY017, NULL,
 						connection -> environment -> requested_version );
 		
-				return function_return( SQL_HANDLE_DESC, descriptor, SQL_ERROR );
+				return function_return( IGNORE_THREAD, descriptor, SQL_ERROR );
 			}
 		
             thread_protect( SQL_HANDLE_DESC, descriptor );
@@ -549,8 +559,6 @@ SQLRETURN __SQLFreeHandle( SQLSMALLINT handle_type,
                         ERROR_IM001, NULL,
                         connection -> environment -> requested_version );
 
-            	thread_release( SQL_HANDLE_DESC, descriptor );
-
                 return function_return( SQL_HANDLE_DESC, descriptor, SQL_ERROR );
             }
             else
@@ -558,6 +566,29 @@ SQLRETURN __SQLFreeHandle( SQLSMALLINT handle_type,
                 ret = SQLFREEHANDLE( connection,
                         handle_type,
                         descriptor -> driver_desc );
+            }
+
+            /*
+             * check status of statements associated with this descriptor
+             */
+
+            if( __check_stmt_from_desc( descriptor, STATE_S8 ) ||
+                __check_stmt_from_desc( descriptor, STATE_S9 ) ||
+                __check_stmt_from_desc( descriptor, STATE_S10 ) ||
+                __check_stmt_from_desc( descriptor, STATE_S11 ) ||
+                __check_stmt_from_desc( descriptor, STATE_S12 )) {
+
+                dm_log_write( __FILE__, 
+                        __LINE__, 
+                        LOG_INFO, 
+                        LOG_INFO, 
+                        "Error: HY010" );
+
+                __post_internal_error( &descriptor -> error,
+                        ERROR_HY010, NULL,
+                        descriptor -> connection -> environment -> requested_version );
+
+                return function_return( SQL_HANDLE_DESC, descriptor, SQL_ERROR );
             }
 
             thread_release( SQL_HANDLE_DESC, descriptor );

@@ -10,6 +10,7 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "driver.h"
 
 SQLRETURN SQLError( SQLHENV     hDrvEnv,
@@ -42,7 +43,7 @@ SQLRETURN SQLError( SQLHENV     hDrvEnv,
 	/* STATEMENT */
     if( hStmt != SQL_NULL_HENV )
 	{
-		if ( logPopMsg( hStmt->hLog, szMsgHdr, &nCode, hStmt->szSqlMsg ) != LOG_SUCCESS )
+		if ( logPopMsg( hStmt->hLog ) != LOG_SUCCESS )
 			return SQL_NO_DATA;
 		strncpy( szErrorMsg, hStmt->szSqlMsg, nErrorMsgMax );
 		*pcbErrorMsg = strlen( szErrorMsg );
@@ -52,7 +53,7 @@ SQLRETURN SQLError( SQLHENV     hDrvEnv,
 	/* CONNECTION */
     if( hDbc != SQL_NULL_HDBC )
 	{
-		if ( logPopMsg( hDbc->hLog, szMsgHdr, &nCode, hDbc->szSqlMsg ) != LOG_SUCCESS )
+		if ( logPopMsg( hDbc->hLog ) != LOG_SUCCESS )
 			return SQL_NO_DATA;
 		strncpy( szErrorMsg, hDbc->szSqlMsg, nErrorMsgMax );
 		*pcbErrorMsg = strlen( szErrorMsg );
@@ -62,7 +63,7 @@ SQLRETURN SQLError( SQLHENV     hDrvEnv,
 	/* ENVIRONMENT */
     if( hEnv != SQL_NULL_HSTMT )
 	{
-		if ( logPopMsg( hEnv->hLog, szMsgHdr, &nCode, hEnv->szSqlMsg ) != LOG_SUCCESS )
+		if ( logPopMsg( hEnv->hLog ) != LOG_SUCCESS )
 			return SQL_NO_DATA;
 		strncpy( szErrorMsg, hEnv->szSqlMsg, nErrorMsgMax );
 		*pcbErrorMsg = strlen( szErrorMsg );

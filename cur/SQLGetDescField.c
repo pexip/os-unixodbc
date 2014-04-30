@@ -3,7 +3,7 @@
  * unixODBC Cursor Library
  *
  * Created by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * copyright (c) 1999 Nick Gorham
  *
@@ -23,9 +23,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLGetDescField.c,v 1.2 2005/09/05 09:49:48 lurcher Exp $
+ * $Id: SQLGetDescField.c,v 1.3 2009/02/18 17:59:17 lurcher Exp $
  *
  * $Log: SQLGetDescField.c,v $
+ * Revision 1.3  2009/02/18 17:59:17  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.2  2005/09/05 09:49:48  lurcher
  * New QT detection macros added
  *
@@ -45,6 +48,7 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "cursorlibrary.h"
 
 SQLRETURN CLGetDescField( SQLHDESC descriptor_handle,

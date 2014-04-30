@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLGetTypeInfo.c,v 1.5 2004/01/12 09:54:39 lurcher Exp $
+ * $Id: SQLGetTypeInfo.c,v 1.6 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLGetTypeInfo.c,v $
+ * Revision 1.6  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.5  2004/01/12 09:54:39  lurcher
  *
  * Fix problem where STATE_S5 stops metadata calls
@@ -117,9 +120,10 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
-static char const rcsid[]= "$RCSfile: SQLGetTypeInfo.c,v $ $Revision: 1.5 $";
+static char const rcsid[]= "$RCSfile: SQLGetTypeInfo.c,v $ $Revision: 1.6 $";
 
 SQLRETURN SQLGetTypeInfoA( SQLHSTMT statement_handle,
            SQLSMALLINT data_type )
@@ -155,8 +159,8 @@ SQLRETURN SQLGetTypeInfo( SQLHSTMT statement_handle,
     if ( log_info.log_flag )
     {
         sprintf( statement -> msg, "\n\t\tEntry:\
-            \n\t\t\tStatement = %p\
-            \n\t\t\tData Type = %s",
+\n\t\t\tStatement = %p\
+\n\t\t\tData Type = %s",
                 statement,
                 __type_as_string( s1, data_type ));
 
@@ -178,7 +182,7 @@ SQLRETURN SQLGetTypeInfo( SQLHSTMT statement_handle,
             statement -> state == STATE_S6 ||
             statement -> state == STATE_S7 )
 #else
-    if ( statement -> state == STATE_S6 ||
+    if (( statement -> state == STATE_S6 && statement -> eod == 0 ) ||
             statement -> state == STATE_S7 )
 #endif
     {

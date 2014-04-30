@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLProcedureColumns.c,v 1.6 2004/01/12 09:54:39 lurcher Exp $
+ * $Id: SQLProcedureColumns.c,v 1.7 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLProcedureColumns.c,v $
+ * Revision 1.7  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.6  2004/01/12 09:54:39  lurcher
  *
  * Fix problem where STATE_S5 stops metadata calls
@@ -117,9 +120,10 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
-static char const rcsid[]= "$RCSfile: SQLProcedureColumns.c,v $ $Revision: 1.6 $";
+static char const rcsid[]= "$RCSfile: SQLProcedureColumns.c,v $ $Revision: 1.7 $";
 
 SQLRETURN SQLProcedureColumnsA(
     SQLHSTMT           statement_handle,
@@ -178,11 +182,11 @@ SQLRETURN SQLProcedureColumns(
     if ( log_info.log_flag  )
     {
         sprintf( statement -> msg, "\n\t\tEntry:\
-            \n\t\t\tStatement = %p\
-            \n\t\t\tCatalog Name = %s\
-            \n\t\t\tSchema Name = %s\
-            \n\t\t\tProc Name = %s\
-            \n\t\t\tColumn Type = %s", 
+\n\t\t\tStatement = %p\
+\n\t\t\tCatalog Name = %s\
+\n\t\t\tSchema Name = %s\
+\n\t\t\tProc Name = %s\
+\n\t\t\tColumn Type = %s", 
                 statement,
                 __string_with_length( s1, sz_catalog_name, cb_catalog_name ), 
                 __string_with_length( s2, sz_schema_name, cb_schema_name ), 
@@ -225,7 +229,7 @@ SQLRETURN SQLProcedureColumns(
             statement -> state == STATE_S6 ||
             statement -> state == STATE_S7 )
 #else
-    if ( statement -> state == STATE_S6 ||
+    if (( statement -> state == STATE_S6 && statement -> eod == 0 ) ||
             statement -> state == STATE_S7 )
 #endif
     {

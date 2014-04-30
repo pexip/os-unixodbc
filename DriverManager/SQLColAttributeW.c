@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLColAttributeW.c,v 1.13 2008/08/29 08:01:38 lurcher Exp $
+ * $Id: SQLColAttributeW.c,v 1.14 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLColAttributeW.c,v $
+ * Revision 1.14  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.13  2008/08/29 08:01:38  lurcher
  * Alter the way W functions are passed to the driver
  *
@@ -98,6 +101,7 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
 static char const rcsid[]= "$RCSfile: SQLColAttributeW.c,v $";
@@ -133,13 +137,13 @@ SQLRETURN SQLColAttributeW ( SQLHSTMT statement_handle,
     if ( log_info.log_flag )
     {
         sprintf( statement -> msg, "\n\t\tEntry:\
-            \n\t\t\tStatement = %p\
-            \n\t\t\tColumn Number = %d\
-            \n\t\t\tField Identifier = %s\
-            \n\t\t\tCharacter Attr = %p\
-            \n\t\t\tBuffer Length = %d\
-            \n\t\t\tString Length = %p\
-            \n\t\t\tNumeric Attribute = %p",
+\n\t\t\tStatement = %p\
+\n\t\t\tColumn Number = %d\
+\n\t\t\tField Identifier = %s\
+\n\t\t\tCharacter Attr = %p\
+\n\t\t\tBuffer Length = %d\
+\n\t\t\tString Length = %p\
+\n\t\t\tNumeric Attribute = %p",
                 statement,
                 column_number,
                 __col_attr_as_string( s1, field_identifier ),

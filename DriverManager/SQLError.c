@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLError.c,v 1.10 2008/09/29 14:02:45 lurcher Exp $
+ * $Id: SQLError.c,v 1.11 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLError.c,v $
+ * Revision 1.11  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.10  2008/09/29 14:02:45  lurcher
  * Fix missing dlfcn group option
  *
@@ -176,9 +179,10 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
-static char const rcsid[]= "$RCSfile: SQLError.c,v $ $Revision: 1.10 $";
+static char const rcsid[]= "$RCSfile: SQLError.c,v $ $Revision: 1.11 $";
 
 static SQLRETURN extract_sql_error( EHEAD *head,
         SQLCHAR *sqlstate,
@@ -331,12 +335,12 @@ SQLRETURN SQLError( SQLHENV environment_handle,
         {
             sprintf( statement -> msg, 
                 "\n\t\tEntry:\
-                \n\t\t\tStatement = %p\
-                \n\t\t\tSQLState = %p\
-                \n\t\t\tNative = %p\
-                \n\t\t\tMessage Text = %p\
-                \n\t\t\tBuffer Length = %d\
-                \n\t\t\tText Len Ptr = %p",
+\n\t\t\tStatement = %p\
+\n\t\t\tSQLState = %p\
+\n\t\t\tNative = %p\
+\n\t\t\tMessage Text = %p\
+\n\t\t\tBuffer Length = %d\
+\n\t\t\tText Len Ptr = %p",
                     statement,
                     sqlstate,
                     native_error,
@@ -365,9 +369,9 @@ SQLRETURN SQLError( SQLHENV environment_handle,
             {
                 sprintf( statement -> msg, 
                     "\n\t\tExit:[%s]\
-                    \n\t\t\tSQLState = %s\
-                    \n\t\t\tNative = %s\
-                    \n\t\t\tMessage Text = %s",
+\n\t\t\tSQLState = %s\
+\n\t\t\tNative = %s\
+\n\t\t\tMessage Text = %s",
                         __get_return_status( ret, s2 ),
                         sqlstate,
                         __iptr_as_string( s0, native_error ),
@@ -413,12 +417,12 @@ SQLRETURN SQLError( SQLHENV environment_handle,
         {
             sprintf( connection -> msg, 
                 "\n\t\tEntry:\
-                \n\t\t\tConnection = %p\
-                \n\t\t\tSQLState = %p\
-                \n\t\t\tNative = %p\
-                \n\t\t\tMessage Text = %p\
-                \n\t\t\tBuffer Length = %d\
-                \n\t\t\tText Len Ptr = %p",
+\n\t\t\tConnection = %p\
+\n\t\t\tSQLState = %p\
+\n\t\t\tNative = %p\
+\n\t\t\tMessage Text = %p\
+\n\t\t\tBuffer Length = %d\
+\n\t\t\tText Len Ptr = %p",
                     connection,
                     sqlstate,
                     native_error,
@@ -447,9 +451,9 @@ SQLRETURN SQLError( SQLHENV environment_handle,
             {
                 sprintf( connection -> msg, 
                     "\n\t\tExit:[%s]\
-                    \n\t\t\tSQLState = %s\
-                    \n\t\t\tNative = %s\
-                    \n\t\t\tMessage Text = %s",
+\n\t\t\tSQLState = %s\
+\n\t\t\tNative = %s\
+\n\t\t\tMessage Text = %s",
                         __get_return_status( ret, s2 ),
                         sqlstate,
                         __iptr_as_string( s0, native_error ),
@@ -493,12 +497,12 @@ SQLRETURN SQLError( SQLHENV environment_handle,
         {
             sprintf( environment -> msg, 
                 "\n\t\tEntry:\
-                \n\t\t\tEnvironment = %p\
-                \n\t\t\tSQLState = %p\
-                \n\t\t\tNative = %p\
-                \n\t\t\tMessage Text = %p\
-                \n\t\t\tBuffer Length = %d\
-                \n\t\t\tText Len Ptr = %p",
+\n\t\t\tEnvironment = %p\
+\n\t\t\tSQLState = %p\
+\n\t\t\tNative = %p\
+\n\t\t\tMessage Text = %p\
+\n\t\t\tBuffer Length = %d\
+\n\t\t\tText Len Ptr = %p",
                     environment,
                     sqlstate,
                     native_error,
@@ -527,9 +531,9 @@ SQLRETURN SQLError( SQLHENV environment_handle,
             {
                 sprintf( environment -> msg, 
                     "\n\t\tExit:[%s]\
-                    \n\t\t\tSQLState = %s\
-                    \n\t\t\tNative = %s\
-                    \n\t\t\tMessage Text = %s",
+\n\t\t\tSQLState = %s\
+\n\t\t\tNative = %s\
+\n\t\t\tMessage Text = %s",
                         __get_return_status( ret, s2 ),
                         sqlstate,
                         __iptr_as_string( s0, native_error ),

@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLAllocConnect.c,v 1.1.1.1 2001/10/17 16:40:03 lurcher Exp $
+ * $Id: SQLAllocConnect.c,v 1.2 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLAllocConnect.c,v $
+ * Revision 1.2  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.1.1.1  2001/10/17 16:40:03  lurcher
  *
  * First upload to SourceForge
@@ -68,6 +71,7 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #ifdef __cplusplus
 #error "This code must be compiled with a C compiler,"
 #error "not a C++ one, this is due in part to Microsoft"
@@ -82,7 +86,7 @@
 
 #include "drivermanager.h"
 
-static char const rcsid[]= "$RCSfile: SQLAllocConnect.c,v $ $Revision: 1.1.1.1 $";
+static char const rcsid[]= "$RCSfile: SQLAllocConnect.c,v $ $Revision: 1.2 $";
 
 SQLRETURN SQLAllocConnect( SQLHENV environment_handle,
            SQLHDBC *connection_handle )

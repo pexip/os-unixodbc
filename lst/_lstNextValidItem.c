@@ -1,3 +1,4 @@
+#include <config.h>
 #include "lst.h"
 
 HLSTITEM _lstNextValidItem( HLST hLst, HLSTITEM hItem )

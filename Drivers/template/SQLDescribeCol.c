@@ -10,6 +10,7 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "driver.h"
 SQLRETURN SQLDescribeCol( SQLHSTMT    	hDrvStmt,
 						  SQLUSMALLINT	nCol,
@@ -38,7 +39,7 @@ SQLRETURN SQLDescribeCol( SQLHSTMT    	hDrvStmt,
 	}
 	if ( nCol < 1 || nCol > hStmt->hStmtExtras->nCols )
 	{
-		sprintf((char*) hStmt->szSqlMsg, "SQL_ERROR Column %d is out of range. Range is 1 - %s", nCol, hStmt->hStmtExtras->nCols );
+		sprintf((char*) hStmt->szSqlMsg, "SQL_ERROR Column %d is out of range. Range is 1 - %d", nCol, hStmt->hStmtExtras->nCols );
 		logPushMsg( hStmt->hLog, __FILE__, __FILE__, __LINE__, LOG_WARNING, LOG_WARNING,(char*) hStmt->szSqlMsg );
 		return SQL_ERROR;
 	}

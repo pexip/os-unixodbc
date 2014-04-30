@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLForeignKeysW.c,v 1.8 2008/08/29 08:01:38 lurcher Exp $
+ * $Id: SQLForeignKeysW.c,v 1.9 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLForeignKeysW.c,v $
+ * Revision 1.9  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.8  2008/08/29 08:01:38  lurcher
  * Alter the way W functions are passed to the driver
  *
@@ -79,6 +82,7 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
 static char const rcsid[]= "$RCSfile: SQLForeignKeysW.c,v $";
@@ -162,13 +166,13 @@ SQLRETURN SQLForeignKeysW(
     if ( log_info.log_flag )
     {
         sprintf( statement -> msg, "\n\t\tEntry:\
-            \n\t\t\tStatement = %p\
-            \n\t\t\tPK Catalog Name = %s\
-            \n\t\t\tPK Schema Name = %s\
-            \n\t\t\tPK Table Name = %s\
-            \n\t\t\tFK Catalog Name = %s\
-            \n\t\t\tFK Schema Name = %s\
-            \n\t\t\tFK Table Name = %s",
+\n\t\t\tStatement = %p\
+\n\t\t\tPK Catalog Name = %s\
+\n\t\t\tPK Schema Name = %s\
+\n\t\t\tPK Table Name = %s\
+\n\t\t\tFK Catalog Name = %s\
+\n\t\t\tFK Schema Name = %s\
+\n\t\t\tFK Table Name = %s",
                 statement,
                 __wstring_with_length( s1, szpk_catalog_name, cbpk_catalog_name ), 
                 __wstring_with_length( s2, szpk_schema_name, cbpk_schema_name ), 
@@ -361,7 +365,7 @@ SQLRETURN SQLForeignKeysW(
 
         if ( ret == SQL_SUCCESS_WITH_INFO )
         {
-            function_return_ex( SQL_HANDLE_STMT, statement, ret, TRUE );
+            function_return_ex( IGNORE_THREAD, statement, ret, TRUE );
         }
 
         SQLNUMRESULTCOLS( statement -> connection,

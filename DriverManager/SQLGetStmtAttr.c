@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,18 @@
  *
  **********************************************************************
  *
- * $Id: SQLGetStmtAttr.c,v 1.5 2003/10/30 18:20:46 lurcher Exp $
+ * $Id: SQLGetStmtAttr.c,v 1.8 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLGetStmtAttr.c,v $
+ * Revision 1.8  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
+ * Revision 1.7  2009/02/17 09:47:44  lurcher
+ * Clear up a number of bugs
+ *
+ * Revision 1.6  2009/02/04 09:30:02  lurcher
+ * Fix some SQLINTEGER/SQLLEN conflicts
+ *
  * Revision 1.5  2003/10/30 18:20:46  lurcher
  *
  * Fix broken thread protection
@@ -151,9 +160,10 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
-static char const rcsid[]= "$RCSfile: SQLGetStmtAttr.c,v $ $Revision: 1.5 $";
+static char const rcsid[]= "$RCSfile: SQLGetStmtAttr.c,v $ $Revision: 1.8 $";
 
 SQLRETURN SQLGetStmtAttrA( SQLHSTMT statement_handle,
            SQLINTEGER attribute,
@@ -198,11 +208,11 @@ SQLRETURN SQLGetStmtAttr( SQLHSTMT statement_handle,
     if ( log_info.log_flag )
     {
         sprintf( statement -> msg, "\n\t\tEntry:\
-            \n\t\t\tStatement = %p\
-            \n\t\t\tAttribute = %s\
-            \n\t\t\tValue = %p\
-            \n\t\t\tBuffer Length = %d\
-            \n\t\t\tStrLen = %p",
+\n\t\t\tStatement = %p\
+\n\t\t\tAttribute = %s\
+\n\t\t\tValue = %p\
+\n\t\t\tBuffer Length = %d\
+\n\t\t\tStrLen = %p",
                 statement,
                 __stmt_attr_as_string( s1, attribute ),
                 value, 
@@ -347,7 +357,7 @@ SQLRETURN SQLGetStmtAttr( SQLHSTMT statement_handle,
             CHECK_SQLEXTENDEDFETCH( statement -> connection ))
     {
         if ( value )
-            memcpy( value, &statement -> fetch_bm_ptr, sizeof( SQLINTEGER * ));
+            memcpy( value, &statement -> fetch_bm_ptr, sizeof( SQLULEN * ));
 
         ret =  SQL_SUCCESS;
     }
@@ -356,7 +366,7 @@ SQLRETURN SQLGetStmtAttr( SQLHSTMT statement_handle,
             CHECK_SQLEXTENDEDFETCH( statement -> connection ))
     {
         if ( value )
-            memcpy( value, &statement -> row_st_arr, sizeof( SQLINTEGER * ));
+            memcpy( value, &statement -> row_st_arr, sizeof( SQLULEN * ));
 
         ret = SQL_SUCCESS;
     }
@@ -365,7 +375,7 @@ SQLRETURN SQLGetStmtAttr( SQLHSTMT statement_handle,
             CHECK_SQLEXTENDEDFETCH( statement -> connection ))
     {
         if ( value )
-            memcpy( value, &statement -> row_ct_ptr, sizeof( SQLUINTEGER * ));
+            memcpy( value, &statement -> row_ct_ptr, sizeof( SQLULEN * ));
 
         ret = SQL_SUCCESS;
     }
@@ -424,8 +434,8 @@ SQLRETURN SQLGetStmtAttr( SQLHSTMT statement_handle,
         }
     }
     else if ( statement -> connection -> unicode_driver &&
-            CHECK_SQLGETSTMTATTRW( statement -> connection ) || 
-            CHECK_SQLGETSTMTATTR( statement -> connection ))
+            ( CHECK_SQLGETSTMTATTRW( statement -> connection ) || 
+            CHECK_SQLGETSTMTATTR( statement -> connection )))
     {
         if ( CHECK_SQLGETSTMTATTRW( statement -> connection ))
         {

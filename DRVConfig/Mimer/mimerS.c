@@ -9,6 +9,7 @@
  *
  */
 
+#include <config.h>
 #include <odbcinstext.h>
 
 static const char *vHost[] =

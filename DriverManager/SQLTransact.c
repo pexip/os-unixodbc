@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLTransact.c,v 1.10 2007/08/30 12:54:17 lurcher Exp $
+ * $Id: SQLTransact.c,v 1.11 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLTransact.c,v $
+ * Revision 1.11  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.10  2007/08/30 12:54:17  lurcher
  * Add -3 option to isql to use ODBC3 calls
  *
@@ -139,9 +142,10 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
-static char const rcsid[]= "$RCSfile: SQLTransact.c,v $ $Revision: 1.10 $";
+static char const rcsid[]= "$RCSfile: SQLTransact.c,v $ $Revision: 1.11 $";
 
 SQLRETURN SQLTransact( SQLHENV environment_handle,
            SQLHDBC connection_handle,
@@ -149,10 +153,13 @@ SQLRETURN SQLTransact( SQLHENV environment_handle,
 {
     SQLCHAR s1[ 100 + LOG_MESSAGE_LEN ];
 
+    /*
+     * check either handle first
+     */
+
     if ( connection_handle != SQL_NULL_HDBC )
     {
         DMHDBC connection = (DMHDBC) connection_handle;
-        SQLRETURN ret;
 
         if ( !__validate_dbc( connection ))
         {
@@ -164,15 +171,37 @@ SQLRETURN SQLTransact( SQLHENV environment_handle,
 
             return SQL_INVALID_HANDLE;
         }
+    }
+
+    if ( environment_handle != SQL_NULL_HENV )
+    {
+        DMHENV environment = (DMHENV) environment_handle;
+
+        if ( !__validate_env( environment ))
+        {
+            dm_log_write( __FILE__, 
+                    __LINE__, 
+                    LOG_INFO, 
+                    LOG_INFO, 
+                    "Error: SQL_INVALID_HANDLE" );
+
+            return SQL_INVALID_HANDLE;
+        }
+    }
+
+    if ( connection_handle != SQL_NULL_HDBC )
+    {
+        DMHDBC connection = (DMHDBC) connection_handle;
+        SQLRETURN ret;
 
         function_entry( connection );
 
         if ( log_info.log_flag )
         {
             sprintf( connection -> msg, "\n\t\tEntry:\
-                \n\t\t\tEnvironment = %p\
-                \n\t\t\tConnection = %p\
-                \n\t\t\tCompletion Type = %d",
+\n\t\t\tEnvironment = %p\
+\n\t\t\tConnection = %p\
+\n\t\t\tCompletion Type = %d",
                     (void*)environment_handle,
                     (void*)connection_handle,
                     (int)completion_type );
@@ -198,6 +227,29 @@ SQLRETURN SQLTransact( SQLHENV environment_handle,
 
             __post_internal_error( &connection -> error,
                     ERROR_08003, NULL,
+                    connection -> environment -> requested_version );
+
+            return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+        }
+
+        /*
+         * check status of statements belonging to this connection
+         */
+
+        if( __check_stmt_from_dbc( connection, STATE_S8 ) ||
+            __check_stmt_from_dbc( connection, STATE_S9 ) ||
+            __check_stmt_from_dbc( connection, STATE_S10 ) ||
+            __check_stmt_from_dbc( connection, STATE_S11 ) ||
+            __check_stmt_from_dbc( connection, STATE_S12 )) {
+
+            dm_log_write( __FILE__, 
+                    __LINE__, 
+                    LOG_INFO, 
+                    LOG_INFO, 
+                    "Error: HY010" );
+
+            __post_internal_error( &connection -> error,
+                    ERROR_HY010, NULL,
                     connection -> environment -> requested_version );
 
             return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
@@ -250,11 +302,9 @@ SQLRETURN SQLTransact( SQLHENV environment_handle,
 
         if( SQL_SUCCEEDED(ret) )
         {
-	    DMHSTMT statement;
-	    SQLINTEGER stmt_remaining;
-	    SQLSMALLINT cb_value;
-	    SQLSMALLINT cb_value_length = sizeof(SQLSMALLINT);
-	    SQLRETURN ret1;
+            SQLSMALLINT cb_value;
+            SQLSMALLINT cb_value_length = sizeof(SQLSMALLINT);
+            SQLRETURN ret1;
 	    
             /*
              * for each statement belonging to this connection set its state 
@@ -300,59 +350,7 @@ SQLRETURN SQLTransact( SQLHENV environment_handle,
 
             if( connection -> cbs_found )
             {
-	    		/* 
-	     	 	 * We need to protect this at a higher level than connection
-	     	 	 * as statements can be coming and going
-	     	 	 */
-	
-	    		mutex_lib_entry();
-	
-            	statement = __get_stmt_root();
-            	stmt_remaining = connection -> statement_count;
-	    
-                while ( statement && stmt_remaining > 0 )
-                {
-                    if ( statement -> connection == connection )
-                    {
-                        if ( (statement -> state == STATE_S2 ||
-                              statement -> state == STATE_S3) &&
-                             cb_value == SQL_CB_DELETE )
-                        {
-                            statement -> state = STATE_S1;
-                            statement -> prepared = 0;
-                        }
-                        else if ( statement -> state == STATE_S4 ||
-                              statement -> state == STATE_S5 ||
-                              statement -> state == STATE_S6 ||
-                              statement -> state == STATE_S7 )
-                        {
-                            if( !statement -> prepared && 
-                                (cb_value == SQL_CB_DELETE ||
-                                 cb_value == SQL_CB_CLOSE) )
-                            {
-                                statement -> state = STATE_S1;
-                            }
-                            else if( statement -> prepared )
-                            {
-                                if( cb_value == SQL_CB_DELETE )
-                                {
-                                    statement -> state = STATE_S1;
-                                    statement -> prepared = 0;
-                                }
-                                else if( cb_value == SQL_CB_CLOSE )
-                                {
-                                    if ( statement -> state == STATE_S4 )
-                                      statement -> state = STATE_S2;
-                                    else
-                                      statement -> state = STATE_S3;
-                                }
-                            }
-                        }
-                        stmt_remaining --;
-                    }
-                    statement = statement -> next_class_list;
-                }
-	    		mutex_lib_exit();
+                __set_stmt_state( connection, cb_value );
             }
         }
 
@@ -377,25 +375,14 @@ SQLRETURN SQLTransact( SQLHENV environment_handle,
         DMHDBC connection;
         SQLRETURN ret;
 
-        if ( !__validate_env( environment ))
-        {
-            dm_log_write( __FILE__, 
-                    __LINE__, 
-                    LOG_INFO, 
-                    LOG_INFO, 
-                    "Error: SQL_INVALID_HANDLE" );
-
-            return SQL_INVALID_HANDLE;
-        }
-
         function_entry( environment );
 
         if ( log_info.log_flag )
         {
             sprintf( environment -> msg, "\n\t\tEntry:\
-                \n\t\t\tEnvironment = %p\
-                \n\t\t\tConnection = %p\
-                \n\t\t\tCompletion Type = %d",
+\n\t\t\tEnvironment = %p\
+\n\t\t\tConnection = %p\
+\n\t\t\tCompletion Type = %d",
                     (void*)environment_handle,
                     (void*)connection_handle,
                     (int)completion_type );
@@ -408,21 +395,6 @@ SQLRETURN SQLTransact( SQLHENV environment_handle,
         }
 
         thread_protect( SQL_HANDLE_ENV, environment );
-
-        if ( environment -> state == STATE_E1 )
-        {
-            dm_log_write( __FILE__, 
-                    __LINE__, 
-                    LOG_INFO, 
-                    LOG_INFO, 
-                    "Error: 08003" );
-
-            __post_internal_error( &environment -> error,
-                    ERROR_08003, NULL,
-                    environment -> requested_version );
-
-            return function_return( SQL_HANDLE_ENV, environment, SQL_ERROR );
-        }
 
         if ( completion_type != SQL_COMMIT &&
                 completion_type != SQL_ROLLBACK )
@@ -437,85 +409,120 @@ SQLRETURN SQLTransact( SQLHENV environment_handle,
                     ERROR_HY012, NULL,
                     environment -> requested_version );
 
-            thread_release( SQL_HANDLE_ENV, environment );
-
             return function_return( SQL_HANDLE_ENV, environment, SQL_ERROR );
         }
 
-        /*
-         * for each connection on this env
-         */
-
-        connection = __get_dbc_root();
-
-        while( connection )
+        if ( environment -> state == STATE_E2 )
         {
-            if ( connection -> environment == environment &&
-                    connection -> state > STATE_C4 )
+            /*
+             * check that none of the connections are in a need data state
+             */
+
+            connection = __get_dbc_root();
+
+            while( connection )
             {
-                if ( CHECK_SQLTRANSACT( connection ))
+                if ( connection -> environment == environment &&
+                        connection -> state > STATE_C4 )
                 {
-                    ret = SQLTRANSACT( connection,
-                        SQL_NULL_HENV,
-                        connection -> driver_dbc,
-                        completion_type );
+                    if( __check_stmt_from_dbc( connection, STATE_S8 ) ||
+                        __check_stmt_from_dbc( connection, STATE_S9 ) ||
+                        __check_stmt_from_dbc( connection, STATE_S10 ) ||
+                        __check_stmt_from_dbc( connection, STATE_S11 ) ||
+                        __check_stmt_from_dbc( connection, STATE_S12 )) {
 
-                    if ( !SQL_SUCCEEDED( ret ))
-                    {
                         dm_log_write( __FILE__, 
                                 __LINE__, 
                                 LOG_INFO, 
                                 LOG_INFO, 
-                                "Error: 24S01" );
-
+                                "Error: HY010" );
+            
                         __post_internal_error( &environment -> error,
-                                ERROR_25S01, NULL,
+                                ERROR_HY010, NULL,
                                 environment -> requested_version );
-
-                        thread_release( SQL_HANDLE_ENV, environment );
-
+            
                         return function_return( SQL_HANDLE_ENV, environment, SQL_ERROR );
                     }
                 }
-                else if ( CHECK_SQLENDTRAN( connection ))
-                {
-                    ret = SQLENDTRAN( connection,
-                        SQL_HANDLE_DBC,
-                        connection -> driver_dbc,
-                        completion_type );
 
-                    if ( !SQL_SUCCEEDED( ret ))
-                    {
-                        dm_log_write( __FILE__, 
-                                __LINE__, 
-                                LOG_INFO, 
-                                LOG_INFO, 
-                                "Error: 24S01" );
-
-                        __post_internal_error( &environment -> error,
-                                ERROR_25S01, NULL,
-                                environment -> requested_version );
-
-                        return function_return( SQL_HANDLE_ENV, environment, SQL_ERROR );
-                    }
-                }
-                else
-                {
-                    dm_log_write( __FILE__, 
-                        __LINE__, 
-                        LOG_INFO, 
-                        LOG_INFO, 
-                        "Error: IM001" );
-
-                    __post_internal_error( &environment -> error,
-                        ERROR_IM001, NULL,
-                        environment -> requested_version );
-
-                    return function_return( SQL_HANDLE_ENV, environment, SQL_ERROR );
-                }
+                connection = connection -> next_class_list;
             }
 
-            connection = connection -> next_class_list;
+            /*
+             * for each connection on this env
+             */
+
+            connection = __get_dbc_root();
+
+            while( connection )
+            {
+                if ( connection -> environment == environment &&
+                        connection -> state > STATE_C4 )
+                {
+                    if ( CHECK_SQLTRANSACT( connection ))
+                    {
+                        ret = SQLTRANSACT( connection,
+                            SQL_NULL_HENV,
+                            connection -> driver_dbc,
+                            completion_type );
+
+                        if ( !SQL_SUCCEEDED( ret ))
+                        {
+                            dm_log_write( __FILE__, 
+                                    __LINE__, 
+                                    LOG_INFO, 
+                                    LOG_INFO, 
+                                    "Error: 24S01" );
+
+                            __post_internal_error( &environment -> error,
+                                    ERROR_25S01, NULL,
+                                    environment -> requested_version );
+
+                            thread_release( SQL_HANDLE_ENV, environment );
+
+                            return function_return( SQL_HANDLE_ENV, environment, SQL_ERROR );
+                        }
+                    }
+                    else if ( CHECK_SQLENDTRAN( connection ))
+                    {
+                        ret = SQLENDTRAN( connection,
+                            SQL_HANDLE_DBC,
+                            connection -> driver_dbc,
+                            completion_type );
+
+                        if ( !SQL_SUCCEEDED( ret ))
+                        {
+                            dm_log_write( __FILE__, 
+                                    __LINE__, 
+                                    LOG_INFO, 
+                                    LOG_INFO, 
+                                    "Error: 24S01" );
+
+                            __post_internal_error( &environment -> error,
+                                    ERROR_25S01, NULL,
+                                    environment -> requested_version );
+
+                            return function_return( SQL_HANDLE_ENV, environment, SQL_ERROR );
+                        }
+                    }
+                    else
+                    {
+                        dm_log_write( __FILE__, 
+                            __LINE__, 
+                            LOG_INFO, 
+                            LOG_INFO, 
+                            "Error: IM001" );
+
+                        __post_internal_error( &environment -> error,
+                            ERROR_IM001, NULL,
+                            environment -> requested_version );
+
+                        return function_return( SQL_HANDLE_ENV, environment, SQL_ERROR );
+                    }
+                }
+
+                connection = connection -> next_class_list;
+            }
         }
 
         if ( log_info.log_flag )

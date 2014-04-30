@@ -11,7 +11,7 @@
 #define __DLG_SPECIFIC_H__
 
 #ifdef HAVE_CONFIG_H
-einclude "config.h"
+#include "config.h"
 #endif
 
 #include "psqlodbc.h"

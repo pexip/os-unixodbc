@@ -221,12 +221,12 @@ char changed = FALSE;
 
 		if (stmt) {
 			SC_set_error(stmt, STMT_NOT_IMPLEMENTED_ERROR, "Unknown statement option (Set)");
-			sprintf(option, "fOption=%d, vParam=%ld", fOption, vParam);
+			sprintf(option, "fOption=%d, vParam=%ld", fOption, (long)vParam);
 			SC_log_error(func, option, stmt);
 		}
 		if (conn) {
 			CC_set_error(conn, STMT_NOT_IMPLEMENTED_ERROR, "Unknown statement option (Set)");
-			sprintf(option, "fOption=%d, vParam=%ld", fOption, vParam);
+			sprintf(option, "fOption=%d, vParam=%ld", fOption, (long)vParam);
 			CC_log_error(func, option, conn);
 		}
 

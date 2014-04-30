@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLDataSources.c,v 1.8 2008/06/30 08:40:48 lurcher Exp $
+ * $Id: SQLDataSources.c,v 1.9 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLDataSources.c,v $
+ * Revision 1.9  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.8  2008/06/30 08:40:48  lurcher
  * Few more tweeks towards a release
  *
@@ -129,9 +132,10 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
-static char const rcsid[]= "$RCSfile: SQLDataSources.c,v $ $Revision: 1.8 $";
+static char const rcsid[]= "$RCSfile: SQLDataSources.c,v $ $Revision: 1.9 $";
 
 #define BUFFERSIZE      1024*4
 
@@ -187,7 +191,7 @@ SQLRETURN SQLDataSources( SQLHENV environment_handle,
     if ( log_info.log_flag )
     {
         sprintf( environment -> msg, "\n\t\tEntry:\
-            \n\t\t\tEnvironment = %p",
+\n\t\t\tEnvironment = %p",
                 environment );
 
         dm_log_write( __FILE__, 

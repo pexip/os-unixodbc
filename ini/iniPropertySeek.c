@@ -11,6 +11,7 @@
  * Peter Harvey		- pharvey@codebydesign.com
  **************************************************/
 
+#include <config.h>
 #include "ini.h"
 
 int iniPropertySeek( HINI hIni, char *pszObject, char *pszProperty, char *pszValue )

@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,15 @@
  *
  **********************************************************************
  *
- * $Id: SQLCopyDesc.c,v 1.6 2004/03/30 13:20:11 lurcher Exp $
+ * $Id: SQLCopyDesc.c,v 1.8 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLCopyDesc.c,v $
+ * Revision 1.8  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
+ * Revision 1.7  2009/02/17 09:47:44  lurcher
+ * Clear up a number of bugs
+ *
  * Revision 1.6  2004/03/30 13:20:11  lurcher
  *
  *
@@ -109,9 +115,10 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
-static char const rcsid[]= "$RCSfile: SQLCopyDesc.c,v $ $Revision: 1.6 $";
+static char const rcsid[]= "$RCSfile: SQLCopyDesc.c,v $ $Revision: 1.8 $";
 
 struct cdesc
 {
@@ -187,8 +194,8 @@ SQLRETURN SQLCopyDesc( SQLHDESC source_desc_handle,
     if ( log_info.log_flag )
     {
         sprintf( src_descriptor -> msg, "\n\t\tEntry:\
-            \n\t\t\tSource Descriptor = %p\
-            \n\t\t\tTarget Descriptor = %p", 
+\n\t\t\tSource Descriptor = %p\
+\n\t\t\tTarget Descriptor = %p", 
                 src_descriptor,
                 target_descriptor );
 
@@ -198,6 +205,53 @@ SQLRETURN SQLCopyDesc( SQLHDESC source_desc_handle,
                 LOG_INFO, 
                 src_descriptor -> msg );
     }
+
+	if ( src_descriptor -> associated_with ) {
+    	DMHSTMT statement = (DMHSTMT) src_descriptor -> associated_with;
+
+    	if ( statement -> state == STATE_S8 ||
+            statement -> state == STATE_S9 ||
+            statement -> state == STATE_S10 ||
+            statement -> state == STATE_S11 ||
+            statement -> state == STATE_S12 )
+    	{
+       	 	dm_log_write( __FILE__, 
+                __LINE__, 
+                LOG_INFO, 
+                LOG_INFO, 
+                "Error: HY010" );
+
+        	__post_internal_error( &src_descriptor -> error,
+                ERROR_HY010, NULL,
+                src_descriptor -> connection -> environment -> requested_version );
+
+			function_return( SQL_HANDLE_DESC, target_descriptor, SQL_SUCCESS );
+        	return function_return( SQL_HANDLE_DESC, src_descriptor, SQL_ERROR );
+    	}
+	}
+
+	if ( target_descriptor -> associated_with ) {
+    	DMHSTMT statement = (DMHSTMT) target_descriptor -> associated_with;
+
+    	if ( statement -> state == STATE_S8 ||
+            statement -> state == STATE_S9 ||
+            statement -> state == STATE_S10 ||
+            statement -> state == STATE_S11 ||
+            statement -> state == STATE_S12 )
+    	{
+       	 	dm_log_write( __FILE__, 
+                __LINE__, 
+                LOG_INFO, 
+                LOG_INFO, 
+                "Error: HY010" );
+
+        	__post_internal_error( &target_descriptor -> error,
+                ERROR_HY010, NULL,
+                target_descriptor -> connection -> environment -> requested_version );
+
+        	return function_return( IGNORE_THREAD, src_descriptor, SQL_ERROR );
+    	}
+	}
 
     /*
      * if both descriptors are from the same connection the we can just
@@ -233,8 +287,7 @@ SQLRETURN SQLCopyDesc( SQLHDESC source_desc_handle,
                     src_descriptor -> msg );
         }
 
-        thread_release( SQL_HANDLE_DBC, src_descriptor -> connection );
-        return function_return( IGNORE_THREAD, target_descriptor, ret );
+        return function_return( IGNORE_THREAD, src_descriptor, ret );
     }
     else
     {
@@ -279,7 +332,7 @@ SQLRETURN SQLCopyDesc( SQLHDESC source_desc_handle,
          * get the count from the source field
          */
 
-        ret == SQLGETDESCFIELD( src_descriptor -> connection,
+        ret = SQLGETDESCFIELD( src_descriptor -> connection,
                                 src_descriptor -> driver_desc,
                                 0, 
                                 SQL_DESC_COUNT,
@@ -298,7 +351,7 @@ SQLRETURN SQLCopyDesc( SQLHDESC source_desc_handle,
             {
                 if ( header_fields[ i ].field_type == SQL_INTEGER )
                 {
-                    ret == SQLGETDESCFIELD( src_descriptor -> connection,
+                    ret = SQLGETDESCFIELD( src_descriptor -> connection,
                                 src_descriptor -> driver_desc,
                                 0, 
                                 header_fields[ i ].field_identifier,
@@ -308,7 +361,7 @@ SQLRETURN SQLCopyDesc( SQLHDESC source_desc_handle,
                 }
                 else if ( header_fields[ i ].field_type == SQL_SMALLINT )
                 {
-                    ret == SQLGETDESCFIELD( src_descriptor -> connection,
+                    ret = SQLGETDESCFIELD( src_descriptor -> connection,
                                 src_descriptor -> driver_desc,
                                 0, 
                                 header_fields[ i ].field_identifier,
@@ -318,7 +371,7 @@ SQLRETURN SQLCopyDesc( SQLHDESC source_desc_handle,
                 }
                 if ( header_fields[ i ].field_type == SQL_VARCHAR )
                 {
-                    ret == SQLGETDESCFIELD( src_descriptor -> connection,
+                    ret = SQLGETDESCFIELD( src_descriptor -> connection,
                                 src_descriptor -> driver_desc,
                                 0, 
                                 header_fields[ i ].field_identifier,
@@ -331,7 +384,7 @@ SQLRETURN SQLCopyDesc( SQLHDESC source_desc_handle,
                 {
                     if ( header_fields[ i ].field_type == SQL_INTEGER )
                     {
-                        ret == SQLSETDESCFIELD( target_descriptor -> connection,
+                        ret = SQLSETDESCFIELD( target_descriptor -> connection,
                                         target_descriptor -> driver_desc,
                                         0, 
                                         header_fields[ i ].field_identifier,
@@ -340,7 +393,7 @@ SQLRETURN SQLCopyDesc( SQLHDESC source_desc_handle,
                     }
                     else if ( header_fields[ i ].field_type == SQL_SMALLINT )
                     {
-                        ret == SQLSETDESCFIELD( target_descriptor -> connection,
+                        ret = SQLSETDESCFIELD( target_descriptor -> connection,
                                         target_descriptor -> driver_desc,
                                         0, 
                                         header_fields[ i ].field_identifier,
@@ -349,7 +402,7 @@ SQLRETURN SQLCopyDesc( SQLHDESC source_desc_handle,
                     }
                     else if ( header_fields[ i ].field_type == SQL_VARCHAR )
                     {
-                        ret == SQLSETDESCFIELD( target_descriptor -> connection,
+                        ret = SQLSETDESCFIELD( target_descriptor -> connection,
                                         target_descriptor -> driver_desc,
                                         0, 
                                         header_fields[ i ].field_identifier,
@@ -376,7 +429,7 @@ SQLRETURN SQLCopyDesc( SQLHDESC source_desc_handle,
                 {
                     if ( rec_fields[ i ].field_type == SQL_INTEGER )
                     {
-                        ret == SQLGETDESCFIELD( src_descriptor -> connection,
+                        ret = SQLGETDESCFIELD( src_descriptor -> connection,
                                     src_descriptor -> driver_desc,
                                     rec, 
                                     rec_fields[ i ].field_identifier,
@@ -386,7 +439,7 @@ SQLRETURN SQLCopyDesc( SQLHDESC source_desc_handle,
                     }
                     else if ( rec_fields[ i ].field_type == SQL_SMALLINT )
                     {
-                        ret == SQLGETDESCFIELD( src_descriptor -> connection,
+                        ret = SQLGETDESCFIELD( src_descriptor -> connection,
                                     src_descriptor -> driver_desc,
                                     rec, 
                                     rec_fields[ i ].field_identifier,
@@ -396,7 +449,7 @@ SQLRETURN SQLCopyDesc( SQLHDESC source_desc_handle,
                     }
                     if ( rec_fields[ i ].field_type == SQL_VARCHAR )
                     {
-                        ret == SQLGETDESCFIELD( src_descriptor -> connection,
+                        ret = SQLGETDESCFIELD( src_descriptor -> connection,
                                     src_descriptor -> driver_desc,
                                     rec, 
                                     rec_fields[ i ].field_identifier,
@@ -409,7 +462,7 @@ SQLRETURN SQLCopyDesc( SQLHDESC source_desc_handle,
                     {
                         if ( rec_fields[ i ].field_type == SQL_INTEGER )
                         {
-                            ret == SQLSETDESCFIELD( target_descriptor -> connection,
+                            ret = SQLSETDESCFIELD( target_descriptor -> connection,
                                             target_descriptor -> driver_desc,
                                             rec, 
                                             rec_fields[ i ].field_identifier,
@@ -418,7 +471,7 @@ SQLRETURN SQLCopyDesc( SQLHDESC source_desc_handle,
                         }
                         else if ( rec_fields[ i ].field_type == SQL_SMALLINT )
                         {
-                            ret == SQLSETDESCFIELD( target_descriptor -> connection,
+                            ret = SQLSETDESCFIELD( target_descriptor -> connection,
                                             target_descriptor -> driver_desc,
                                             rec, 
                                             rec_fields[ i ].field_identifier,
@@ -427,7 +480,7 @@ SQLRETURN SQLCopyDesc( SQLHDESC source_desc_handle,
                         }
                         else if ( rec_fields[ i ].field_type == SQL_VARCHAR )
                         {
-                            ret == SQLSETDESCFIELD( target_descriptor -> connection,
+                            ret = SQLSETDESCFIELD( target_descriptor -> connection,
                                             target_descriptor -> driver_desc,
                                             rec, 
                                             rec_fields[ i ].field_identifier,

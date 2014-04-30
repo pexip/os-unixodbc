@@ -5,6 +5,7 @@
  * see iniElement instead	
  **********************************************************************************/
 
+#include <config.h>
 #include "ini.h"
 
 int iniPropertyValue( char *pszString, char *pszProperty, char *pszValue, char cEqual, char cPropertySep )

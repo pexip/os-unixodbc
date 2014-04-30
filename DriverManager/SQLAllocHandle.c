@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLAllocHandle.c,v 1.12 2007/12/17 13:13:03 lurcher Exp $
+ * $Id: SQLAllocHandle.c,v 1.13 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLAllocHandle.c,v $
+ * Revision 1.13  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.12  2007/12/17 13:13:03  lurcher
  * Fix a couple of descriptor typo's
  *
@@ -242,13 +245,14 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 #if defined ( COLLECT_STATS ) && defined( HAVE_SYS_SEM_H )
 #include "__stats.h"
 #include <uodbc_stats.h>
 #endif
 
-static char const rcsid[]= "$RCSfile: SQLAllocHandle.c,v $ $Revision: 1.12 $";
+static char const rcsid[]= "$RCSfile: SQLAllocHandle.c,v $ $Revision: 1.13 $";
 
 /*
  * connection pooling stuff
@@ -273,8 +277,15 @@ SQLRETURN __SQLAllocHandle( SQLSMALLINT handle_type,
             DMHENV environment;
             char pooling_string[ 128 ];
 
-            if ( !output_handle )
+            if ( !output_handle ) 
+            {
                 return SQL_ERROR;
+            }
+
+            if ( input_handle )
+            {
+                return SQL_INVALID_HANDLE;
+            }
 
             /*
              * check connection pooling attributes
@@ -683,9 +694,7 @@ SQLRETURN __SQLAllocHandle( SQLSMALLINT handle_type,
                 if ( connection -> state == STATE_C4 )
                     connection -> state = STATE_C5;
 
-                connection -> statement_count ++;
-
-                statement -> connection = connection;
+                __register_stmt ( connection, statement );
 
                 *output_handle = (SQLHANDLE) statement;
 
@@ -738,6 +747,7 @@ SQLRETURN __SQLAllocHandle( SQLSMALLINT handle_type,
                         }
                         statement -> implicit_ard = statement -> ard;
                         statement -> ard -> implicit = 1;
+                        statement -> ard -> associated_with = statement;
                         statement -> ard -> state = STATE_D1i;
                         statement -> ard -> driver_desc = desc;
                         statement -> ard -> connection = connection;
@@ -781,6 +791,7 @@ SQLRETURN __SQLAllocHandle( SQLSMALLINT handle_type,
                         }
                         statement -> implicit_apd = statement -> apd;
                         statement -> apd -> implicit = 1;
+                        statement -> apd -> associated_with = statement;
                         statement -> apd -> state = STATE_D1i;
                         statement -> apd -> driver_desc = desc;
                         statement -> apd -> connection = connection;
@@ -824,6 +835,7 @@ SQLRETURN __SQLAllocHandle( SQLSMALLINT handle_type,
                         }
                         statement -> implicit_ird = statement -> ird;
                         statement -> ird -> implicit = 1;
+                        statement -> ird -> associated_with = statement;
                         statement -> ird -> state = STATE_D1i;
                         statement -> ird -> driver_desc = desc;
                         statement -> ird -> connection = connection;
@@ -865,6 +877,7 @@ SQLRETURN __SQLAllocHandle( SQLSMALLINT handle_type,
                         }
                         statement -> implicit_ipd = statement -> ipd;
                         statement -> ipd -> implicit = 1;
+                        statement -> ipd -> associated_with = statement;
                         statement -> ipd -> state = STATE_D1i;
                         statement -> ipd -> driver_desc = desc;
                         statement -> ipd -> connection = connection;
@@ -911,6 +924,7 @@ SQLRETURN __SQLAllocHandle( SQLSMALLINT handle_type,
                         }
                         statement -> implicit_ard = statement -> ard;
                         statement -> ard -> implicit = 1;
+                        statement -> ard -> associated_with = statement;
                         statement -> ard -> state = STATE_D1i;
                         statement -> ard -> driver_desc = desc;
                         statement -> ard -> connection = connection;
@@ -954,6 +968,7 @@ SQLRETURN __SQLAllocHandle( SQLSMALLINT handle_type,
                         }
                         statement -> implicit_apd = statement -> apd;
                         statement -> apd -> implicit = 1;
+                        statement -> apd -> associated_with = statement;
                         statement -> apd -> state = STATE_D1i;
                         statement -> apd -> driver_desc = desc;
                         statement -> apd -> connection = connection;
@@ -997,6 +1012,7 @@ SQLRETURN __SQLAllocHandle( SQLSMALLINT handle_type,
                         }
                         statement -> implicit_ird = statement -> ird;
                         statement -> ird -> implicit = 1;
+                        statement -> ird -> associated_with = statement;
                         statement -> ird -> state = STATE_D1i;
                         statement -> ird -> driver_desc = desc;
                         statement -> ird -> connection = connection;
@@ -1038,6 +1054,7 @@ SQLRETURN __SQLAllocHandle( SQLSMALLINT handle_type,
                         }
                         statement -> implicit_ipd = statement -> ipd;
                         statement -> ipd -> implicit = 1;
+                        statement -> ipd -> associated_with = statement;
                         statement -> ipd -> state = STATE_D1i;
                         statement -> ipd -> driver_desc = desc;
                         statement -> ipd -> connection = connection;
@@ -1207,6 +1224,7 @@ SQLRETURN __SQLAllocHandle( SQLSMALLINT handle_type,
 
             descriptor -> state = STATE_D1e;
             descriptor -> implicit = 0;
+            descriptor -> associated_with = NULL;
 
             connection -> statement_count ++;
 
@@ -1240,6 +1258,9 @@ SQLRETURN __SQLAllocHandle( SQLSMALLINT handle_type,
 		if ( __validate_env( (DMHENV) input_handle ))
 		{
 			DMHENV environment = (DMHENV) input_handle;
+
+            thread_protect( SQL_HANDLE_ENV, environment );
+
 			__post_internal_error( &environment -> error,
 						ERROR_HY092, NULL,
 						environment -> requested_version );
@@ -1249,6 +1270,9 @@ SQLRETURN __SQLAllocHandle( SQLSMALLINT handle_type,
 		else if ( __validate_dbc( (DMHDBC) input_handle ))
 		{
 			DMHDBC connection = (DMHDBC) input_handle;
+
+            thread_protect( SQL_HANDLE_DBC, connection );
+
 			__post_internal_error( &connection -> error,
 					ERROR_HY092, NULL,
 					connection -> environment -> requested_version );

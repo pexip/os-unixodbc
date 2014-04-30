@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,18 @@
  *
  **********************************************************************
  *
- * $Id: SQLGetDiagRec.c,v 1.18 2008/09/29 14:02:45 lurcher Exp $
+ * $Id: SQLGetDiagRec.c,v 1.21 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLGetDiagRec.c,v $
+ * Revision 1.21  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
+ * Revision 1.20  2009/02/17 09:47:44  lurcher
+ * Clear up a number of bugs
+ *
+ * Revision 1.19  2009/02/04 09:30:02  lurcher
+ * Fix some SQLINTEGER/SQLLEN conflicts
+ *
  * Revision 1.18  2008/09/29 14:02:45  lurcher
  * Fix missing dlfcn group option
  *
@@ -171,9 +180,10 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
-static char const rcsid[]= "$RCSfile: SQLGetDiagRec.c,v $ $Revision: 1.18 $";
+static char const rcsid[]= "$RCSfile: SQLGetDiagRec.c,v $ $Revision: 1.21 $";
 
 int __is_env( EHEAD * head )
 {
@@ -313,6 +323,11 @@ static SQLRETURN extract_sql_error_rec( EHEAD *head,
             rec_number --;
         }
 
+		if ( !ptr ) 
+		{
+	    	return SQL_NO_DATA;
+		}
+
         as1 = (SQLCHAR*) unicode_to_ansi_alloc( ptr -> msg, SQL_NTS, __get_connection( head ));
 
         if ( sqlstate )
@@ -367,7 +382,6 @@ static SQLRETURN extract_sql_error_rec( EHEAD *head,
     else if ( !__is_env( head ) && __get_connection( head ) -> state != STATE_C2 )
     {
         ERROR *ptr;
-        SQLCHAR *as1 = NULL;
         SQLWCHAR *s1 = NULL, *s2 = NULL;
 
 		rec_number -= head -> sql_diag_head.internal_count;
@@ -440,6 +454,11 @@ static SQLRETURN extract_sql_error_rec( EHEAD *head,
                 ptr = ptr -> next;
                 rec_number --;
             }
+
+			if ( !ptr ) 
+			{
+	    		return SQL_NO_DATA;
+			}
 
             as1 = (SQLCHAR*) unicode_to_ansi_alloc( ptr -> msg, SQL_NTS, __get_connection( head ));
 
@@ -564,13 +583,13 @@ SQLRETURN SQLGetDiagRec( SQLSMALLINT handle_type,
         {
             sprintf( environment -> msg, 
                 "\n\t\tEntry:\
-                \n\t\t\tEnvironment = %p\
-                \n\t\t\tRec Number = %d\
-                \n\t\t\tSQLState = %p\
-                \n\t\t\tNative = %p\
-                \n\t\t\tMessage Text = %p\
-                \n\t\t\tBuffer Length = %d\
-                \n\t\t\tText Len Ptr = %p",
+\n\t\t\tEnvironment = %p\
+\n\t\t\tRec Number = %d\
+\n\t\t\tSQLState = %p\
+\n\t\t\tNative = %p\
+\n\t\t\tMessage Text = %p\
+\n\t\t\tBuffer Length = %d\
+\n\t\t\tText Len Ptr = %p",
                     environment,
                     rec_number,
                     sqlstate,
@@ -600,11 +619,11 @@ SQLRETURN SQLGetDiagRec( SQLSMALLINT handle_type,
             {
                 sprintf( environment -> msg, 
                     "\n\t\tExit:[%s]\
-                    \n\t\t\tSQLState = %s\
-                    \n\t\t\tNative = %s\
-                    \n\t\t\tMessage Text = %s",
+\n\t\t\tSQLState = %s\
+\n\t\t\tNative = %s\
+\n\t\t\tMessage Text = %s",
                         __get_return_status( ret, s2 ),
-                        sqlstate,
+                        sqlstate ? sqlstate : (SQLCHAR*)"NULL",
                         __iptr_as_string( s0, native ),
                         __sdata_as_string( s1, SQL_CHAR, 
                             text_length_ptr, message_text ));
@@ -642,13 +661,13 @@ SQLRETURN SQLGetDiagRec( SQLSMALLINT handle_type,
         {
             sprintf( connection -> msg, 
                 "\n\t\tEntry:\
-                \n\t\t\tConnection = %p\
-                \n\t\t\tRec Number = %d\
-                \n\t\t\tSQLState = %p\
-                \n\t\t\tNative = %p\
-                \n\t\t\tMessage Text = %p\
-                \n\t\t\tBuffer Length = %d\
-                \n\t\t\tText Len Ptr = %p",
+\n\t\t\tConnection = %p\
+\n\t\t\tRec Number = %d\
+\n\t\t\tSQLState = %p\
+\n\t\t\tNative = %p\
+\n\t\t\tMessage Text = %p\
+\n\t\t\tBuffer Length = %d\
+\n\t\t\tText Len Ptr = %p",
                     connection,
                     rec_number,
                     sqlstate,
@@ -678,11 +697,11 @@ SQLRETURN SQLGetDiagRec( SQLSMALLINT handle_type,
             {
                 sprintf( connection -> msg, 
                     "\n\t\tExit:[%s]\
-                    \n\t\t\tSQLState = %s\
-                    \n\t\t\tNative = %s\
-                    \n\t\t\tMessage Text = %s",
+\n\t\t\tSQLState = %s\
+\n\t\t\tNative = %s\
+\n\t\t\tMessage Text = %s",
                         __get_return_status( ret, s2 ),
-                        sqlstate,
+                        sqlstate ? sqlstate : (SQLCHAR*)"NULL",
                         __iptr_as_string( s0, native ),
                         __sdata_as_string( s1, SQL_CHAR, 
                             text_length_ptr, message_text ));
@@ -720,13 +739,13 @@ SQLRETURN SQLGetDiagRec( SQLSMALLINT handle_type,
         {
             sprintf( statement -> msg, 
                 "\n\t\tEntry:\
-                \n\t\t\tStatement = %p\
-                \n\t\t\tRec Number = %d\
-                \n\t\t\tSQLState = %p\
-                \n\t\t\tNative = %p\
-                \n\t\t\tMessage Text = %p\
-                \n\t\t\tBuffer Length = %d\
-                \n\t\t\tText Len Ptr = %p",
+\n\t\t\tStatement = %p\
+\n\t\t\tRec Number = %d\
+\n\t\t\tSQLState = %p\
+\n\t\t\tNative = %p\
+\n\t\t\tMessage Text = %p\
+\n\t\t\tBuffer Length = %d\
+\n\t\t\tText Len Ptr = %p",
                     statement,
                     rec_number,
                     sqlstate,
@@ -756,11 +775,11 @@ SQLRETURN SQLGetDiagRec( SQLSMALLINT handle_type,
             {
                 sprintf( statement -> msg, 
                     "\n\t\tExit:[%s]\
-                    \n\t\t\tSQLState = %s\
-                    \n\t\t\tNative = %s\
-                    \n\t\t\tMessage Text = %s",
+\n\t\t\tSQLState = %s\
+\n\t\t\tNative = %s\
+\n\t\t\tMessage Text = %s",
                         __get_return_status( ret, s2 ),
-                        sqlstate,
+                        sqlstate ? sqlstate : (SQLCHAR*)"NULL",
                         __iptr_as_string( s0, native ),
                         __sdata_as_string( s1, SQL_CHAR, 
                             text_length_ptr, message_text ));
@@ -798,13 +817,13 @@ SQLRETURN SQLGetDiagRec( SQLSMALLINT handle_type,
         {
             sprintf( descriptor -> msg, 
                 "\n\t\tEntry:\
-                \n\t\t\tDescriptor = %p\
-                \n\t\t\tRec Number = %d\
-                \n\t\t\tSQLState = %p\
-                \n\t\t\tNative = %p\
-                \n\t\t\tMessage Text = %p\
-                \n\t\t\tBuffer Length = %d\
-                \n\t\t\tText Len Ptr = %p",
+\n\t\t\tDescriptor = %p\
+\n\t\t\tRec Number = %d\
+\n\t\t\tSQLState = %p\
+\n\t\t\tNative = %p\
+\n\t\t\tMessage Text = %p\
+\n\t\t\tBuffer Length = %d\
+\n\t\t\tText Len Ptr = %p",
                     descriptor,
                     rec_number,
                     sqlstate,
@@ -834,11 +853,11 @@ SQLRETURN SQLGetDiagRec( SQLSMALLINT handle_type,
             {
                 sprintf( descriptor -> msg, 
                     "\n\t\tExit:[%s]\
-                    \n\t\t\tSQLState = %s\
-                    \n\t\t\tNative = %s\
-                    \n\t\t\tMessage Text = %s",
+\n\t\t\tSQLState = %s\
+\n\t\t\tNative = %s\
+\n\t\t\tMessage Text = %s",
                         __get_return_status( ret, s2 ),
-                        sqlstate,
+                        sqlstate ? sqlstate : (SQLCHAR*)"NULL",
                         __iptr_as_string( s0, native ),
                         __sdata_as_string( s1, SQL_CHAR, 
                             text_length_ptr, message_text ));
