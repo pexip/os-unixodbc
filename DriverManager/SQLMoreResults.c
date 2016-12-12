@@ -171,7 +171,7 @@ SQLRETURN SQLMoreResults( SQLHSTMT statement_handle )
      * check states
      */
     if ( statement -> state == STATE_S1 ||
-            statement -> state == STATE_S2 ||
+            /* statement -> state == STATE_S2 || */
             statement -> state == STATE_S3 )
     {
         sprintf( statement -> msg, 
@@ -219,6 +219,22 @@ SQLRETURN SQLMoreResults( SQLHSTMT statement_handle )
 
             return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
         }
+    }
+    else if ( statement -> state == STATE_S13 ||
+            statement -> state == STATE_S14 ||
+            statement -> state == STATE_S15 )
+    {
+        dm_log_write( __FILE__, 
+                __LINE__, 
+                LOG_INFO, 
+                LOG_INFO, 
+                "Error: HY010" );
+
+        __post_internal_error( &statement -> error,
+                ERROR_HY010, NULL,
+                statement -> connection -> environment -> requested_version );
+
+        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
 
 #ifdef NR_PROBE
@@ -299,6 +315,18 @@ SQLRETURN SQLMoreResults( SQLHSTMT statement_handle )
         {
             statement -> state = STATE_S1;
         }
+    }
+    else if ( ret == SQL_NEED_DATA )
+    {
+        statement -> interupted_func = SQL_API_SQLMORERESULTS;
+        statement -> interupted_state = statement -> state;
+        statement -> state = STATE_S8;
+    }
+    else if ( ret == SQL_PARAM_DATA_AVAILABLE )
+    {
+        statement -> interupted_func = SQL_API_SQLMORERESULTS;
+        statement -> interupted_state = statement -> state;
+        statement -> state = STATE_S13;
     }
     else
     {

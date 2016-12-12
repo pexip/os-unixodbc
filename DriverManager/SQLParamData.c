@@ -182,7 +182,8 @@ SQLRETURN SQLParamData( SQLHSTMT statement_handle,
             statement -> state == STATE_S5 ||
             statement -> state == STATE_S6 ||
             statement -> state == STATE_S7 ||
-            statement -> state == STATE_S9 )
+            statement -> state == STATE_S9 ||
+            statement -> state == STATE_S14 )
     {
         dm_log_write( __FILE__, 
                 __LINE__, 
@@ -257,7 +258,8 @@ SQLRETURN SQLParamData( SQLHSTMT statement_handle,
     else if ( SQL_SUCCEEDED( ret ))
     {
         if ( statement -> interupted_func == SQL_API_SQLEXECDIRECT ||
-                statement -> interupted_func == SQL_API_SQLEXECUTE )
+                statement -> interupted_func == SQL_API_SQLEXECUTE || 
+                statement -> interupted_func == SQL_API_SQLMORERESULTS )
         {
 #ifdef NR_PROBE
             SQLRETURN local_ret;
@@ -304,6 +306,10 @@ SQLRETURN SQLParamData( SQLHSTMT statement_handle,
     else if ( ret == SQL_NEED_DATA )
     {
         statement -> state = STATE_S9;
+    }
+    else if ( ret == SQL_PARAM_DATA_AVAILABLE  )
+    {
+        statement -> state = STATE_S14;
     }
 	else if ( ret == SQL_NO_DATA )
 	{

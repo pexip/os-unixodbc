@@ -1,4 +1,4 @@
-/* config.h.in.  Generated from configure.in by autoheader.  */
+/* config.h.in.  Generated from configure.ac by autoheader.  */
 
 /* Encoding to use for CHAR */
 #undef ASCII_ENCODING
@@ -125,6 +125,12 @@
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
 
+/* Define if you have <langinfo.h> and nl_langinfo(CODESET). */
+#undef HAVE_LANGINFO_CODESET
+
+/* Define to 1 if you have the <langinfo.h> header file. */
+#undef HAVE_LANGINFO_H
+
 /* Add -lcrypt to lib list */
 #undef HAVE_LIBCRYPT
 
@@ -172,6 +178,9 @@
 
 /* Define to 1 if you have the <ndir.h> header file, and it defines `DIR'. */
 #undef HAVE_NDIR_H
+
+/* Define to 1 if you have the `nl_langinfo' function. */
+#undef HAVE_NL_LANGINFO
 
 /* Define to 1 if you have the `opendir' function. */
 #undef HAVE_OPENDIR
@@ -356,9 +365,6 @@
 
 /* Define to the shared library suffix, say, ".dylib". */
 #undef LT_SHARED_EXT
-
-/* ODBC driver search path */
-#undef MODULEDIR
 
 /* Define if you need semundo union */
 #undef NEED_SEMUNDO_UNION

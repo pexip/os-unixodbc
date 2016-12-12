@@ -266,7 +266,10 @@ SQLRETURN SQLDescribeColW( SQLHSTMT statement_handle,
     if ( statement -> state == STATE_S1 ||
             statement -> state == STATE_S8 ||
             statement -> state == STATE_S9 ||
-            statement -> state == STATE_S10 )
+            statement -> state == STATE_S10 ||
+            statement -> state == STATE_S13 ||
+            statement -> state == STATE_S14 ||
+            statement -> state == STATE_S15 )
     {
         dm_log_write( __FILE__, 
                 __LINE__, 
@@ -280,6 +283,9 @@ SQLRETURN SQLDescribeColW( SQLHSTMT statement_handle,
 
         return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
+    /* 
+     * This seems to be down to the driver in the MS DM
+     *
     else if ( statement -> state == STATE_S2 )
     {
         dm_log_write( __FILE__, 
@@ -294,6 +300,7 @@ SQLRETURN SQLDescribeColW( SQLHSTMT statement_handle,
 
         return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
+    */
     else if ( statement -> state == STATE_S4 )
     {
         dm_log_write( __FILE__, 
@@ -410,7 +417,7 @@ SQLRETURN SQLDescribeColW( SQLHSTMT statement_handle,
 
         if ( column_name && as1 )
         {
-            ansi_to_unicode_copy( column_name, (char*) as1, SQL_NTS, statement -> connection );
+            ansi_to_unicode_copy( column_name, (char*) as1, SQL_NTS, statement -> connection, NULL );
         }
 
         if ( as1 )
@@ -448,7 +455,7 @@ SQLRETURN SQLDescribeColW( SQLHSTMT statement_handle,
                 \n\t\t\tDecimal Digits = %s\
                 \n\t\t\tNullable = %s",
                     __get_return_status( ret, s6 ),
-                    __sdata_as_string( s1, SQL_CHAR, 
+                    __sdata_as_string( s1, SQL_WCHAR, 
                         name_length, column_name ),
                     __sptr_as_string( s2, data_type ),
                     __ptr_as_string( s3, (SQLLEN*)column_size ),

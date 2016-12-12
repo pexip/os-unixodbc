@@ -5,7 +5,7 @@ Build-Conflicts: unixodbc-dev
 Section: libs
 Priority: optional
 Maintainer: Steve Langasek <vorlon@debian.org>
-Standards-Version: 3.9.4
+Standards-Version: 3.9.8
 Homepage: http://www.unixodbc.org/
 Vcs-Bzr: nosmart+http://bzr.debian.org/bzr/users/vorlon/unixodbc/trunk/
 Vcs-Browser: http://anonscm.debian.org/loggerhead/users/vorlon/unixodbc/trunk/
@@ -44,9 +44,9 @@ Description: ODBC library for Unix
 
 Package: unixodbc-dev
 Architecture: any
-Section: devel
+Section: libdevel
 Priority: extra
-Depends: unixodbc (= ${binary:Version}),
+Depends: libodbc1 (= ${binary:Version}),
 	odbcinst1debian2 (= ${binary:Version}),
 	libltdl3-dev, ${misc:Depends}
 Conflicts: libiodbc2-dev, remembrance-agent (<< 2.11-4)

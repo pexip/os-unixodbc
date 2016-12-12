@@ -163,7 +163,10 @@ SQLRETURN SQLSetCursorNameW( SQLHSTMT statement_handle,
             statement -> state == STATE_S9 ||
             statement -> state == STATE_S10 ||
             statement -> state == STATE_S11 ||
-            statement -> state == STATE_S12 )
+            statement -> state == STATE_S12 ||
+            statement -> state == STATE_S13 ||
+            statement -> state == STATE_S14 ||
+            statement -> state == STATE_S15 )
     {
         dm_log_write( __FILE__, 
                 __LINE__, 
@@ -204,6 +207,7 @@ SQLRETURN SQLSetCursorNameW( SQLHSTMT statement_handle,
     else
     {
         SQLCHAR *as1;
+        int clen;
 
         if ( !CHECK_SQLSETCURSORNAME( statement -> connection ))
         {
@@ -220,7 +224,9 @@ SQLRETURN SQLSetCursorNameW( SQLHSTMT statement_handle,
             return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
         }
 
-        as1 = (SQLCHAR*) unicode_to_ansi_alloc( cursor_name, name_length, statement -> connection );
+        as1 = (SQLCHAR*) unicode_to_ansi_alloc( cursor_name, name_length, statement -> connection, &clen );
+
+        name_length = clen;
 
         ret = SQLSETCURSORNAME( statement -> connection,
                 statement -> driver_stmt,

@@ -1,11 +1,7 @@
 dnl Process this file with autoconf to produce a configure script.
-AC_INIT(unixODBC, 2.3.1, nick@unixodbc.org )
-dnl AC_CONFIG_AUX_DIR([libltdl/config])
 
-AM_INIT_AUTOMAKE(unixODBC, 2.3.1)
-
-dnl Avoid annoying Makefile rebuilds on the autobuilders.
-AM_MAINTAINER_MODE
+AC_INIT([unixODBC], [2.3.4], nick@unixodbc.org, [unixODBC])
+AM_INIT_AUTOMAKE
 
 dnl Checks for programs.
 AC_PROG_AWK
@@ -136,7 +132,7 @@ LIBLTDL=""
 AC_LIBTOOL_WIN32_DLL
 dnl AC_PROG_LIBTOOL
 
-AC_CONFIG_MACRO_DIR([libltdl/m4])
+dnl AC_CONFIG_MACRO_DIR([libltdl/m4])
 dnl LT_CONFIG_LTDL_DIR([libltdl])
 dnl LTDL_INIT
 
@@ -148,11 +144,17 @@ dnl Substitute INCLTDL and LIBLTDL in the Makefiles
 AC_SUBST(LTDLINCL)
 AC_SUBST(LIBLTDL)
 
+#dnl Find shared lib extension
+#AC_MSG_CHECKING(for shared lib extension)
+#SHLIBEXT="$shrext_cmds"
+#AC_MSG_RESULT($shrext_cmds)
+#AC_SUBST(SHLIBEXT)
+
 dnl Find shared lib extension
 AC_MSG_CHECKING(for shared lib extension)
-SHLIBEXT="$shrext_cmds"
-AC_MSG_RESULT($shrext_cmds)
-AC_SUBST(SHLIBEXT)
+eval "SHLIBEXT=$shrext_cmds"
+AC_MSG_RESULT($SHLIBEXT)
+AC_SUBST(SHLIBEXT,$SHLIBEXT)
 
 dnl export the libdir, so we can have a multiarch-friendly search path
 dnl for ODBC drivers.
@@ -291,7 +293,9 @@ fi
 AC_CHECK_LONG_LONG
 AC_CHECK_SIZEOF([long int])
 
-AC_CHECK_FUNCS( strcasecmp strncasecmp vsnprintf strtol atoll strtoll endpwent gettimeofday ftime time stricmp strnicmp getuid getpwuid )
+AC_CHECK_FUNCS( strcasecmp strncasecmp vsnprintf strtol atoll strtoll endpwent gettimeofday ftime time stricmp strnicmp getuid getpwuid nl_langinfo )
+
+AM_LANGINFO_CODESET
 
 LIBADD_DL=
 AC_SUBST(LIBADD_DL)
@@ -446,7 +450,7 @@ AC_SUBST(msql_headers)
 dnl Checks for header files.
 AC_HEADER_STDC
 
-AC_CHECK_HEADERS(malloc.h unistd.h pwd.h crypt.h limits.h synch.h strings.h string.h locale.h sys/malloc.h sys/types.h sys/sem.h stdarg.h varargs.h sys/time.h sys/timeb.h time.h )
+AC_CHECK_HEADERS(malloc.h unistd.h pwd.h crypt.h limits.h synch.h strings.h string.h locale.h sys/malloc.h sys/types.h sys/sem.h stdarg.h varargs.h sys/time.h sys/timeb.h time.h langinfo.h )
 
 INCLUDES="$INCLUDES $USER_INCLUDES";
 
@@ -539,6 +543,7 @@ AC_OUTPUT( Makefile \
     Drivers/template/Makefile \
     Drivers/MiniSQL/Makefile \
     include/Makefile \
+    man/Makefile \
     doc/Makefile \
     doc/AdministratorManual/Makefile \
     doc/ProgrammerManual/Makefile \

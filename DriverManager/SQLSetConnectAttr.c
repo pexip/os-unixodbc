@@ -507,11 +507,7 @@ SQLRETURN SQLSetConnectAttr( SQLHDBC connection_handle,
       	case SQL_ATTR_RETRIEVE_DATA:
       	case SQL_ATTR_SIMULATE_CURSOR:
       	case SQL_ATTR_USE_BOOKMARKS:
-            if( __check_stmt_from_dbc( connection, STATE_S8 ) ||
-                __check_stmt_from_dbc( connection, STATE_S9 ) ||
-                __check_stmt_from_dbc( connection, STATE_S10 ) ||
-                __check_stmt_from_dbc( connection, STATE_S11 ) ||
-                __check_stmt_from_dbc( connection, STATE_S12 )) {
+            if( __check_stmt_from_dbc_v( connection, 5, STATE_S8, STATE_S9, STATE_S10, STATE_S11, STATE_S12 )) {
 
                 dm_log_write( __FILE__, 
                         __LINE__, 
@@ -530,9 +526,7 @@ SQLRETURN SQLSetConnectAttr( SQLHDBC connection_handle,
         default:
             if ( attribute == SQL_ATTR_CURRENT_CATALOG ) 
             {
-                if( __check_stmt_from_dbc( connection, STATE_S5 ) ||
-                    __check_stmt_from_dbc( connection, STATE_S6 ) ||
-                    __check_stmt_from_dbc( connection, STATE_S7 )) {
+                if( __check_stmt_from_dbc_v( connection, 3, STATE_S5, STATE_S6, STATE_S7 )) {
 
                     dm_log_write( __FILE__, 
                             __LINE__, 
@@ -548,11 +542,7 @@ SQLRETURN SQLSetConnectAttr( SQLHDBC connection_handle,
                 }
             }
 
-            if( __check_stmt_from_dbc( connection, STATE_S8 ) ||
-                __check_stmt_from_dbc( connection, STATE_S9 ) ||
-                __check_stmt_from_dbc( connection, STATE_S10 ) ||
-                __check_stmt_from_dbc( connection, STATE_S11 ) ||
-                __check_stmt_from_dbc( connection, STATE_S12 )) {
+            if( __check_stmt_from_dbc_v( connection, 5, STATE_S8, STATE_S9, STATE_S10, STATE_S11, STATE_S12 )) {
 
                 dm_log_write( __FILE__, 
                         __LINE__, 
@@ -576,7 +566,7 @@ SQLRETURN SQLSetConnectAttr( SQLHDBC connection_handle,
     value = __attr_override( connection, SQL_HANDLE_DBC, attribute, value, &string_length );
 
     /*
-     * we need to save this even if connected so we can use it for the next connetc
+     * we need to save this even if connected so we can use it for the next connect
      */
     if ( attribute == SQL_ATTR_LOGIN_TIMEOUT )
     {
@@ -775,7 +765,7 @@ SQLRETURN SQLSetConnectAttr( SQLHDBC connection_handle,
                       case SQL_ATTR_CURRENT_CATALOG:
                       case SQL_ATTR_TRACEFILE:
                       case SQL_ATTR_TRANSLATE_LIB:
-                        s1 = ansi_to_unicode_alloc( value, SQL_NTS, connection );
+                        s1 = ansi_to_unicode_alloc( value, SQL_NTS, connection, NULL );
 
                         ret = SQLSETCONNECTOPTIONW( connection,
                                 connection -> driver_dbc,
@@ -819,13 +809,13 @@ SQLRETURN SQLSetConnectAttr( SQLHDBC connection_handle,
                   case SQL_ATTR_CURRENT_CATALOG:
                   case SQL_ATTR_TRACEFILE:
                   case SQL_ATTR_TRANSLATE_LIB:
-                    s1 = ansi_to_unicode_alloc( value, string_length, connection );
+                    s1 = ansi_to_unicode_alloc( value, string_length, connection, NULL );
 
                     ret = SQLSETCONNECTATTRW( connection,
                         connection -> driver_dbc,
                         attribute,
                         s1,
-                        string_length * sizeof( SQLWCHAR ));
+                        string_length == SQL_NTS ? SQL_NTS : string_length * sizeof( SQLWCHAR ));
 
                     if ( s1 )
                         free( s1 );

@@ -231,7 +231,10 @@ SQLRETURN SQLForeignKeysW(
     }
     else if ( statement -> state == STATE_S8 ||
             statement -> state == STATE_S9 ||
-            statement -> state == STATE_S10 )
+            statement -> state == STATE_S10 ||
+            statement -> state == STATE_S13 ||
+            statement -> state == STATE_S14 ||
+            statement -> state == STATE_S15 )
     {
         dm_log_write( __FILE__, 
                 __LINE__, 
@@ -305,6 +308,7 @@ SQLRETURN SQLForeignKeysW(
     else
     {
         SQLCHAR *as1, *as2, *as3, *as4, *as5, *as6;
+        int clen;
 
         if ( !CHECK_SQLFOREIGNKEYS( statement -> connection ))
         {
@@ -321,12 +325,18 @@ SQLRETURN SQLForeignKeysW(
             return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
         }
 
-        as1 = (SQLCHAR*) unicode_to_ansi_alloc( szpk_catalog_name, cbpk_catalog_name, statement -> connection );
-        as2 = (SQLCHAR*) unicode_to_ansi_alloc( szpk_schema_name, cbpk_schema_name, statement -> connection );
-        as3 = (SQLCHAR*) unicode_to_ansi_alloc( szpk_table_name, cbpk_table_name, statement -> connection );
-        as4 = (SQLCHAR*) unicode_to_ansi_alloc( szfk_catalog_name, cbfk_catalog_name, statement -> connection );
-        as5 = (SQLCHAR*) unicode_to_ansi_alloc( szfk_schema_name, cbfk_schema_name, statement -> connection );
-        as6 = (SQLCHAR*) unicode_to_ansi_alloc( szfk_table_name, cbfk_table_name, statement -> connection );
+        as1 = (SQLCHAR*) unicode_to_ansi_alloc( szpk_catalog_name, cbpk_catalog_name, statement -> connection, &clen );
+        cbpk_catalog_name = clen;
+        as2 = (SQLCHAR*) unicode_to_ansi_alloc( szpk_schema_name, cbpk_schema_name, statement -> connection, &clen );
+        cbpk_schema_name = clen;
+        as3 = (SQLCHAR*) unicode_to_ansi_alloc( szpk_table_name, cbpk_table_name, statement -> connection, &clen );
+        cbpk_table_name = clen;
+        as4 = (SQLCHAR*) unicode_to_ansi_alloc( szfk_catalog_name, cbfk_catalog_name, statement -> connection, &clen );
+        cbfk_catalog_name = clen;
+        as5 = (SQLCHAR*) unicode_to_ansi_alloc( szfk_schema_name, cbfk_schema_name, statement -> connection, &clen );
+        cbfk_schema_name = clen;
+        as6 = (SQLCHAR*) unicode_to_ansi_alloc( szfk_table_name, cbfk_table_name, statement -> connection, &clen );
+        cbfk_table_name = clen;
 
         ret = SQLFOREIGNKEYS( statement -> connection ,
                 statement -> driver_stmt,

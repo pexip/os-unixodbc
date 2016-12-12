@@ -302,7 +302,10 @@ SQLRETURN SQLExecDirect( SQLHSTMT statement_handle,
     }
     else if ( statement -> state == STATE_S8 ||
             statement -> state == STATE_S9 ||
-            statement -> state == STATE_S10 )
+            statement -> state == STATE_S10 ||
+            statement -> state == STATE_S13 ||
+            statement -> state == STATE_S14 ||
+            statement -> state == STATE_S15 )
     {
         dm_log_write( __FILE__, 
                 __LINE__, 
@@ -339,6 +342,7 @@ SQLRETURN SQLExecDirect( SQLHSTMT statement_handle,
     if ( statement -> connection -> unicode_driver )
     {
         SQLWCHAR *s1;
+        int wlen;
 
 #ifdef NR_PROBE
         if ( !CHECK_SQLEXECDIRECTW( statement -> connection ) ||
@@ -373,7 +377,9 @@ SQLRETURN SQLExecDirect( SQLHSTMT statement_handle,
         }
 #endif
 
-        s1 = ansi_to_unicode_alloc( statement_text, text_length, statement -> connection );
+        s1 = ansi_to_unicode_alloc( statement_text, text_length, statement -> connection, &wlen );
+
+        text_length = wlen;
 
         ret = SQLEXECDIRECTW( statement -> connection,
                 statement -> driver_stmt,
@@ -478,6 +484,12 @@ SQLRETURN SQLExecDirect( SQLHSTMT statement_handle,
         statement -> state = STATE_S8;
 
         statement -> prepared = 0;
+    }
+    else if ( ret == SQL_PARAM_DATA_AVAILABLE )
+    {
+        statement -> interupted_func = SQL_API_SQLEXECDIRECT;
+        statement -> interupted_state = statement -> state;
+        statement -> state = STATE_S13;
     }
     else if ( ret == SQL_STILL_EXECUTING )
     {
