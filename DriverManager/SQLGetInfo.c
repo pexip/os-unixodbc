@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,15 @@
  *
  **********************************************************************
  *
- * $Id: SQLGetInfo.c,v 1.12 2008/09/29 14:02:45 lurcher Exp $
+ * $Id: SQLGetInfo.c,v 1.14 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLGetInfo.c,v $
+ * Revision 1.14  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
+ * Revision 1.13  2009/02/17 09:47:44  lurcher
+ * Clear up a number of bugs
+ *
  * Revision 1.12  2008/09/29 14:02:45  lurcher
  * Fix missing dlfcn group option
  *
@@ -163,9 +169,10 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
-static char const rcsid[]= "$RCSfile: SQLGetInfo.c,v $ $Revision: 1.12 $";
+static char const rcsid[]= "$RCSfile: SQLGetInfo.c,v $ $Revision: 1.14 $";
 
 SQLRETURN SQLGetInfoA( SQLHDBC connection_handle,
            SQLUSMALLINT info_type,
@@ -192,7 +199,6 @@ SQLRETURN __SQLGetInfo( SQLHDBC connection_handle,
 	SQLUSMALLINT sval;
     char txt[ 30 ], *cptr;
     SQLPOINTER *ptr;
-    SQLCHAR s1[ 100 + LOG_MESSAGE_LEN ];
 
     switch ( info_type )
     {
@@ -228,27 +234,30 @@ SQLRETURN __SQLGetInfo( SQLHDBC connection_handle,
 
       case SQL_DRIVER_HDESC:
         {
-            DMHDESC hdesc = *((DMHDESC*) info_value); 
-
-            type = 2;
-
-            if ( __validate_desc( hdesc ))
+            if ( info_value ) 
             {
-                ptr = (SQLPOINTER) hdesc -> driver_desc;
-            }
-            else
-            {
-                dm_log_write( __FILE__, 
-                        __LINE__, 
-                        LOG_INFO, 
-                        LOG_INFO, 
-                        "Error: HY024" );
+                DMHDESC hdesc = *((DMHDESC*) info_value); 
 
-                __post_internal_error( &connection -> error,
-                        ERROR_HY024, NULL,
-                        connection -> environment -> requested_version );
+                type = 2;
 
-                return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+                if ( __validate_desc( hdesc ))
+                {
+                    ptr = (SQLPOINTER) hdesc -> driver_desc;
+                }
+                else
+                {
+                    dm_log_write( __FILE__, 
+                            __LINE__, 
+                            LOG_INFO, 
+                            LOG_INFO, 
+                            "Error: HY024" );
+    
+                    __post_internal_error( &connection -> error,
+                            ERROR_HY024, NULL,
+                            connection -> environment -> requested_version );
+
+                    return SQL_ERROR;
+                }
             }
         }
         break;
@@ -260,27 +269,30 @@ SQLRETURN __SQLGetInfo( SQLHDBC connection_handle,
 
       case SQL_DRIVER_HSTMT:
         {
-            DMHSTMT hstmt = *((DMHSTMT*) info_value); 
-
-            type = 2;
-
-            if ( __validate_stmt( hstmt ))
+            if ( info_value ) 
             {
-                ptr = (SQLPOINTER) hstmt -> driver_stmt;
-            }
-            else
-            {
-                dm_log_write( __FILE__, 
+                DMHSTMT hstmt = *((DMHSTMT*) info_value); 
+
+                type = 2;
+
+                if ( __validate_stmt( hstmt ))
+                {
+                    ptr = (SQLPOINTER) hstmt -> driver_stmt;
+                }
+                else
+                {
+                    dm_log_write( __FILE__, 
                         __LINE__, 
                         LOG_INFO, 
                         LOG_INFO, 
                         "Error: HY024" );
 
-                __post_internal_error( &connection -> error,
+                    __post_internal_error( &connection -> error,
                         ERROR_HY024, NULL,
                         connection -> environment -> requested_version );
 
-                return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+                    return SQL_ERROR;
+                }
             }
         }
         break;
@@ -316,7 +328,7 @@ SQLRETURN __SQLGetInfo( SQLHDBC connection_handle,
                         ERROR_IM001, NULL,
                         connection -> environment -> requested_version );
 
-                return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+                return SQL_ERROR;
             }
 
             switch( info_type )
@@ -443,7 +455,7 @@ SQLRETURN __SQLGetInfo( SQLHDBC connection_handle,
                         ERROR_IM001, NULL,
                         connection -> environment -> requested_version );
 
-                return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+                return SQL_ERROR;
             }
 
             ret = SQLGETINFO( connection,
@@ -454,7 +466,7 @@ SQLRETURN __SQLGetInfo( SQLHDBC connection_handle,
                     string_length );
         }
 
-        return function_return( SQL_HANDLE_DBC, connection, ret );
+        return ret;
     }
 
     if ( type == 1 )
@@ -493,7 +505,7 @@ SQLRETURN __SQLGetInfo( SQLHDBC connection_handle,
             *string_length = sizeof( SQLUSMALLINT );
 	}
 
-    return function_return( SQL_HANDLE_DBC, connection, ret );
+    return ret;
 }
 
 SQLRETURN SQLGetInfo( SQLHDBC connection_handle,
@@ -504,10 +516,6 @@ SQLRETURN SQLGetInfo( SQLHDBC connection_handle,
 {
     DMHDBC connection = (DMHDBC)connection_handle;
     SQLRETURN ret = SQL_SUCCESS;
-    int type;
-	SQLUSMALLINT sval;
-    char txt[ 30 ], *cptr;
-    SQLPOINTER *ptr;
     SQLCHAR s1[ 100 + LOG_MESSAGE_LEN ];
 
     /*
@@ -530,11 +538,11 @@ SQLRETURN SQLGetInfo( SQLHDBC connection_handle,
     if ( log_info.log_flag )
     {
         sprintf( connection -> msg, "\n\t\tEntry:\
-            \n\t\t\tConnection = %p\
-            \n\t\t\tInfo Type = %s (%d)\
-            \n\t\t\tInfo Value = %p\
-            \n\t\t\tBuffer Length = %d\
-            \n\t\t\tStrLen = %p",
+\n\t\t\tConnection = %p\
+\n\t\t\tInfo Type = %s (%d)\
+\n\t\t\tInfo Value = %p\
+\n\t\t\tBuffer Length = %d\
+\n\t\t\tStrLen = %p",
                 connection,
                 __info_as_string( s1, info_type ),
                 info_type,
@@ -551,7 +559,8 @@ SQLRETURN SQLGetInfo( SQLHDBC connection_handle,
 
     thread_protect( SQL_HANDLE_DBC, connection );
 
-    if ( info_type != SQL_ODBC_VER &&
+    if ( info_type != SQL_ODBC_VER && 
+            info_type != SQL_DM_VER &&
             connection -> state == STATE_C2 )
     {
         dm_log_write( __FILE__, 

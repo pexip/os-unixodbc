@@ -40,6 +40,8 @@ char *szSyntax =
 "* -q         wrap char fields in dquotes     *\n" \
 "* -3         Use ODBC 3 calls                *\n" \
 "* -n         Use new line processing         *\n" \
+"* -e         Use SQLExecDirect not Prepare   *\n" \
+"* -k         Use SQLDriverConnect            *\n" \
 "* --version  version                         *\n" \
 "*                                            *\n" \
 "* Commands                                   *\n" \
@@ -60,8 +62,8 @@ char *szSyntax =
 "* Please visit;                              *\n" \
 "*                                            *\n" \
 "*      http://www.unixodbc.org               *\n" \
+"*      nick@lurcher.org                      *\n" \
 "*      pharvey@codebydesign.com              *\n" \
-"*      nick@easysoft.com                     *\n" \
 "**********************************************\n\n";
 
 #else
@@ -107,8 +109,8 @@ char *szSyntax =
 "* Please visit;                              *\n" \
 "*                                            *\n" \
 "*      http://www.unixodbc.org               *\n" \
+"*      nick@lurcher.org                      *\n" \
 "*      pharvey@codebydesign.com              *\n" \
-"*      nick@easysoft.com                     *\n" \
 "**********************************************\n\n";
 
 #endif
@@ -122,26 +124,5 @@ char *szSyntax =
 #ifndef min
 #define min( a, b ) (((a) < (b)) ? (a) : (b))
 #endif
-
-static int OpenDatabase( SQLHENV *phEnv, SQLHDBC *phDbc, char *szDSN, char *szUID, char *szPWD );
-static int ExecuteSQL( SQLHDBC hDbc, char *szSQL, char cDelimiter, int bColumnNames, int bHTMLTable );
-static int ExecuteHelp( SQLHDBC hDbc, char *szSQL, char cDelimiter, int bColumnNames, int bHTMLTable );
-static int ExecuteSlash( SQLHDBC hDbc, char *szSQL, char cDelimiter, int bColumnNames, int bHTMLTable );
-static int	CloseDatabase( SQLHENV hEnv, SQLHDBC hDbc );
-
-static void WriteHeaderHTMLTable( SQLHSTMT hStmt );
-static void WriteHeaderNormal( SQLHSTMT hStmt, SQLCHAR	*szSepLine );
-static void WriteHeaderDelimited( SQLHSTMT hStmt, char cDelimiter );
-static void WriteBodyHTMLTable( SQLHSTMT hStmt );
-static SQLLEN WriteBodyNormal( SQLHSTMT hStmt );
-static void WriteBodyDelimited( SQLHSTMT hStmt, char cDelimiter );
-static void WriteFooterHTMLTable( SQLHSTMT hStmt );
-static void WriteFooterNormal( SQLHSTMT hStmt, SQLCHAR	*szSepLine, SQLLEN nRows );
-
-static int DumpODBCLog( SQLHENV hEnv, SQLHDBC hDbc, SQLHSTMT hStmt );
-static int get_args(char *string, char **args, int maxarg);
-static void free_args(char **args, int maxarg);
-static void output_help(void);
-
 
 

@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,15 @@
  *
  **********************************************************************
  *
- * $Id: SQLSetStmtOption.c,v 1.8 2007/11/29 12:00:31 lurcher Exp $
+ * $Id: SQLSetStmtOption.c,v 1.10 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLSetStmtOption.c,v $
+ * Revision 1.10  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
+ * Revision 1.9  2009/02/04 09:30:02  lurcher
+ * Fix some SQLINTEGER/SQLLEN conflicts
+ *
  * Revision 1.8  2007/11/29 12:00:31  lurcher
  * Add 64 bit type changes to SQLExtendedFetch etc
  *
@@ -140,9 +146,10 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
-static char const rcsid[]= "$RCSfile: SQLSetStmtOption.c,v $ $Revision: 1.8 $";
+static char const rcsid[]= "$RCSfile: SQLSetStmtOption.c,v $ $Revision: 1.10 $";
 
 SQLRETURN SQLSetStmtOptionA( SQLHSTMT statement_handle,
            SQLUSMALLINT option,
@@ -179,9 +186,9 @@ SQLRETURN SQLSetStmtOption( SQLHSTMT statement_handle,
     if ( log_info.log_flag )
     {
         sprintf( statement -> msg, "\n\t\tEntry:\
-            \n\t\t\tStatement = %p\
-            \n\t\t\tOption = %s\
-            \n\t\t\tValue = %d",
+\n\t\t\tStatement = %p\
+\n\t\t\tOption = %s\
+\n\t\t\tValue = %d",
                 statement,
                 __stmt_attr_as_string( s1, option ),
                 (int)value );
@@ -292,6 +299,42 @@ SQLRETURN SQLSetStmtOption( SQLHSTMT statement_handle,
 
             return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
         }
+    }
+
+    if ( option == SQL_ATTR_IMP_ROW_DESC || 
+        option == SQL_ATTR_IMP_PARAM_DESC )
+    {
+        dm_log_write( __FILE__, 
+                    __LINE__, 
+                    LOG_INFO, 
+                    LOG_INFO, 
+                    "Error: HY017" );
+
+        __post_internal_error( &statement -> error,
+                ERROR_HY017, NULL,
+                statement -> connection -> environment -> requested_version );
+
+        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+    }
+
+    /*
+     * is it a legitimate value
+     */
+    ret = dm_check_statement_attrs( statement, option, (SQLPOINTER)value );
+
+    if ( ret != SQL_SUCCESS ) 
+    {
+        dm_log_write( __FILE__, 
+                    __LINE__, 
+                    LOG_INFO, 
+                    LOG_INFO, 
+                    "Error: HY011" );
+
+        __post_internal_error( &statement -> error,
+                ERROR_HY024, NULL,
+                statement -> connection -> environment -> requested_version );
+
+        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
 
     /*
@@ -418,7 +461,7 @@ SQLRETURN SQLSetStmtOption( SQLHSTMT statement_handle,
 
     if ( option == SQL_USE_BOOKMARKS && SQL_SUCCEEDED( ret ))
     {
-        statement -> bookmarks_on = (SQLUINTEGER) value;
+        statement -> bookmarks_on = (SQLULEN) value;
     }
 
     if ( log_info.log_flag )

@@ -12,6 +12,10 @@
  *
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "lobj.h"
 #include "psqlodbc.h"
 #include "connection.h"

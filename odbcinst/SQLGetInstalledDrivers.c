@@ -9,6 +9,7 @@
  * -----------------------------------------------
  * Peter Harvey		- pharvey@codebydesign.com
  **************************************************/
+#include <config.h>
 #include <odbcinstext.h>
 
 BOOL SQLGetInstalledDrivers(	LPSTR	pszBuf,
@@ -27,7 +28,7 @@ BOOL SQLGetInstalledDrivers(	LPSTR	pszBuf,
 #ifdef VMS
     sprintf( szIniName, "%s:%s", odbcinst_system_file_path( b1 ), odbcinst_system_file_name( b2 ) );
 #else
-    sprintf( szIniName, "%s/%d", odbcinst_system_file_path( b1 ), odbcinst_system_file_name( b2 ) );
+    sprintf( szIniName, "%s/%s", odbcinst_system_file_path( b1 ), odbcinst_system_file_name( b2 ) );
 #endif
 
 #ifdef __OS2__

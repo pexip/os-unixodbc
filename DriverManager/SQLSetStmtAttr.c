@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,15 @@
  *
  **********************************************************************
  *
- * $Id: SQLSetStmtAttr.c,v 1.14 2007/12/17 13:13:03 lurcher Exp $
+ * $Id: SQLSetStmtAttr.c,v 1.16 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLSetStmtAttr.c,v $
+ * Revision 1.16  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
+ * Revision 1.15  2009/02/04 09:30:02  lurcher
+ * Fix some SQLINTEGER/SQLLEN conflicts
+ *
  * Revision 1.14  2007/12/17 13:13:03  lurcher
  * Fix a couple of descriptor typo's
  *
@@ -201,9 +207,10 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
-static char const rcsid[]= "$RCSfile: SQLSetStmtAttr.c,v $ $Revision: 1.14 $";
+static char const rcsid[]= "$RCSfile: SQLSetStmtAttr.c,v $ $Revision: 1.16 $";
 
 SQLRETURN SQLSetStmtAttrA( SQLHSTMT statement_handle,
            SQLINTEGER attribute,
@@ -245,10 +252,10 @@ SQLRETURN SQLSetStmtAttr( SQLHSTMT statement_handle,
     if ( log_info.log_flag )
     {
         sprintf( statement -> msg, "\n\t\tEntry:\
-            \n\t\t\tStatement = %p\
-            \n\t\t\tAttribute = %s\
-            \n\t\t\tValue = %p\
-            \n\t\t\tStrLen = %d",
+\n\t\t\tStatement = %p\
+\n\t\t\tAttribute = %s\
+\n\t\t\tValue = %p\
+\n\t\t\tStrLen = %d",
                 statement,
                 __stmt_attr_as_string( s1, attribute ),
                 value, 
@@ -524,6 +531,7 @@ SQLRETURN SQLSetStmtAttr( SQLHSTMT statement_handle,
          */
         value = ( SQLPOINTER ) desc -> driver_desc;
         statement -> ard = desc;
+        desc -> associated_with = statement;
     }
 
     if ( attribute == SQL_ATTR_APP_PARAM_DESC )
@@ -665,6 +673,7 @@ SQLRETURN SQLSetStmtAttr( SQLHSTMT statement_handle,
          */
         value = ( SQLPOINTER ) desc -> driver_desc;
         statement -> apd = desc;
+        desc -> associated_with = statement;
     }
 
     /*
@@ -674,6 +683,42 @@ SQLRETURN SQLSetStmtAttr( SQLHSTMT statement_handle,
     if ( attribute == SQL_ATTR_METADATA_ID )
     {
         statement -> metadata_id = (SQLLEN) value;
+    }
+
+    if ( attribute == SQL_ATTR_IMP_ROW_DESC || 
+        attribute == SQL_ATTR_IMP_PARAM_DESC )
+    {
+        dm_log_write( __FILE__, 
+                    __LINE__, 
+                    LOG_INFO, 
+                    LOG_INFO, 
+                    "Error: HY017" );
+
+        __post_internal_error( &statement -> error,
+                ERROR_HY017, NULL,
+                statement -> connection -> environment -> requested_version );
+
+        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+    }
+
+    /*
+     * is it a legitimate value
+     */
+    ret = dm_check_statement_attrs( statement, attribute, value );
+
+    if ( ret != SQL_SUCCESS ) 
+    {
+        dm_log_write( __FILE__, 
+                    __LINE__, 
+                    LOG_INFO, 
+                    LOG_INFO, 
+                    "Error: HY024" );
+
+        __post_internal_error( &statement -> error,
+                ERROR_HY024, NULL,
+                statement -> connection -> environment -> requested_version );
+
+        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
 
     /*
@@ -691,7 +736,7 @@ SQLRETURN SQLSetStmtAttr( SQLHSTMT statement_handle,
             CHECK_SQLEXTENDEDFETCH( statement -> connection ) &&
             !CHECK_SQLFETCHSCROLL( statement -> connection ))
     {
-        statement -> fetch_bm_ptr = (SQLUINTEGER*) value;
+        statement -> fetch_bm_ptr = (SQLULEN*) value;
         /*
          * pass on if required
          */
@@ -753,7 +798,7 @@ SQLRETURN SQLSetStmtAttr( SQLHSTMT statement_handle,
     else if ( attribute == SQL_ATTR_ROWS_FETCHED_PTR &&
 	      statement -> connection -> driver_act_ver == SQL_OV_ODBC2 )
     {
-        statement -> row_ct_ptr = (SQLUINTEGER*) value;
+        statement -> row_ct_ptr = (SQLULEN*) value;
         /*
          * pass on if required
          */

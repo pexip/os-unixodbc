@@ -19,6 +19,7 @@
  *
  ********************************************************************/
 
+#include <config.h>
 #include "driver.h"
 
 enum nSQLColumns

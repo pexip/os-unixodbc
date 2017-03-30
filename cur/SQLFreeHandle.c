@@ -3,7 +3,7 @@
  * unixODBC Cursor Library
  *
  * Created by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * copyright (c) 1999 Nick Gorham
  *
@@ -23,9 +23,15 @@
  *
  **********************************************************************
  *
- * $Id: SQLFreeHandle.c,v 1.2 2004/07/24 17:55:38 lurcher Exp $
+ * $Id: SQLFreeHandle.c,v 1.4 2009/02/18 17:59:17 lurcher Exp $
  *
  * $Log: SQLFreeHandle.c,v $
+ * Revision 1.4  2009/02/18 17:59:17  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
+ * Revision 1.3  2009/02/17 09:47:45  lurcher
+ * Clear up a number of bugs
+ *
  * Revision 1.2  2004/07/24 17:55:38  lurcher
  * Sync up CVS
  *
@@ -45,6 +51,7 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "cursorlibrary.h"
 
 SQLRETURN CLFreeHandle( SQLSMALLINT handle_type,
@@ -122,5 +129,7 @@ SQLRETURN CLFreeHandle( SQLSMALLINT handle_type,
          */
         return SQL_ERROR;
     }
+
+    return SQL_ERROR;
 }
 

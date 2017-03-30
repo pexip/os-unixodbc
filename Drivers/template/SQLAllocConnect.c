@@ -10,6 +10,7 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "driver.h"
 
 
@@ -26,7 +27,7 @@ SQLRETURN _AllocConnect(	SQLHENV    hDrvEnv,
     if( SQL_NULL_HENV == hEnv )
         return SQL_INVALID_HANDLE;
 
-    sprintf((char*) hEnv->szSqlMsg, "hEnv = $%08lX phDbc = $%08lX",	hEnv, phDbc );
+    sprintf((char*) hEnv->szSqlMsg, "hEnv = $%08lX phDbc = $%08lX",	(long)hEnv, (long)phDbc );
     logPushMsg( hEnv->hLog, __FILE__, __FILE__, __LINE__, LOG_WARNING, LOG_WARNING,(char*) hEnv->szSqlMsg );
 
     if( SQL_NULL_HDBC == phDbc )

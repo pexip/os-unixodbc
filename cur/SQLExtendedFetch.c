@@ -3,7 +3,7 @@
  * unixODBC Cursor Library
  *
  * Created by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * copyright (c) 1999 Nick Gorham
  *
@@ -23,9 +23,15 @@
  *
  **********************************************************************
  *
- * $Id: SQLExtendedFetch.c,v 1.12 2008/01/22 17:51:54 lurcher Exp $
+ * $Id: SQLExtendedFetch.c,v 1.14 2009/02/18 17:59:17 lurcher Exp $
  *
  * $Log: SQLExtendedFetch.c,v $
+ * Revision 1.14  2009/02/18 17:59:17  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
+ * Revision 1.13  2009/02/17 09:47:45  lurcher
+ * Clear up a number of bugs
+ *
  * Revision 1.12  2008/01/22 17:51:54  lurcher
  * Another SQLULEN mismatch
  *
@@ -94,6 +100,7 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "cursorlibrary.h"
 
 #define ABS(x)  (((x)>=0)?(x):(-(x)))
@@ -612,7 +619,7 @@ SQLRETURN do_fetch_scroll( CLHSTMT cl_statement,
         }
 		else if ( ret == SQL_FETCH_PART_ROWSET ) 
 		{
-        	cl_statement -> rowset_position == CL_AFTER_END;
+        	cl_statement -> rowset_position = CL_AFTER_END;
 			ret = SQL_SUCCESS;
 		}
         break;

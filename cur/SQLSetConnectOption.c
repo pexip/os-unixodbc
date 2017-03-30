@@ -3,7 +3,7 @@
  * unixODBC Cursor Library
  *
  * Created by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * copyright (c) 1999 Nick Gorham
  *
@@ -23,9 +23,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLSetConnectOption.c,v 1.2 2003/03/05 09:48:45 lurcher Exp $
+ * $Id: SQLSetConnectOption.c,v 1.3 2009/02/18 17:59:18 lurcher Exp $
  *
  * $Log: SQLSetConnectOption.c,v $
+ * Revision 1.3  2009/02/18 17:59:18  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.2  2003/03/05 09:48:45  lurcher
  *
  * Add some 64 bit fixes
@@ -46,6 +49,7 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "cursorlibrary.h"
 
 SQLRETURN CLSetConnectOption( SQLHDBC connection_handle,

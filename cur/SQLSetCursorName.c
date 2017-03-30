@@ -3,7 +3,7 @@
  * unixODBC Cursor Library
  *
  * Created by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * copyright (c) 1999 Nick Gorham
  *
@@ -23,9 +23,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLSetCursorName.c,v 1.3 2002/11/19 18:52:28 lurcher Exp $
+ * $Id: SQLSetCursorName.c,v 1.4 2009/02/18 17:59:18 lurcher Exp $
  *
  * $Log: SQLSetCursorName.c,v $
+ * Revision 1.4  2009/02/18 17:59:18  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.3  2002/11/19 18:52:28  lurcher
  *
  * Alter the cursor lib to not require linking to the driver manager.
@@ -53,6 +56,7 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "cursorlibrary.h"
 
 SQLRETURN CLSetCursorName( SQLHSTMT statement_handle,

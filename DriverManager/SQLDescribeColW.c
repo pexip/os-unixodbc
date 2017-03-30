@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLDescribeColW.c,v 1.13 2008/08/29 08:01:38 lurcher Exp $
+ * $Id: SQLDescribeColW.c,v 1.14 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLDescribeColW.c,v $
+ * Revision 1.14  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.13  2008/08/29 08:01:38  lurcher
  * Alter the way W functions are passed to the driver
  *
@@ -107,6 +110,7 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
 static char const rcsid[]= "$RCSfile: SQLDescribeColW.c,v $";
@@ -182,15 +186,15 @@ SQLRETURN SQLDescribeColW( SQLHSTMT statement_handle,
     if ( log_info.log_flag )
     {
         sprintf( statement -> msg, "\n\t\tEntry:\
-            \n\t\t\tStatement = %p\
-            \n\t\t\tColumn Number = %d\
-            \n\t\t\tColumn Name = %p\
-            \n\t\t\tBuffer Length = %d\
-            \n\t\t\tName Length = %p\
-            \n\t\t\tData Type = %p\
-            \n\t\t\tColumn Size = %p\
-            \n\t\t\tDecimal Digits = %p\
-            \n\t\t\tNullable = %p",
+\n\t\t\tStatement = %p\
+\n\t\t\tColumn Number = %d\
+\n\t\t\tColumn Name = %p\
+\n\t\t\tBuffer Length = %d\
+\n\t\t\tName Length = %p\
+\n\t\t\tData Type = %p\
+\n\t\t\tColumn Size = %p\
+\n\t\t\tDecimal Digits = %p\
+\n\t\t\tNullable = %p",
                 statement,
                 column_number,
                 column_name,

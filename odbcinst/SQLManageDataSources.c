@@ -9,6 +9,7 @@
  * -----------------------------------------------
  * Peter Harvey		- pharvey@codebydesign.com
  **************************************************/
+#include <config.h>
 #include <odbcinstext.h>
 
 /*! 
@@ -28,7 +29,7 @@ char *_getUIPluginName( char *pszName, char *pszUI )
     *pszName = '\0';
 
     /* is it being provided by caller? */
-    if ( *pszUI )
+    if ( pszUI && *pszUI )
     {
         sprintf( pszName, "lib%s", pszUI );
         return pszName;
@@ -56,8 +57,8 @@ char *_getUIPluginName( char *pszName, char *pszUI )
         }
     }
 
-    /* default to qt3 */
-    strcpy( pszName, "libodbcinstQ" );
+    /* default to qt4 */
+    strcpy( pszName, "libodbcinstQ4" );
 
     return pszName;
 }

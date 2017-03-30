@@ -3,7 +3,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * copyright (c) 1999 Nick Gorham
  *
@@ -26,9 +26,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLExecDirectW.c,v 1.9 2008/08/29 08:01:38 lurcher Exp $
+ * $Id: SQLExecDirectW.c,v 1.10 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLExecDirectW.c,v $
+ * Revision 1.10  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.9  2008/08/29 08:01:38  lurcher
  * Alter the way W functions are passed to the driver
  *
@@ -83,6 +86,7 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
 static char const rcsid[]= "$RCSfile: SQLExecDirectW.c,v $";
@@ -162,8 +166,8 @@ SQLRETURN SQLExecDirectW( SQLHSTMT statement_handle,
         }
 
         sprintf( statement -> msg, "\n\t\tEntry:\
-            \n\t\t\tStatement = %p\
-            \n\t\t\tSQL = %s",
+\n\t\t\tStatement = %p\
+\n\t\t\tSQL = %s",
                 statement,
                 __wstring_with_length( s1, statement_text, text_length ));
 
@@ -217,7 +221,7 @@ SQLRETURN SQLExecDirectW( SQLHSTMT statement_handle,
             statement -> state == STATE_S6 ||
             statement -> state == STATE_S7 )
 #else
-    if ( statement -> state == STATE_S6 ||
+    if (( statement -> state == STATE_S6 && statement -> eod == 0 ) ||
             statement -> state == STATE_S7 )
 #endif
     {
@@ -369,7 +373,7 @@ SQLRETURN SQLExecDirectW( SQLHSTMT statement_handle,
 
         if ( ret == SQL_SUCCESS_WITH_INFO )
         {
-            function_return_ex( SQL_HANDLE_STMT, statement, ret, TRUE );
+            function_return_ex( IGNORE_THREAD, statement, ret, TRUE );
         }
 
         local_ret = SQLNUMRESULTCOLS( statement -> connection,

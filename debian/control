@@ -1,13 +1,12 @@
 Source: unixodbc
-Build-Depends: debhelper (>= 8.1.3~),
-	libreadline-dev, autotools-dev, libltdl-dev
+Build-Depends: debhelper (>= 9), dh-exec, dh-autoreconf,
+	libreadline-dev, libltdl-dev
 Build-Conflicts: unixodbc-dev
 Section: libs
 Priority: optional
 Maintainer: Pexip AS <packaging@pexip.com>
-XSBC-Pexip-Original-Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
-XSBC-Original-Maintainer: Steve Langasek <vorlon@debian.org>
-Standards-Version: 3.9.2
+XSBC-Pexip-Original-Maintainer: Steve Langasek <vorlon@debian.org>
+Standards-Version: 3.9.4
 Homepage: http://www.unixodbc.org/
 Vcs-Bzr: nosmart+http://bzr.debian.org/bzr/users/vorlon/unixodbc/trunk/
 Vcs-Browser: http://anonscm.debian.org/loggerhead/users/vorlon/unixodbc/trunk/
@@ -69,7 +68,7 @@ Pre-Depends: ${misc:Pre-Depends}
 Replaces: unixodbc (<< 2.1.1-2)
 Conflicts: odbcinst1, odbcinst1debian1
 Breaks: libmyodbc (<< 5.1.6-2), tdsodbc (<< 0.82-8),
-	odbc-postgresql (<< 1:09.00.0310-1.1), libiodbc2
+	odbc-postgresql (<< 1:09.00.0310-1.1)
 Description: Support library for accessing odbc ini files
  This package contains the libodbcinst library from unixodbc, a library
  used by ODBC drivers for reading their configuration settings from
@@ -81,7 +80,7 @@ Description: Support library for accessing odbc ini files
 Package: odbcinst
 Architecture: any
 Multi-Arch: foreign
-Section: libs
+Section: utils
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Replaces: unixodbc (<< 2.1.1-2), odbcinst1debian1 (<< 2.2.11-20), odbcinst1
 Conflicts: odbcinst1

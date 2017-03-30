@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,15 @@
  *
  **********************************************************************
  *
- * $Id: SQLSetEnvAttr.c,v 1.7 2004/06/21 10:01:11 lurcher Exp $
+ * $Id: SQLSetEnvAttr.c,v 1.9 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLSetEnvAttr.c,v $
+ * Revision 1.9  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
+ * Revision 1.8  2009/02/17 09:47:44  lurcher
+ * Clear up a number of bugs
+ *
  * Revision 1.7  2004/06/21 10:01:11  lurcher
  *
  * Fix a couple of 64 bit issues
@@ -126,9 +132,10 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
-static char const rcsid[]= "$RCSfile: SQLSetEnvAttr.c,v $ $Revision: 1.7 $";
+static char const rcsid[]= "$RCSfile: SQLSetEnvAttr.c,v $ $Revision: 1.9 $";
 
 SQLRETURN SQLSetEnvAttr( SQLHENV environment_handle,
            SQLINTEGER attribute,
@@ -136,7 +143,7 @@ SQLRETURN SQLSetEnvAttr( SQLHENV environment_handle,
            SQLINTEGER string_length )
 {
     DMHENV environment = (DMHENV) environment_handle;
-    SQLCHAR s0[ 20 ], s1[ 100 + LOG_MESSAGE_LEN ];
+    SQLCHAR s1[ 100 + LOG_MESSAGE_LEN ];
 
     /*
      * we may do someting with these later
@@ -169,10 +176,10 @@ SQLRETURN SQLSetEnvAttr( SQLHENV environment_handle,
     if ( log_info.log_flag )
     {
         sprintf( environment -> msg, "\n\t\tEntry:\
-            \n\t\t\tEnvironment = %p\
-            \n\t\t\tAttribute = %s\
-            \n\t\t\tValue = %p\
-            \n\t\t\tStrLen = %d",
+\n\t\t\tEnvironment = %p\
+\n\t\t\tAttribute = %s\
+\n\t\t\tValue = %p\
+\n\t\t\tStrLen = %d",
                 environment,
                 __env_attr_as_string( s1, attribute ),
                 value, 
@@ -191,7 +198,7 @@ SQLRETURN SQLSetEnvAttr( SQLHENV environment_handle,
     {
       case SQL_ATTR_CONNECTION_POOLING:
         {
-            long int ptr = (long int) value;
+            SQLUINTEGER ptr = (SQLUINTEGER) value;
 
             if ( ptr != SQL_CP_OFF &&
                 ptr != SQL_CP_ONE_PER_DRIVER &&
@@ -216,7 +223,7 @@ SQLRETURN SQLSetEnvAttr( SQLHENV environment_handle,
 
       case SQL_ATTR_CP_MATCH:
         {
-            long int ptr = (long int) value;
+            SQLUINTEGER ptr = (SQLUINTEGER) value;
 
             if ( ptr != SQL_CP_STRICT_MATCH &&
                 ptr != SQL_CP_RELAXED_MATCH )
@@ -240,7 +247,7 @@ SQLRETURN SQLSetEnvAttr( SQLHENV environment_handle,
 
       case SQL_ATTR_ODBC_VERSION:
         {
-            long int ptr = (long int) value;
+            SQLUINTEGER ptr = (SQLUINTEGER) value;
 
             if ( ptr != SQL_OV_ODBC2 &&
                     ptr != SQL_OV_ODBC3 )
@@ -281,7 +288,7 @@ SQLRETURN SQLSetEnvAttr( SQLHENV environment_handle,
 
       case SQL_ATTR_OUTPUT_NTS:
         {
-            long int ptr = (long int) value;
+            SQLUINTEGER ptr = (SQLUINTEGER) value;
 
             /*
              * this must be one of the most brain dead atribute,
@@ -323,6 +330,13 @@ SQLRETURN SQLSetEnvAttr( SQLHENV environment_handle,
 
             return function_return( SQL_HANDLE_ENV, environment, SQL_ERROR );
         }
+        break;
+
+        /*
+         * Third party extensions
+         */
+
+      case 1064:        /* SQL_ATTR_APP_UNICODE_TYPE */
         break;
 
       default:

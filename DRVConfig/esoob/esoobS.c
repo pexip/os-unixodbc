@@ -5,9 +5,12 @@
  *  unixODBC (http://www.unixodbc.org) to define Easysoft ODBC-ODBC Bridge
  *  DSNs.
  *
- *  $Id: esoobS.c,v 1.1.1.1 2001/10/17 16:40:01 lurcher Exp $
+ *  $Id: esoobS.c,v 1.2 2009/02/18 17:59:08 lurcher Exp $
  *
  *  $Log: esoobS.c,v $
+ *  Revision 1.2  2009/02/18 17:59:08  lurcher
+ *  Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  *  Revision 1.1.1.1  2001/10/17 16:40:01  lurcher
  *
  *  First upload to SourceForge
@@ -41,6 +44,7 @@
  *
  */
 
+#include <config.h>
 #include <odbcinstext.h>
 
 char *help_strings[] = 

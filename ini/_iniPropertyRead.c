@@ -12,6 +12,7 @@
  * Peter Harvey		- pharvey@codebydesign.com
  **************************************************/
 
+#include <config.h>
 #include "ini.h"
 
 int _iniPropertyRead( HINI hIni, char *szLine, char *pszPropertyName, char *pszPropertyValue )

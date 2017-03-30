@@ -10,6 +10,7 @@
  *
  ********************************************************************/
 
+#include <config.h>
 #include "driver.h"
 
 SQLRETURN SQLProcedureColumns(
@@ -29,7 +30,7 @@ SQLRETURN SQLProcedureColumns(
     if( hStmt == SQL_NULL_HSTMT )
         return SQL_INVALID_HANDLE;
 
-	sprintf((char*) hStmt->szSqlMsg, "hStmt = $%08lX", hStmt );
+	sprintf((char*) hStmt->szSqlMsg, "hStmt = $%08lX", (long)hStmt );
     logPushMsg( hStmt->hLog, __FILE__, __FILE__, __LINE__, LOG_WARNING, LOG_WARNING,(char*) hStmt->szSqlMsg );
 
     /************************

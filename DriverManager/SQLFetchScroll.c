@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLFetchScroll.c,v 1.5 2007/11/29 12:00:31 lurcher Exp $
+ * $Id: SQLFetchScroll.c,v 1.6 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLFetchScroll.c,v $
+ * Revision 1.6  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.5  2007/11/29 12:00:31  lurcher
  * Add 64 bit type changes to SQLExtendedFetch etc
  *
@@ -112,9 +115,10 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
-static char const rcsid[]= "$RCSfile: SQLFetchScroll.c,v $ $Revision: 1.5 $";
+static char const rcsid[]= "$RCSfile: SQLFetchScroll.c,v $ $Revision: 1.6 $";
 
 SQLRETURN SQLFetchScroll( SQLHSTMT statement_handle,
            SQLSMALLINT fetch_orientation,
@@ -144,9 +148,9 @@ SQLRETURN SQLFetchScroll( SQLHSTMT statement_handle,
     if ( log_info.log_flag )
     {
         sprintf( statement -> msg, "\n\t\tEntry:\
-            \n\t\t\tStatement = %p\
-            \n\t\t\tFetch Orentation = %d\
-            \n\t\t\tFetch Offset = %d",
+\n\t\t\tStatement = %p\
+\n\t\t\tFetch Orentation = %d\
+\n\t\t\tFetch Offset = %d",
                 statement,
                 fetch_orientation,
                 (int)fetch_offset );
@@ -330,6 +334,9 @@ SQLRETURN SQLFetchScroll( SQLHSTMT statement_handle,
     else if ( SQL_SUCCEEDED( ret ))
     {
         statement -> state = STATE_S6;
+    }
+    else if ( ret == SQL_NO_DATA ) {
+        statement -> eod = 1;
     }
 
     if ( log_info.log_flag )

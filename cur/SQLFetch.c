@@ -3,7 +3,7 @@
  * unixODBC Cursor Library
  *
  * Created by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * copyright (c) 1999 Nick Gorham
  *
@@ -23,9 +23,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLFetch.c,v 1.5 2005/10/27 17:54:49 lurcher Exp $
+ * $Id: SQLFetch.c,v 1.6 2009/02/18 17:59:17 lurcher Exp $
  *
  * $Log: SQLFetch.c,v $
+ * Revision 1.6  2009/02/18 17:59:17  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.5  2005/10/27 17:54:49  lurcher
  * fix what I suspect is a typo in qt.m4
  *
@@ -63,6 +66,7 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "cursorlibrary.h"
 
 SQLRETURN CLFetch( SQLHSTMT statement_handle )

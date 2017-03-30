@@ -10,6 +10,7 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "driver.h"
 
 SQLRETURN _AllocStmt(   SQLHDBC     hDrvDbc,
@@ -25,7 +26,7 @@ SQLRETURN _AllocStmt(   SQLHDBC     hDrvDbc,
         return SQL_INVALID_HANDLE;
     }
 
-	sprintf((char*) hDbc->szSqlMsg, "hDbc = $%08lX", hDbc );
+	sprintf((char*) hDbc->szSqlMsg, "hDbc = $%08lX", (long)hDbc );
     logPushMsg( hDbc->hLog, __FILE__, __FILE__, __LINE__, LOG_WARNING, LOG_WARNING,(char*) hDbc->szSqlMsg );
 
     if( NULL == phStmt )
@@ -45,7 +46,7 @@ SQLRETURN _AllocStmt(   SQLHDBC     hDrvDbc,
     }
 
     /* initialize memory */
-	sprintf((char*) hDbc->szSqlMsg, "*phstmt = $%08lX", *phStmt );
+	sprintf((char*) hDbc->szSqlMsg, "*phstmt = $%08lX", (long)*phStmt );
     logPushMsg( hDbc->hLog, __FILE__, __FILE__, __LINE__, LOG_WARNING, LOG_WARNING,(char*) hDbc->szSqlMsg );
 
 	memset( *phStmt, 0, sizeof(DRVSTMT) );	/* SAFETY */

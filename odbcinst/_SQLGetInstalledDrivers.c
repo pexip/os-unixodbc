@@ -17,6 +17,7 @@
  * -----------------------------------------------
  * Peter Harvey		- pharvey@codebydesign.com
  **************************************************/
+#include <config.h>
 #include <odbcinstext.h>
 
 int _SQLGetInstalledDrivers(    LPCSTR  pszSection,

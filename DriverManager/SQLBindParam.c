@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLBindParam.c,v 1.8 2007/03/05 09:49:23 lurcher Exp $
+ * $Id: SQLBindParam.c,v 1.9 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLBindParam.c,v $
+ * Revision 1.9  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.8  2007/03/05 09:49:23  lurcher
  * Get it to build on VMS again
  *
@@ -126,9 +129,10 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
-static char const rcsid[]= "$RCSfile: SQLBindParam.c,v $ $Revision: 1.8 $";
+static char const rcsid[]= "$RCSfile: SQLBindParam.c,v $ $Revision: 1.9 $";
 
 SQLRETURN SQLBindParam( SQLHSTMT statement_handle,
            SQLUSMALLINT parameter_number,
@@ -162,14 +166,14 @@ SQLRETURN SQLBindParam( SQLHSTMT statement_handle,
     if ( log_info.log_flag )
     {
         sprintf( statement -> msg, "\n\t\tEntry:\
-            \n\t\t\tStatement = %p\
-            \n\t\t\tParam Number = %d\
-            \n\t\t\tValue Type = %d %s\
-            \n\t\t\tParameter Type = %d %s\
-            \n\t\t\tLength Precision = %d\
-            \n\t\t\tParameter Scale = %d\
-            \n\t\t\tParameter Value = %p\
-            \n\t\t\tStrLen Or Ind = %p", 
+\n\t\t\tStatement = %p\
+\n\t\t\tParam Number = %d\
+\n\t\t\tValue Type = %d %s\
+\n\t\t\tParameter Type = %d %s\
+\n\t\t\tLength Precision = %d\
+\n\t\t\tParameter Scale = %d\
+\n\t\t\tParameter Value = %p\
+\n\t\t\tStrLen Or Ind = %p", 
                 statement,
                 parameter_number,
                 value_type,

@@ -3,7 +3,7 @@
  * unixODBC Cursor Library
  *
  * Created by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * copyright (c) 1999 Nick Gorham
  *
@@ -23,9 +23,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLTransact.c,v 1.2 2005/07/25 16:11:22 lurcher Exp $
+ * $Id: SQLTransact.c,v 1.3 2009/02/18 17:59:18 lurcher Exp $
  *
  * $Log: SQLTransact.c,v $
+ * Revision 1.3  2009/02/18 17:59:18  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.2  2005/07/25 16:11:22  lurcher
  * Fix swapped about args in the cursor lib
  *
@@ -45,6 +48,7 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "cursorlibrary.h"
 
 SQLRETURN CLTransact( SQLHENV environment_handle,

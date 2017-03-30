@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLDescribeCol.c,v 1.12 2008/09/29 14:02:44 lurcher Exp $
+ * $Id: SQLDescribeCol.c,v 1.13 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLDescribeCol.c,v $
+ * Revision 1.13  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.12  2008/09/29 14:02:44  lurcher
  * Fix missing dlfcn group option
  *
@@ -160,9 +163,10 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
-static char const rcsid[]= "$RCSfile: SQLDescribeCol.c,v $ $Revision: 1.12 $";
+static char const rcsid[]= "$RCSfile: SQLDescribeCol.c,v $ $Revision: 1.13 $";
 
 SQLRETURN SQLDescribeColA( SQLHSTMT statement_handle,
            SQLUSMALLINT column_number,
@@ -220,15 +224,15 @@ SQLRETURN SQLDescribeCol( SQLHSTMT statement_handle,
     if ( log_info.log_flag )
     {
         sprintf( statement -> msg, "\n\t\tEntry:\
-            \n\t\t\tStatement = %p\
-            \n\t\t\tColumn Number = %d\
-            \n\t\t\tColumn Name = %p\
-            \n\t\t\tBuffer Length = %d\
-            \n\t\t\tName Length = %p\
-            \n\t\t\tData Type = %p\
-            \n\t\t\tColumn Size = %p\
-            \n\t\t\tDecimal Digits = %p\
-            \n\t\t\tNullable = %p",
+\n\t\t\tStatement = %p\
+\n\t\t\tColumn Number = %d\
+\n\t\t\tColumn Name = %p\
+\n\t\t\tBuffer Length = %d\
+\n\t\t\tName Length = %p\
+\n\t\t\tData Type = %p\
+\n\t\t\tColumn Size = %p\
+\n\t\t\tDecimal Digits = %p\
+\n\t\t\tNullable = %p",
                 statement,
                 column_number,
                 column_name,

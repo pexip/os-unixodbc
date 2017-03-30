@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLGetEnvAttr.c,v 1.5 2008/09/29 14:02:45 lurcher Exp $
+ * $Id: SQLGetEnvAttr.c,v 1.6 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLGetEnvAttr.c,v $
+ * Revision 1.6  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.5  2008/09/29 14:02:45  lurcher
  * Fix missing dlfcn group option
  *
@@ -105,9 +108,10 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
-static char const rcsid[]= "$RCSfile: SQLGetEnvAttr.c,v $ $Revision: 1.5 $";
+static char const rcsid[]= "$RCSfile: SQLGetEnvAttr.c,v $ $Revision: 1.6 $";
 
 SQLRETURN SQLGetEnvAttr( SQLHENV environment_handle,
            SQLINTEGER attribute,
@@ -138,11 +142,11 @@ SQLRETURN SQLGetEnvAttr( SQLHENV environment_handle,
     if ( log_info.log_flag )
     {
         sprintf( environment -> msg, "\n\t\tEntry:\
-            \n\t\t\tEnvironment = %p\
-            \n\t\t\tAttribute = %s\
-            \n\t\t\tValue = %p\
-            \n\t\t\tBuffer Len = %d\
-            \n\t\t\tStrLen = %p",
+\n\t\t\tEnvironment = %p\
+\n\t\t\tAttribute = %s\
+\n\t\t\tValue = %p\
+\n\t\t\tBuffer Len = %d\
+\n\t\t\tStrLen = %p",
                 environment,
                 __env_attr_as_string( s1, attribute ),
                 value, 

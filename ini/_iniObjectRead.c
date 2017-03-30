@@ -11,6 +11,7 @@
  * Peter Harvey		- pharvey@codebydesign.com
  **************************************************/
 
+#include <config.h>
 #include "ini.h"
 
 int _iniObjectRead( HINI hIni, char *szLine, char *pszObjectName )

@@ -10,6 +10,7 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "driver.h"
 
 SQLRETURN  SQLBindParameter( SQLHSTMT           hDrvStmt,
@@ -30,7 +31,8 @@ SQLRETURN  SQLBindParameter( SQLHSTMT           hDrvStmt,
     if( NULL == hStmt )
         return SQL_INVALID_HANDLE;
 
-	sprintf((char*) hStmt->szSqlMsg, "hStmt=$%08lX nParameterNumber=%d nIOType=%d nBufferType=%d nParamType=%d nParamLength=%d nScale=%d pData=$%08lX nBufferLength=%d *pnLengthOrIndicator=$%08lX",hStmt,nParameterNumber,nIOType,nBufferType,nParamType,nParamLength,nScale,pData,nBufferLength, *pnLengthOrIndicator );
+	sprintf((char*) hStmt->szSqlMsg, "hStmt=$%08lX nParameterNumber=%d nIOType=%d nBufferType=%d nParamType=%d nParamLength=%ld nScale=%d pData=$%08lX nBufferLength=%ld *pnLengthOrIndicator=$%08lX",(long) hStmt,nParameterNumber,nIOType,nBufferType,nParamType,(long) nParamLength,nScale,(long) pData,(long) nBufferLength, *pnLengthOrIndicator );
+
     logPushMsg( hStmt->hLog, __FILE__, __FILE__, __LINE__, LOG_WARNING, LOG_WARNING,(char*) hStmt->szSqlMsg );
 
     /************************

@@ -941,7 +941,7 @@ int lobj_fd, retval;
 			strcpy(tmp, setlocale(LC_ALL, NULL));
 			setlocale(LC_ALL, "C");
 #endif
-			sprintf(param_string, "%f", 
+			sprintf(param_string, "%g", 
 				 *((SDOUBLE *) buffer));
 #ifdef HAVE_LOCALE_H
 			setlocale(LC_ALL, tmp);
@@ -953,7 +953,7 @@ int lobj_fd, retval;
 			strcpy(tmp, setlocale(LC_ALL, NULL));
 			setlocale(LC_ALL, "C");
 #endif
-			sprintf(param_string, "%f", 
+			sprintf(param_string, "%g", 
 				 *((SFLOAT *) buffer));
 #ifdef HAVE_LOCALE_H
 			setlocale(LC_ALL, tmp);

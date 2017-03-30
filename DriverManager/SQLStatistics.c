@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLStatistics.c,v 1.7 2005/02/07 14:17:07 lurcher Exp $
+ * $Id: SQLStatistics.c,v 1.8 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLStatistics.c,v $
+ * Revision 1.8  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.7  2005/02/07 14:17:07  lurcher
  * Fix small typo in SQLStatistics
  *
@@ -123,9 +126,10 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
-static char const rcsid[]= "$RCSfile: SQLStatistics.c,v $ $Revision: 1.7 $";
+static char const rcsid[]= "$RCSfile: SQLStatistics.c,v $ $Revision: 1.8 $";
 
 SQLRETURN SQLStatisticsA( SQLHSTMT statement_handle,
            SQLCHAR *catalog_name,
@@ -182,12 +186,12 @@ SQLRETURN SQLStatistics( SQLHSTMT statement_handle,
     if ( log_info.log_flag )
     {
         sprintf( statement -> msg, "\n\t\tEntry:\
-            \n\t\t\tStatement = %p\
-            \n\t\t\tCatalog Name = %s\
-            \n\t\t\tSchema Name = %s\
-            \n\t\t\tTable Name = %s\
-            \n\t\t\tUnique = %d\
-            \n\t\t\tReserved = %d",
+\n\t\t\tStatement = %p\
+\n\t\t\tCatalog Name = %s\
+\n\t\t\tSchema Name = %s\
+\n\t\t\tTable Name = %s\
+\n\t\t\tUnique = %d\
+\n\t\t\tReserved = %d",
                 statement,
                 __string_with_length( s1, catalog_name, name_length1 ), 
                 __string_with_length( s2, schema_name, name_length2 ), 
@@ -314,9 +318,37 @@ SQLRETURN SQLStatistics( SQLHSTMT statement_handle,
         }
     }
 
-    /*
-     * TO_DO Check the SQL_ATTR_METADATA_ID settings
-     */
+    if ( table_name == NULL ) 
+    {
+        dm_log_write( __FILE__, 
+                __LINE__, 
+                LOG_INFO, 
+                LOG_INFO, 
+                "Error: HY009" );
+
+        __post_internal_error( &statement -> error,
+                ERROR_HY009, NULL,
+                statement -> connection -> environment -> requested_version );
+
+        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+    }
+
+    if ( statement -> metadata_id == SQL_TRUE ) {
+        if ( schema_name == NULL ) 
+        {
+            dm_log_write( __FILE__, 
+                    __LINE__, 
+                    LOG_INFO, 
+                    LOG_INFO, 
+                    "Error: HY009" );
+    
+            __post_internal_error( &statement -> error,
+                    ERROR_HY009, NULL,
+                    statement -> connection -> environment -> requested_version );
+    
+            return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+        }
+    }
 
     if ( statement -> connection -> unicode_driver )
     {

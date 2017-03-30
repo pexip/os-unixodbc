@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLGetCursorName.c,v 1.7 2008/09/29 14:02:45 lurcher Exp $
+ * $Id: SQLGetCursorName.c,v 1.8 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLGetCursorName.c,v $
+ * Revision 1.8  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.7  2008/09/29 14:02:45  lurcher
  * Fix missing dlfcn group option
  *
@@ -123,9 +126,10 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
-static char const rcsid[]= "$RCSfile: SQLGetCursorName.c,v $ $Revision: 1.7 $";
+static char const rcsid[]= "$RCSfile: SQLGetCursorName.c,v $ $Revision: 1.8 $";
 
 SQLRETURN SQLGetCursorNameA( SQLHSTMT statement_handle,
            SQLCHAR *cursor_name,
@@ -167,10 +171,10 @@ SQLRETURN SQLGetCursorName( SQLHSTMT statement_handle,
     if ( log_info.log_flag )
     {
         sprintf( statement -> msg, "\n\t\tEntry:\
-            \n\t\t\tStatement = %p\
-            \n\t\t\tCursor Name = %p\
-            \n\t\t\tBuffer Length = %d\
-            \n\t\t\tName Length= %p",
+\n\t\t\tStatement = %p\
+\n\t\t\tCursor Name = %p\
+\n\t\t\tBuffer Length = %d\
+\n\t\t\tName Length= %p",
                 statement,
                 cursor_name,
                 buffer_length, 

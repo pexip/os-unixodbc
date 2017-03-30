@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,15 @@
  *
  **********************************************************************
  *
- * $Id: SQLBrowseConnect.c,v 1.13 2007/10/19 10:14:05 lurcher Exp $
+ * $Id: SQLBrowseConnect.c,v 1.15 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLBrowseConnect.c,v $
+ * Revision 1.15  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
+ * Revision 1.14  2009/02/17 09:47:44  lurcher
+ * Clear up a number of bugs
+ *
  * Revision 1.13  2007/10/19 10:14:05  lurcher
  * Pull errors from SQLBrowseConnect when it returns SQL_NEED_DATA
  *
@@ -165,9 +171,10 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
-static char const rcsid[]= "$RCSfile: SQLBrowseConnect.c,v $ $Revision: 1.13 $";
+static char const rcsid[]= "$RCSfile: SQLBrowseConnect.c,v $ $Revision: 1.15 $";
 
 #define BUFFER_LEN      4095
 
@@ -262,7 +269,7 @@ SQLRETURN SQLBrowseConnect(
                 ERROR_08002, NULL, 
                 connection -> environment -> requested_version );
 
-        return function_return( -1, connection, SQL_ERROR );
+        return function_return( IGNORE_THREAD, connection, SQL_ERROR );
     }
 
     thread_protect( SQL_HANDLE_DBC, connection );
@@ -476,7 +483,6 @@ SQLRETURN SQLBrowseConnect(
         SQLSMALLINT ind;
         SQLCHAR message_text[ SQL_MAX_MESSAGE_LENGTH + 1 ];
         SQLRETURN eret;
-        char buf[ 128 ];
 
         /*
          * get the error from the driver before
@@ -566,7 +572,7 @@ SQLRETURN SQLBrowseConnect(
 
         if( ret == SQL_SUCCESS_WITH_INFO )
         {
-            function_return_ex( SQL_HANDLE_DBC, connection, ret, TRUE );
+            function_return_ex( IGNORE_THREAD, connection, ret, TRUE );
         }
 
         if ( !__connect_part_two( connection ))

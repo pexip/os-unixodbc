@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,15 @@
  *
  **********************************************************************
  *
- * $Id: SQLDriversW.c,v 1.10 2008/09/29 14:02:45 lurcher Exp $
+ * $Id: SQLDriversW.c,v 1.12 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLDriversW.c,v $
+ * Revision 1.12  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
+ * Revision 1.11  2009/02/17 09:47:44  lurcher
+ * Clear up a number of bugs
+ *
  * Revision 1.10  2008/09/29 14:02:45  lurcher
  * Fix missing dlfcn group option
  *
@@ -98,6 +104,7 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
 static char const rcsid[]= "$RCSfile: SQLDriversW.c,v $";
@@ -136,8 +143,8 @@ SQLRETURN SQLDriversW(
     if ( log_info.log_flag )
     {
         sprintf( environment -> msg, "\n\t\tEntry:\
-            \n\t\t\tEnvironment = %p\
-            \n\t\t\tDirection = %d",
+\n\t\t\tEnvironment = %p\
+\n\t\t\tDirection = %d",
                 environment,
                 (int)fdirection );
 
@@ -149,6 +156,25 @@ SQLRETURN SQLDriversW(
     }
 
     thread_protect( SQL_HANDLE_ENV, environment );
+
+    /*
+     * check that a version has been requested
+     */
+
+    if ( environment -> requested_version == 0 )
+    {
+        dm_log_write( __FILE__, 
+                __LINE__, 
+                LOG_INFO, 
+                LOG_INFO, 
+                "Error: HY090" );
+
+        __post_internal_error( &environment -> error,
+                ERROR_HY010, NULL,
+                environment -> requested_version );
+
+        return function_return( SQL_HANDLE_ENV, environment, SQL_ERROR );
+    }
 
     if ( cb_driver_desc_max < 0 )
     {
@@ -165,10 +191,6 @@ SQLRETURN SQLDriversW(
         return function_return( SQL_HANDLE_ENV, environment, SQL_ERROR );
     }
 
-    /*
-     * the DataManager fails if this is in
-     *
-     *
     if ( cb_drvr_attr_max < 0
             || cb_drvr_attr_max == 1 )
     {
@@ -180,26 +202,6 @@ SQLRETURN SQLDriversW(
 
         __post_internal_error( &environment -> error,
                 ERROR_HY090, NULL,
-                environment -> requested_version );
-
-        return function_return( SQL_HANDLE_ENV, environment, SQL_ERROR );
-    }
-     */
-
-    /*
-     * check that a version has been requested
-     */
-
-    if ( environment -> requested_version == 0 )
-    {
-        dm_log_write( __FILE__, 
-                __LINE__, 
-                LOG_INFO, 
-                LOG_INFO, 
-                "Error: HY090" );
-
-        __post_internal_error( &environment -> error,
-                ERROR_HY010, NULL,
                 environment -> requested_version );
 
         return function_return( SQL_HANDLE_ENV, environment, SQL_ERROR );
@@ -279,14 +281,13 @@ try_again:
         }
         else
         {
-            ret = SQL_SUCCESS_WITH_INFO;
+            ret = SQL_SUCCESS;
         }
 
 		if ( sz_driver_attributes ||
                 pcb_drvr_attr )
 		{
             HINI hIni;
-            int string_length = 0;
             char szPropertyName[INI_MAX_PROPERTY_NAME+1];
             char szValue[INI_MAX_PROPERTY_NAME+1];
             char szIniName[ INI_MAX_OBJECT_NAME + 1 ];
@@ -298,7 +299,7 @@ try_again:
              * enumerate the driver attributes
              */
 
-            sprintf( szIniName, "%s/odbcinst.ini", odbcinst_system_file_path( b1 ), odbcinst_system_file_name( b2 ));
+            sprintf( szIniName, "%s/%s", odbcinst_system_file_path( b1 ), odbcinst_system_file_name( b2 ));
 
 			memset( buffer, '\0', sizeof( buffer ));
 #ifdef __OS2__
@@ -309,9 +310,6 @@ try_again:
                     INI_SUCCESS )
 #endif
             {
-                char pRetBuffer[ 256 ];
-                int nRetBuffer;
-
                 iniObjectSeek( hIni, (char *)object );
                 iniPropertyFirst( hIni );
                 while ( iniPropertyEOL( hIni ) != TRUE )

@@ -14,7 +14,7 @@
  *	Portions Copyright (c) 1994, Regents of the University of California
  *
  * IDENTIFICATION
- *	  $Header: /cvsroot/unixodbc/unixODBC/Drivers/Postgre7.1/md5.c,v 1.1 2004/11/22 14:44:13 lurcher Exp $
+ *	  $Header: /cvsroot/unixodbc/unixODBC/Drivers/Postgre7.1/md5.c,v 1.2 2009/02/18 17:59:16 lurcher Exp $
  */
 
 
@@ -26,6 +26,10 @@
  *	can be compiled stand-alone.
  */
  
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "md5.h"
 
 #undef palloc

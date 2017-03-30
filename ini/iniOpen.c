@@ -16,6 +16,7 @@
  *					before calling iniCommit.
  **************************************************/
 
+#include <config.h>
 #include "ini.h"
 
 /*
@@ -141,7 +142,6 @@ int uo_fprintf( FILE *stream, const char *fmt, ...)
     int r;
     va_list ap;
 
-
     va_start(ap, fmt);
 
     r = uo_vfprintf(stream,fmt,ap);
@@ -234,7 +234,7 @@ int iniOpen( HINI *hIni, char *pszFileName, char *cComment, char cLeftBracket, c
             if ( bCreate == TRUE )
             {
                 if ( (*hIni)->iniFileType == 0 )
-                    hFile = uo_fopen( pszFileName, "w" );
+                    hFile = uo_fopen( pszFileName, "w+" );
                 else
                     hFile = (FILE *)iniOS2Open( pszFileName);
             }
@@ -400,11 +400,12 @@ int iniOpen( HINI *hIni, char *pszFileName, char *cComment, char cLeftBracket, c
         {
             /*
              * This could fail because of something other than the file not existing...
+             * so open as w+ just in case
              */
 
             if ( bCreate == TRUE )
             {
-                hFile = uo_fopen( pszFileName, "w" );
+                hFile = uo_fopen( pszFileName, "w+" );
             }
         }
 

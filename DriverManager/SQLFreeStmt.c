@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLFreeStmt.c,v 1.5 2003/10/30 18:20:45 lurcher Exp $
+ * $Id: SQLFreeStmt.c,v 1.6 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLFreeStmt.c,v $
+ * Revision 1.6  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.5  2003/10/30 18:20:45  lurcher
  *
  * Fix broken thread protection
@@ -101,9 +104,10 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
-static char const rcsid[]= "$RCSfile: SQLFreeStmt.c,v $ $Revision: 1.5 $";
+static char const rcsid[]= "$RCSfile: SQLFreeStmt.c,v $ $Revision: 1.6 $";
 
 SQLRETURN SQLFreeStmt( SQLHSTMT statement_handle,
            SQLUSMALLINT option )
@@ -131,8 +135,8 @@ SQLRETURN SQLFreeStmt( SQLHSTMT statement_handle,
     if ( log_info.log_flag )
     {
         sprintf( statement -> msg, "\n\t\tEntry:\
-            \n\t\t\tStatement = %p\
-            \n\t\t\tOption = %d",
+\n\t\t\tStatement = %p\
+\n\t\t\tOption = %d",
                 statement,
                 option );
 
@@ -144,6 +148,28 @@ SQLRETURN SQLFreeStmt( SQLHSTMT statement_handle,
     }
 
     thread_protect( SQL_HANDLE_STMT, statement );
+
+    switch ( option )
+    {
+      case SQL_CLOSE:
+      case SQL_DROP:
+      case SQL_RESET_PARAMS:
+      case SQL_UNBIND:
+        break;
+
+      default:
+        dm_log_write( __FILE__, 
+                __LINE__, 
+                LOG_INFO, 
+                LOG_INFO, 
+                "Error: HY092" );
+
+        __post_internal_error( &statement -> error,
+                ERROR_HY092, NULL,
+                statement -> connection -> environment -> requested_version );
+
+        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+    }
 
     if (  statement -> state == STATE_S8 ||
         statement -> state == STATE_S9 ||
@@ -178,6 +204,10 @@ SQLRETURN SQLFreeStmt( SQLHSTMT statement_handle,
 
         return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
+
+    /*
+     * option has already been checked and found valid
+     */
 
     switch ( option )
     {
@@ -221,19 +251,6 @@ SQLRETURN SQLFreeStmt( SQLHSTMT statement_handle,
          * TO_DO reset any information about parameters or bound columns
          */
         break;
-
-      default:
-        dm_log_write( __FILE__, 
-                __LINE__, 
-                LOG_INFO, 
-                LOG_INFO, 
-                "Error: HY092" );
-
-        __post_internal_error( &statement -> error,
-                ERROR_HY092, NULL,
-                statement -> connection -> environment -> requested_version );
-
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
 
     if ( log_info.log_flag )

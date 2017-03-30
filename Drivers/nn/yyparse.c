@@ -73,7 +73,8 @@
 static	char	sccsid[]
 	= "@(#)SQL parser for NNSQL(NetNews SQL), Copyright(c) 1995, 1996 by Ke Jin";
 
-#include	<config.h>
+#include <config.h>
+#include	<nnconfig.h>
 
 #include	<nncol.h>
 #include	<yyenv.h>

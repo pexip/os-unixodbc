@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,15 @@
  *
  **********************************************************************
  *
- * $Id: SQLSetPos.c,v 1.4 2003/10/30 18:20:46 lurcher Exp $
+ * $Id: SQLSetPos.c,v 1.6 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLSetPos.c,v $
+ * Revision 1.6  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
+ * Revision 1.5  2009/02/17 09:47:44  lurcher
+ * Clear up a number of bugs
+ *
  * Revision 1.4  2003/10/30 18:20:46  lurcher
  *
  * Fix broken thread protection
@@ -109,9 +115,10 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
-static char const rcsid[]= "$RCSfile: SQLSetPos.c,v $ $Revision: 1.4 $";
+static char const rcsid[]= "$RCSfile: SQLSetPos.c,v $ $Revision: 1.6 $";
 
 SQLRETURN SQLSetPos(
     SQLHSTMT           statement_handle,
@@ -143,12 +150,12 @@ SQLRETURN SQLSetPos(
     if ( log_info.log_flag )
     {
         sprintf( statement -> msg, "\n\t\tEntry:\
-            \n\t\t\tStatement = %p\
-            \n\t\t\tIrow = %d\
-            \n\t\t\tFoption = %d\
-            \n\t\t\tFlock = %d",
+\n\t\t\tStatement = %p\
+\n\t\t\tIrow = %ld\
+\n\t\t\tFoption = %d\
+\n\t\t\tFlock = %d",
                 statement,
-                irow,
+                (long int)irow,
                 foption,
                 flock );
 

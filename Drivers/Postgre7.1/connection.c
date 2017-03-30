@@ -13,6 +13,7 @@
  *
  */
 
+#include <config.h>
 #include "environ.h"
 #include "connection.h"
 #include "socket.h"

@@ -1,10 +1,6 @@
 lib_LTLIBRARIES = libodbcinst.la
 
 INCLUDES = -I@top_srcdir@/include \
-	-DSYSTEM_FILE_PATH=\"@sysconfdir@\" \
-	-DDEFLIB_PATH=\"@libdir@\" \
-	-DSHLIBEXT=\"@SHLIBEXT@\" \
-	-DUNIXODBC_SOURCE \
 	$(LTDLINCL)
 
 EXTRA_DIST = \
@@ -20,20 +16,13 @@ libodbcinst_la_LIBADD = \
 	../ini/libinilc.la \
 	../log/libloglc.la \
 	../lst/liblstlc.la \
-	$(LIBLTDL) $(LIBADD_DL) 
+	$(LIBLTDL) 
 
-if WITHLT
 libodbcinst_la_DEPENDENCIES = \
     ../log/libloglc.la \
     ../ini/libinilc.la \
     ../lst/liblstlc.la \
-    $(LIBLTDL) 
-else
-libodbcinst_la_DEPENDENCIES = \
-    ../log/libloglc.la \
-    ../ini/libinilc.la \
-    ../lst/liblstlc.la
-endif
+    $(LTDLDEPS) 
 
 sysconf_DATA=
 
@@ -75,7 +64,8 @@ libodbcinst_la_SOURCES = \
 	_odbcinst_GetSections.c \
 	_odbcinst_GetEntries.c \
 	_SQLGetInstalledDrivers.c \
-	_SQLWriteInstalledDrivers.c
+	_SQLWriteInstalledDrivers.c \
+	_SQLDriverConnectPrompt.c
 
 libodbcinstlc_la_LDFLAGS =
 
@@ -118,4 +108,5 @@ libodbcinstlc_la_SOURCES = \
 	_odbcinst_GetSections.c \
 	_odbcinst_GetEntries.c \
 	_SQLGetInstalledDrivers.c \
-	_SQLWriteInstalledDrivers.c
+	_SQLWriteInstalledDrivers.c \
+	_SQLDriverConnectPrompt.c

@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLParamOptions.c,v 1.5 2005/11/23 08:29:16 lurcher Exp $
+ * $Id: SQLParamOptions.c,v 1.6 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLParamOptions.c,v $
+ * Revision 1.6  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.5  2005/11/23 08:29:16  lurcher
  * Add cleanup in postgres driver
  *
@@ -116,9 +119,10 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
-static char const rcsid[]= "$RCSfile: SQLParamOptions.c,v $ $Revision: 1.5 $";
+static char const rcsid[]= "$RCSfile: SQLParamOptions.c,v $ $Revision: 1.6 $";
 
 /*
  * This one is strictly ODBC 2
@@ -153,9 +157,9 @@ SQLRETURN SQLParamOptions(
     if ( log_info.log_flag )
     {
         sprintf( statement -> msg, "\n\t\tEntry:\
-            \n\t\t\tStatement = %p\
-            \n\t\t\tCrow = %d\
-            \n\t\t\tPirow = %p",
+\n\t\t\tStatement = %p\
+\n\t\t\tCrow = %d\
+\n\t\t\tPirow = %p",
                 statement,
                 (int)crow,
                 (void*)pirow );

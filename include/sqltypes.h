@@ -20,10 +20,10 @@
 #define __SQLTYPES_H
 
 /****************************
- * default to the 3.51 definitions. should define ODBCVER before here if you want an older set of defines
+ * default to the 3.80 definitions. should define ODBCVER before here if you want an older set of defines
  ***************************/
 #ifndef ODBCVER
-#define ODBCVER	0x0351
+#define ODBCVER	0x0380
 #endif
 
 /*
@@ -49,7 +49,7 @@ extern "C" {
  */
 
 #ifndef SIZEOF_LONG_INT
-#include <unixodbc_conf.h>
+#include "unixodbc_conf.h"
 #endif
 
 #ifndef SIZEOF_LONG_INT
@@ -69,7 +69,9 @@ extern "C" {
 #define SQL_API
 #endif
 #define	BOOL				int
+#ifndef _WINDOWS_
 typedef void*				HWND;
+#endif
 typedef char				CHAR;
 #ifdef UNICODE
 
@@ -87,10 +89,6 @@ typedef signed short        TCHAR;
 
 #else
 typedef char				TCHAR;
-#endif
-
-#ifndef DONT_TD_VOID
-typedef void				VOID;
 #endif
 
 typedef unsigned short		WORD;
@@ -114,7 +112,9 @@ typedef TCHAR*              LPTSTR;
 typedef char*               LPSTR;
 typedef DWORD*           	LPDWORD;
 
+#ifndef _WINDOWS_
 typedef void*               HINSTANCE;
+#endif
 
 #endif
 
@@ -371,10 +371,14 @@ typedef struct tagSQL_INTERVAL_STRUCT
 # if (SIZEOF_LONG_INT == 8)
 #   define ODBCINT64	    long
 #   define UODBCINT64	unsigned long
+#   define ODBCINT64_TYPE	    "long"
+#   define UODBCINT64_TYPE	"unsigned long"
 # else
 #  ifdef HAVE_LONG_LONG
 #   define ODBCINT64	    long long
 #   define UODBCINT64	unsigned long long
+#   define ODBCINT64_TYPE	    "long long"
+#   define UODBCINT64_TYPE	"unsigned long long"
 #  else
 /*
  * may fail in some cases, but what else can we do ?
@@ -391,6 +395,8 @@ struct __bigint_struct_u
 };
 #   define ODBCINT64	    struct __bigint_struct
 #   define UODBCINT64	struct __bigint_struct_u
+#   define ODBCINT64_TYPE	    "struct __bigint_struct"
+#   define UODBCINT64_TYPE	"struct __bigint_struct_u"
 #  endif
 # endif
 #endif

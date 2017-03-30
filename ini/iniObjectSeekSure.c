@@ -14,6 +14,7 @@
  * PAH	06.MAR.99	Added this func
  **************************************************/
 
+#include <config.h>
 #include "ini.h"
 
 int iniObjectSeekSure( HINI hIni, char *pszObject )

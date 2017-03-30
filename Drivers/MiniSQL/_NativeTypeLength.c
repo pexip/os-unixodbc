@@ -9,6 +9,7 @@
  * -----------------------------------------------
  * Peter Harvey		- pharvey@codebydesign.com
  **************************************************/
+#include <config.h>
 #include "driver.h"
 
 int _NativeTypeLength( void *pNativeColumnHeader )

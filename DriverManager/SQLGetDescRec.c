@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLGetDescRec.c,v 1.12 2008/09/29 14:02:45 lurcher Exp $
+ * $Id: SQLGetDescRec.c,v 1.13 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLGetDescRec.c,v $
+ * Revision 1.13  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.12  2008/09/29 14:02:45  lurcher
  * Fix missing dlfcn group option
  *
@@ -148,9 +151,10 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
-static char const rcsid[]= "$RCSfile: SQLGetDescRec.c,v $ $Revision: 1.12 $";
+static char const rcsid[]= "$RCSfile: SQLGetDescRec.c,v $ $Revision: 1.13 $";
 
 SQLRETURN SQLGetDescRecA( SQLHDESC descriptor_handle,
            SQLSMALLINT rec_number, 
@@ -222,17 +226,17 @@ SQLRETURN SQLGetDescRec( SQLHDESC descriptor_handle,
     if ( log_info.log_flag )
     {
         sprintf( descriptor -> msg, "\n\t\tEntry:\
-            \n\t\t\tDescriptor = %p\
-            \n\t\t\tRec Number = %d\
-            \n\t\t\tName = %p\
-            \n\t\t\tBuffer length = %d\
-            \n\t\t\tString Length = %p\
-            \n\t\t\tType = %p\
-            \n\t\t\tSub Type = %p\
-            \n\t\t\tLength = %p\
-            \n\t\t\tPrecision = %p\
-            \n\t\t\tScale = %p\
-            \n\t\t\tNullable = %p",
+\n\t\t\tDescriptor = %p\
+\n\t\t\tRec Number = %d\
+\n\t\t\tName = %p\
+\n\t\t\tBuffer length = %d\
+\n\t\t\tString Length = %p\
+\n\t\t\tType = %p\
+\n\t\t\tSub Type = %p\
+\n\t\t\tLength = %p\
+\n\t\t\tPrecision = %p\
+\n\t\t\tScale = %p\
+\n\t\t\tNullable = %p",
                 descriptor,
                 rec_number,
                 name,
@@ -264,6 +268,44 @@ SQLRETURN SQLGetDescRec( SQLHDESC descriptor_handle,
 
         __post_internal_error( &descriptor -> error,
                 ERROR_HY010, NULL,
+                descriptor -> connection -> environment -> requested_version );
+
+        return function_return( SQL_HANDLE_DESC, descriptor, SQL_ERROR );
+    }
+
+    /*
+     * check status of statements associated with this descriptor
+     */
+
+    if( __check_stmt_from_desc( descriptor, STATE_S8 ) ||
+        __check_stmt_from_desc( descriptor, STATE_S9 ) ||
+        __check_stmt_from_desc( descriptor, STATE_S10 ) ||
+        __check_stmt_from_desc( descriptor, STATE_S11 ) ||
+        __check_stmt_from_desc( descriptor, STATE_S12 )) {
+
+        dm_log_write( __FILE__, 
+                __LINE__, 
+                LOG_INFO, 
+                LOG_INFO, 
+                "Error: HY010" );
+
+        __post_internal_error( &descriptor -> error,
+                ERROR_HY010, NULL,
+                descriptor -> connection -> environment -> requested_version );
+
+        return function_return( SQL_HANDLE_DESC, descriptor, SQL_ERROR );
+    }
+
+    if( __check_stmt_from_desc_ird( descriptor, STATE_S1 )) {
+
+        dm_log_write( __FILE__, 
+                __LINE__, 
+                LOG_INFO, 
+                LOG_INFO, 
+                "Error: HY007" );
+
+        __post_internal_error( &descriptor -> error,
+                ERROR_HY007, NULL,
                 descriptor -> connection -> environment -> requested_version );
 
         return function_return( SQL_HANDLE_DESC, descriptor, SQL_ERROR );
@@ -354,13 +396,13 @@ SQLRETURN SQLGetDescRec( SQLHDESC descriptor_handle,
     {
         sprintf( descriptor -> msg, 
                 "\n\t\tExit:[%s]\
-                \n\t\t\tName = %s\
-                \n\t\t\tType = %s\
-                \n\t\t\tSub Type = %s\
-                \n\t\t\tLength = %s\
-                \n\t\t\tPrecision = %s\
-                \n\t\t\tScale = %s\
-                \n\t\t\tNullable = %s",
+\n\t\t\tName = %s\
+\n\t\t\tType = %s\
+\n\t\t\tSub Type = %s\
+\n\t\t\tLength = %s\
+\n\t\t\tPrecision = %s\
+\n\t\t\tScale = %s\
+\n\t\t\tNullable = %s",
                     __get_return_status( ret, s8 ),
                     __sdata_as_string( s1, SQL_CHAR, 
                         string_length, name ),

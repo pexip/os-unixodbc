@@ -10,6 +10,7 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "driver.h"
 
 SQLRETURN SQLConnect(	SQLHDBC        hDrvDbc,
@@ -31,7 +32,7 @@ SQLRETURN SQLConnect(	SQLHDBC        hDrvDbc,
     if( SQL_NULL_HDBC == hDbc )
 		return SQL_INVALID_HANDLE;
 
-	sprintf((char*) hDbc->szSqlMsg, "hDbc=$%08lX 3zDataSource=(%s)", hDbc, szDataSource );
+	sprintf((char*) hDbc->szSqlMsg, "hDbc=$%08lX 3zDataSource=(%s)", (long)hDbc, szDataSource );
 	logPushMsg( hDbc->hLog, __FILE__, __FILE__, __LINE__, LOG_WARNING, LOG_WARNING,(char*) hDbc->szSqlMsg );
 
     if( hDbc->bConnected == 1 )

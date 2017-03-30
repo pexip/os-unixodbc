@@ -8,6 +8,7 @@
  * -----------------------------------------------
  * Peter Harvey		- pharvey@codebydesign.com
  **************************************************/
+#include <config.h>
 #include <odbcinstext.h>
 
 #define SQL_MAX_DSN_LENGTH 32

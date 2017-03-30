@@ -3,7 +3,7 @@
  * unixODBC Cursor Library
  *
  * Created by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * copyright (c) 1999 Nick Gorham
  *
@@ -23,9 +23,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLConnect.c,v 1.6 2007/02/12 11:49:35 lurcher Exp $
+ * $Id: SQLConnect.c,v 1.7 2009/02/18 17:59:17 lurcher Exp $
  *
  * $Log: SQLConnect.c,v $
+ * Revision 1.7  2009/02/18 17:59:17  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.6  2007/02/12 11:49:35  lurcher
  * Add QT4 support to existing GUI parts
  *
@@ -78,6 +81,7 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "cursorlibrary.h"
 
 static struct driver_func  cl_template_func[] =

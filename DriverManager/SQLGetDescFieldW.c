@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLGetDescFieldW.c,v 1.8 2008/08/29 08:01:39 lurcher Exp $
+ * $Id: SQLGetDescFieldW.c,v 1.9 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLGetDescFieldW.c,v $
+ * Revision 1.9  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.8  2008/08/29 08:01:39  lurcher
  * Alter the way W functions are passed to the driver
  *
@@ -82,6 +85,7 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
 static char const rcsid[]= "$RCSfile: SQLGetDescFieldW.c,v $";
@@ -156,12 +160,12 @@ SQLRETURN SQLGetDescFieldW( SQLHDESC descriptor_handle,
     if ( log_info.log_flag )
     {
         sprintf( descriptor -> msg, "\n\t\tEntry:\
-            \n\t\t\tDescriptor = %p\
-            \n\t\t\tRec Number = %d\
-            \n\t\t\tField Attr = %s\
-            \n\t\t\tValue = %p\
-            \n\t\t\tBuffer Length = %d\
-            \n\t\t\tStrLen = %p",
+\n\t\t\tDescriptor = %p\
+\n\t\t\tRec Number = %d\
+\n\t\t\tField Attr = %s\
+\n\t\t\tValue = %p\
+\n\t\t\tBuffer Length = %d\
+\n\t\t\tStrLen = %p",
                 descriptor,
                 rec_number,
                 __desc_attr_as_string( s1, field_identifier ),
@@ -192,6 +196,45 @@ SQLRETURN SQLGetDescFieldW( SQLHDESC descriptor_handle,
 
         return function_return( SQL_HANDLE_DESC, descriptor, SQL_ERROR );
     }
+
+    /*
+     * check status of statements associated with this descriptor
+     */
+
+    if( __check_stmt_from_desc( descriptor, STATE_S8 ) ||
+        __check_stmt_from_desc( descriptor, STATE_S9 ) ||
+        __check_stmt_from_desc( descriptor, STATE_S10 ) ||
+        __check_stmt_from_desc( descriptor, STATE_S11 ) ||
+        __check_stmt_from_desc( descriptor, STATE_S12 )) {
+
+        dm_log_write( __FILE__, 
+                __LINE__, 
+                LOG_INFO, 
+                LOG_INFO, 
+                "Error: HY010" );
+
+        __post_internal_error( &descriptor -> error,
+                ERROR_HY010, NULL,
+                descriptor -> connection -> environment -> requested_version );
+
+        return function_return( SQL_HANDLE_DESC, descriptor, SQL_ERROR );
+    }
+
+    if( __check_stmt_from_desc_ird( descriptor, STATE_S1 )) {
+
+        dm_log_write( __FILE__, 
+                __LINE__, 
+                LOG_INFO, 
+                LOG_INFO, 
+                "Error: HY007" );
+
+        __post_internal_error( &descriptor -> error,
+                ERROR_HY007, NULL,
+                descriptor -> connection -> environment -> requested_version );
+
+        return function_return( SQL_HANDLE_DESC, descriptor, SQL_ERROR );
+    }
+
 
     if ( descriptor -> connection -> unicode_driver ||
 		    CHECK_SQLGETDESCFIELDW( descriptor -> connection ))

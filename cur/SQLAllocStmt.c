@@ -3,7 +3,7 @@
  * unixODBC Cursor Library
  *
  * Created by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * copyright (c) 1999 Nick Gorham
  *
@@ -23,9 +23,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLAllocStmt.c,v 1.2 2002/11/19 18:52:28 lurcher Exp $
+ * $Id: SQLAllocStmt.c,v 1.3 2009/02/18 17:59:17 lurcher Exp $
  *
  * $Log: SQLAllocStmt.c,v $
+ * Revision 1.3  2009/02/18 17:59:17  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.2  2002/11/19 18:52:28  lurcher
  *
  * Alter the cursor lib to not require linking to the driver manager.
@@ -54,6 +57,7 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "cursorlibrary.h"
 
 SQLRETURN CLAllocStmt( SQLHDBC connection_handle,

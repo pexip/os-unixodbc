@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLSetDescRec.c,v 1.3 2003/10/30 18:20:46 lurcher Exp $
+ * $Id: SQLSetDescRec.c,v 1.4 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLSetDescRec.c,v $
+ * Revision 1.4  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.3  2003/10/30 18:20:46  lurcher
  *
  * Fix broken thread protection
@@ -91,9 +94,10 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
-static char const rcsid[]= "$RCSfile: SQLSetDescRec.c,v $ $Revision: 1.3 $";
+static char const rcsid[]= "$RCSfile: SQLSetDescRec.c,v $ $Revision: 1.4 $";
 
 SQLRETURN SQLSetDescRec( SQLHDESC descriptor_handle,
            SQLSMALLINT rec_number, 
@@ -137,6 +141,29 @@ SQLRETURN SQLSetDescRec( SQLHDESC descriptor_handle,
 
     if ( descriptor -> connection -> state < STATE_C4 )
     {
+        dm_log_write( __FILE__, 
+                __LINE__, 
+                LOG_INFO, 
+                LOG_INFO, 
+                "Error: HY010" );
+
+        __post_internal_error( &descriptor -> error,
+                ERROR_HY010, NULL,
+                descriptor -> connection -> environment -> requested_version );
+
+        return function_return( SQL_HANDLE_DESC, descriptor, SQL_ERROR );
+    }
+
+    /*
+     * check status of statements associated with this descriptor
+     */
+
+    if( __check_stmt_from_desc( descriptor, STATE_S8 ) ||
+        __check_stmt_from_desc( descriptor, STATE_S9 ) ||
+        __check_stmt_from_desc( descriptor, STATE_S10 ) ||
+        __check_stmt_from_desc( descriptor, STATE_S11 ) ||
+        __check_stmt_from_desc( descriptor, STATE_S12 )) {
+
         dm_log_write( __FILE__, 
                 __LINE__, 
                 LOG_INFO, 

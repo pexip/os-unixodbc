@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLSpecialColumnsW.c,v 1.8 2008/08/29 08:01:39 lurcher Exp $
+ * $Id: SQLSpecialColumnsW.c,v 1.9 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLSpecialColumnsW.c,v $
+ * Revision 1.9  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.8  2008/08/29 08:01:39  lurcher
  * Alter the way W functions are passed to the driver
  *
@@ -79,6 +82,7 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
 static char const rcsid[]= "$RCSfile: SQLSpecialColumnsW.c,v $";
@@ -154,13 +158,13 @@ SQLRETURN SQLSpecialColumnsW( SQLHSTMT statement_handle,
     if ( log_info.log_flag )
     {
         sprintf( statement -> msg, "\n\t\tEntry:\
-            \n\t\t\tStatement = %p\
-            \n\t\t\tIdentifier Type = %d\
-            \n\t\t\tCatalog Name = %s\
-            \n\t\t\tSchema Name = %s\
-            \n\t\t\tTable Name = %s\
-            \n\t\t\tScope = %d\
-            \n\t\t\tNullable = %d",
+\n\t\t\tStatement = %p\
+\n\t\t\tIdentifier Type = %d\
+\n\t\t\tCatalog Name = %s\
+\n\t\t\tSchema Name = %s\
+\n\t\t\tTable Name = %s\
+\n\t\t\tScope = %d\
+\n\t\t\tNullable = %d",
                 statement,
                 identifier_type,
                 __wstring_with_length( s1, catalog_name, name_length1 ), 

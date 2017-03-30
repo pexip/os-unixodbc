@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLPutData.c,v 1.4 2003/10/30 18:20:46 lurcher Exp $
+ * $Id: SQLPutData.c,v 1.5 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLPutData.c,v $
+ * Revision 1.5  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.4  2003/10/30 18:20:46  lurcher
  *
  * Fix broken thread protection
@@ -101,9 +104,10 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
-static char const rcsid[]= "$RCSfile: SQLPutData.c,v $ $Revision: 1.4 $";
+static char const rcsid[]= "$RCSfile: SQLPutData.c,v $ $Revision: 1.5 $";
 
 SQLRETURN SQLPutData( SQLHSTMT statement_handle,
            SQLPOINTER data,
@@ -133,9 +137,9 @@ SQLRETURN SQLPutData( SQLHSTMT statement_handle,
     if ( log_info.log_flag )
     {
         sprintf( statement -> msg, "\n\t\tEntry:\
-            \n\t\t\tStatement = %p\
-            \n\t\t\tData = %p\
-            \n\t\t\tStrLen = %d",
+\n\t\t\tStatement = %p\
+\n\t\t\tData = %p\
+\n\t\t\tStrLen = %d",
                 statement,
                 data,
                 (int)strlen_or_ind );
@@ -215,6 +219,21 @@ SQLRETURN SQLPutData( SQLHSTMT statement_handle,
         }
     }
 
+    if ( data == NULL && strlen_or_ind != 0 && strlen_or_ind != SQL_DEFAULT_PARAM && strlen_or_ind != SQL_NULL_DATA ) 
+    {
+        dm_log_write( __FILE__, 
+                __LINE__, 
+                LOG_INFO, 
+                LOG_INFO, 
+                "Error: HY010" );
+
+        __post_internal_error( &statement -> error,
+                ERROR_HY009, NULL,
+                statement -> connection -> environment -> requested_version );
+
+        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+    }
+
     if ( !CHECK_SQLPUTDATA( statement -> connection ))
     {
         dm_log_write( __FILE__, 
@@ -276,6 +295,7 @@ SQLRETURN SQLPutData( SQLHSTMT statement_handle,
         else
         {
             statement -> state = STATE_S6;
+            statement -> eod = 0;
         }
     }
 

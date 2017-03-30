@@ -15,7 +15,7 @@
 #ifndef _H_DRIVER
 #define _H_DRIVER
 
-#include "config.h"
+#include "nnconfig.h"
 #include "isql.h"
 #include "isqlext.h"
 #include "convert.h"

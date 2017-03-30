@@ -8,6 +8,7 @@
  * -----------------------------------------------
  * Peter Harvey		- pharvey@codebydesign.com
  **************************************************/
+#include <config.h>
 #include <odbcinstext.h>
 
 BOOL SQLRemoveTranslator(		LPCSTR	pszTranslator,

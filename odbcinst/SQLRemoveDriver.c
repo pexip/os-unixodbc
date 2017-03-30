@@ -8,6 +8,7 @@
  * -----------------------------------------------
  * Peter Harvey		- pharvey@codebydesign.com
  **************************************************/
+#include <config.h>
 #include <odbcinstext.h>
 
 BOOL SQLRemoveDriver(			LPCSTR	pszDriver,
@@ -15,9 +16,7 @@ BOOL SQLRemoveDriver(			LPCSTR	pszDriver,
 								LPDWORD	pnUsageCount )
 {
 	HINI	hODBCInstIni;
-	HINI	hODBCIni;
 	char	szValue[INI_MAX_PROPERTY_VALUE+1];
-	char	szODBCFile[ODBC_FILENAME_MAX+1];
     char    szIniName[ INI_MAX_OBJECT_NAME + 1 ];
 	char	b1[ 256 ], b2[ 256 ];
 
@@ -87,7 +86,7 @@ BOOL SQLRemoveDriver(			LPCSTR	pszDriver,
 		{
 			if ( iniPropertySeek( hODBCInstIni, (char *)pszDriver, "UsageCount", "" ) == INI_SUCCESS )
 			{
-				sprintf( szValue, "%d", (*pnUsageCount) );
+				sprintf( szValue, "%ld", (long int)(*pnUsageCount) );
 				iniPropertyUpdate( hODBCInstIni, "UsageCount", szValue );
 			}
 			else

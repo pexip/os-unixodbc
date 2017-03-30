@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLExtendedFetch.c,v 1.5 2007/11/29 12:00:30 lurcher Exp $
+ * $Id: SQLExtendedFetch.c,v 1.6 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLExtendedFetch.c,v $
+ * Revision 1.6  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.5  2007/11/29 12:00:30  lurcher
  * Add 64 bit type changes to SQLExtendedFetch etc
  *
@@ -112,9 +115,10 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
-static char const rcsid[]= "$RCSfile: SQLExtendedFetch.c,v $ $Revision: 1.5 $";
+static char const rcsid[]= "$RCSfile: SQLExtendedFetch.c,v $ $Revision: 1.6 $";
 
 SQLRETURN SQLExtendedFetch(
     SQLHSTMT           statement_handle,
@@ -147,11 +151,11 @@ SQLRETURN SQLExtendedFetch(
     if ( log_info.log_flag )
     {
         sprintf( statement -> msg, "\n\t\tEntry:\
-            \n\t\t\tStatement = %p\
-            \n\t\t\tFetch Type = %d\
-            \n\t\t\tRow = %d\
-            \n\t\t\tPcRow = %p\
-            \n\t\t\tRow Status = %p",
+\n\t\t\tStatement = %p\
+\n\t\t\tFetch Type = %d\
+\n\t\t\tRow = %d\
+\n\t\t\tPcRow = %p\
+\n\t\t\tRow Status = %p",
                 statement,
                 f_fetch_type,
                 (int)irow,

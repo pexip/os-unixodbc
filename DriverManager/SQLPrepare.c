@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLPrepare.c,v 1.6 2005/03/04 14:38:08 lurcher Exp $
+ * $Id: SQLPrepare.c,v 1.7 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLPrepare.c,v $
+ * Revision 1.7  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.6  2005/03/04 14:38:08  lurcher
  * Bump version number
  *
@@ -122,9 +125,10 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
-static char const rcsid[]= "$RCSfile: SQLPrepare.c,v $ $Revision: 1.6 $";
+static char const rcsid[]= "$RCSfile: SQLPrepare.c,v $ $Revision: 1.7 $";
 
 SQLRETURN SQLPrepareA( SQLHSTMT statement_handle,
            SQLCHAR *statement_text,
@@ -181,8 +185,8 @@ SQLRETURN SQLPrepare( SQLHSTMT statement_handle,
         }
 
         sprintf( statement -> msg, "\n\t\tEntry:\
-            \n\t\t\tStatement = %p\
-            \n\t\t\tSQL = %s",
+\n\t\t\tStatement = %p\
+\n\t\t\tSQL = %s",
                 statement,
                 __string_with_length( s1, statement_text, text_length ));
 

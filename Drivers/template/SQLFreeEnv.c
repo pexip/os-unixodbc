@@ -13,6 +13,7 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "driver.h"
 
 SQLRETURN _FreeEnv( SQLHENV hDrvEnv )
@@ -23,7 +24,7 @@ SQLRETURN _FreeEnv( SQLHENV hDrvEnv )
     if( hEnv == SQL_NULL_HENV )
         return SQL_INVALID_HANDLE;
 
-	sprintf((char*) hEnv->szSqlMsg, "hEnv = $%08lX", hEnv );
+	sprintf((char*) hEnv->szSqlMsg, "hEnv = $%08lX", (long)hEnv );
     logPushMsg( hEnv->hLog, __FILE__, __FILE__, __LINE__, LOG_WARNING, LOG_WARNING,(char*) hEnv->szSqlMsg );
 
 	if ( hEnv->hFirstDbc != NULL )
