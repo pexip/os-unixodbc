@@ -13,6 +13,7 @@
  * -----------------------------------------------
  * Peter Harvey		- pharvey@codebydesign.com
  **************************************************/
+#include <config.h>
 #include <odbcinstext.h>
 
 BOOL SQLInstallDriverManager(	LPSTR	pszPath,

@@ -10,6 +10,7 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "driver.h"
 
 SQLRETURN _AllocEnv( SQLHENV *phDrvEnv )
@@ -37,7 +38,7 @@ SQLRETURN _AllocEnv( SQLHENV *phDrvEnv )
     (*phEnv)->hLog 		= NULL;
 
 	/* start logging		*/
-    if ( !logOpen( &(*phEnv)->hLog, DRIVER_NAME, NULL, 50 ) )
+    if ( !logOpen( &(*phEnv)->hLog, SQL_DRIVER_NAME, NULL, 50 ) )
 		(*phEnv)->hLog = NULL;
 	logOn( (*phEnv)->hLog, 1 );
 

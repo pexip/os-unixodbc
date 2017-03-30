@@ -1,13 +1,21 @@
 #ifndef _DRIVERMANAGER_H
 #define _DRIVERMANAGER_H
 
-#define ODBCVER 0x0351
+#define ODBCVER 0x0380
 
+#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
+#endif
+#ifdef HAVE_PWD_H
 #include <pwd.h>
+#endif
 #include <ltdl.h>
+#ifdef HAVE_STRING_H
 #include <string.h>
+#endif
+#ifdef HAVE_TIME_H
 #include <time.h>
+#endif
 
 #ifdef HAVE_SYNCH_H
 #include <synch.h>
@@ -272,8 +280,15 @@ typedef struct environment
     int             fetch_mode;         /* for SQLDataSources */
     int             entry;
     void            *sh;                /* statistics handle */
+    int             driver_act_ver;     /* real version of the driver */
     struct env_lib_struct *env_lib_list;/* use this to avoid multiple AllocEnv in the driver */
 } *DMHENV;
+
+
+#ifdef FAST_HANDLE_VALIDATE
+    struct statement;
+#endif
+
 
 /*
  * connection pooling attributes
@@ -283,10 +298,15 @@ typedef struct connection
 {
     int             type;               /* magic number */
     struct connection *next_class_list; /* static list of all dbc handles */
-    char            msg[ LOG_MSG_MAX ];	/* buff to format msgs */
+    char            msg[ LOG_MSG_MAX ]; /* buff to format msgs */
     int             state;              /* state of connection */
-    DMHENV          environment;         /* environment that own's the
+    DMHENV          environment;        /* environment that own's the
                                            connection */
+#ifdef FAST_HANDLE_VALIDATE
+    struct statement *statements;       /* List of statements owned by this 
+                                           connection */
+#endif
+    
     void            *dl_handle;         /* handle of the loaded lib */
     char            dl_name[ 256 ];     /* name of loaded lib */
     struct driver_func *functions;      /* entry points */
@@ -393,12 +413,18 @@ typedef struct descriptor
 {
     int             type;               /* magic number */
     struct descriptor *next_class_list; /* static list of all desc handles */
-    char            msg[ LOG_MSG_MAX ];	/* buff to format msgs */
+    char            msg[ LOG_MSG_MAX ]; /* buff to format msgs */
     int             state;              /* state of descriptor */
+
+#ifdef FAST_HANDLE_VALIDATE
+    struct descriptor *prev_class_list;/* static list of all desc handles */
+#endif    
+
     EHEAD           error;              /* keep track of errors */
     DRV_SQLHDESC    driver_desc;        /* driver descriptor */
     DMHDBC          connection;         /* DM connection that owns this */
     int             implicit;           /* created by a AllocStmt */
+    void            *associated_with;   /* statement that this is a descriptor of */
 #ifdef HAVE_LIBPTH
     pth_mutex_t     mutex;              /* protect the object */
 #elif HAVE_LIBPTHREAD
@@ -411,9 +437,14 @@ typedef struct descriptor
 typedef struct statement
 {
     int             type;               /* magic number */
-    struct statement *next_class_list; /* static list of all stmt handles */
-    char            msg[ LOG_MSG_MAX ];	/* buff to format msgs */
+    struct statement *next_class_list;  /* static list of all stmt handles */
+    char            msg[ LOG_MSG_MAX ]; /* buff to format msgs */
     int             state;              /* state of statement */
+#ifdef FAST_HANDLE_VALIDATE
+    struct statement *prev_class_list;  /* static list of all stmt handles */
+    struct statement *next_conn_list;   /* Single linked list storing statements 
+                                           owned by "connection" connection */
+#endif
     DMHDBC          connection;         /* DM connection that owns this */
     DRV_SQLHANDLE   driver_stmt;        /* statement in the driver */
     SQLSMALLINT     hascols;            /* is there a result set */
@@ -433,10 +464,10 @@ typedef struct statement
     DMHDESC         implicit_apd;
     DMHDESC         implicit_ird;
     DMHDESC         implicit_ard;
-    SQLUINTEGER     *fetch_bm_ptr;      /* Saved for ODBC3 to ODBC2 mapping */ 
-    SQLUINTEGER     *row_ct_ptr;        /* row count ptr */
+    SQLULEN		    *fetch_bm_ptr;      /* Saved for ODBC3 to ODBC2 mapping */ 
+    SQLULEN     	*row_ct_ptr;        /* row count ptr */
     SQLUSMALLINT    *row_st_arr;        /* row status array */
-    SQLUINTEGER     row_array_size;
+    SQLULEN     	row_array_size;
 	SQLPOINTER      valueptr;           /* Default buffer for SQLParamData() */
 
 #ifdef HAVE_LIBPTH
@@ -445,7 +476,10 @@ typedef struct statement
     pthread_mutex_t mutex;              /* protect the object */
 #elif HAVE_LIBTHREAD
     mutex_t mutex;              		/* protect the object */
+
 #endif
+
+    int             eod;                /* when in S6 has EOD been returned */
 } *DMHSTMT;
 
 #if defined ( HAVE_LIBPTHREAD ) || defined ( HAVE_LIBTHREAD ) || defined ( HAVE_LIBPTH )
@@ -491,6 +525,8 @@ int __validate_dbc( DMHDBC );
 void __release_dbc( DMHDBC connection );
 
 DMHSTMT __alloc_stmt( void );
+void __register_stmt ( DMHDBC connection, DMHSTMT statement );
+void __set_stmt_state ( DMHDBC connection, SQLSMALLINT cb_value );
 int __validate_stmt( DMHSTMT );
 void __release_stmt( DMHSTMT );
 
@@ -523,7 +559,6 @@ void __disconnect_part_two( DMHDBC connection );
 void __disconnect_part_three( DMHDBC connection );
 void __disconnect_part_four( DMHDBC connection );
 DMHDBC __get_dbc_root( void );
-DMHSTMT __get_stmt_root( void );
 
 void  __check_for_function( DMHDBC connection,
         SQLUSMALLINT function_id,
@@ -572,6 +607,7 @@ typedef enum error_id
     ERROR_HY001,
     ERROR_HY003,
     ERROR_HY004,
+    ERROR_HY007,
     ERROR_HY009,
     ERROR_HY010,
     ERROR_HY011,
@@ -602,7 +638,8 @@ typedef enum error_id
     ERROR_SL004,
     ERROR_SL009,
     ERROR_SL010,
-    ERROR_SL008
+    ERROR_SL008,
+    ERROR_HY000
 } error_id;
 
 #define IGNORE_THREAD       (-1)
@@ -663,6 +700,8 @@ char * __data_as_string( SQLCHAR *s, SQLINTEGER type,
         SQLLEN *ptr, SQLPOINTER buf );
 char * __sdata_as_string( SQLCHAR *s, SQLINTEGER type, 
         SQLSMALLINT *ptr, SQLPOINTER buf );
+char * __idata_as_string( SQLCHAR *s, SQLINTEGER type, 
+        SQLINTEGER *ptr, SQLPOINTER buf );
 char * __col_attr_as_string( SQLCHAR *s, SQLINTEGER type );
 char * __fid_as_string( SQLCHAR *s, SQLINTEGER fid );
 char * __con_attr_as_string( SQLCHAR *s, SQLINTEGER type );
@@ -674,6 +713,11 @@ char * __type_as_string( SQLCHAR *s, SQLSMALLINT type );
 DMHDBC __get_connection( EHEAD * head );
 DRV_SQLHANDLE __get_driver_handle( EHEAD * head );
 int __get_version( EHEAD * head );
+int dm_check_connection_attrs( DMHDBC connection, SQLINTEGER attribute, SQLPOINTER value );
+int dm_check_statement_attrs( DMHSTMT statement, SQLINTEGER attribute, SQLPOINTER value );
+int __check_stmt_from_dbc( DMHDBC connection, int state );
+int __check_stmt_from_desc( DMHDESC desc, int state );
+int __check_stmt_from_desc_ird( DMHDESC desc, int state );
 
 /* 
  * These are passed to the cursor lib as helper functions
@@ -758,6 +802,7 @@ void __release_conn( struct con_struct *con_str );
 void __get_attr( char ** cp, char ** keyword, char ** value );
 struct con_pair * __get_pair( char ** cp );
 int __append_pair( struct con_struct *con_str, char *kword, char *value );
+void __handle_attr_extensions_cs( DMHDBC connection, struct con_struct *con_str );
 
 /*
  * the following two are part of a effort to get a particular unicode driver working
@@ -1389,5 +1434,11 @@ void return_to_pool( DMHDBC connection );
 #define SQLGETDIAGRECW(con,typ,han,rn,st,nat,msg,bl,tlp)\
                                     (con->functions[77].funcW)\
                                         (typ,han,rn,st,nat,msg,bl,tlp)
+
+#define DM_SQLCANCELHANDLE          78
+#define CHECK_SQLCANCELHANDLE(con)  (con->functions[78].func!=NULL)
+#define SQLCANCELHANDLE(con,typ,han)\
+                                    (con->functions[78].func)\
+                                        (typ,han)
 
 #endif

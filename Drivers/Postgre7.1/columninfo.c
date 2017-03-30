@@ -12,6 +12,7 @@
  *
  */
 
+#include <config.h>
 #include "columninfo.h"
 #include "connection.h"
 #include "socket.h"

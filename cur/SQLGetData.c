@@ -3,7 +3,7 @@
  * unixODBC Cursor Library
  *
  * Created by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * copyright (c) 1999 Nick Gorham
  *
@@ -23,9 +23,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLGetData.c,v 1.11 2008/01/02 15:10:33 lurcher Exp $
+ * $Id: SQLGetData.c,v 1.12 2009/02/18 17:59:17 lurcher Exp $
  *
  * $Log: SQLGetData.c,v $
+ * Revision 1.12  2009/02/18 17:59:17  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.11  2008/01/02 15:10:33  lurcher
  * Fix problems trying to use the cursor lib on a non select statement
  *
@@ -86,6 +89,7 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "cursorlibrary.h"
 
 SQLRETURN CLGetData( SQLHSTMT statement_handle,

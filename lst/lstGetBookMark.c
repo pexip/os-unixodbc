@@ -1,3 +1,4 @@
+#include <config.h>
 #include "lst.h"
 
 int lstGetBookMark( HLST hLst, HLSTBOOKMARK hLstBookMark )

@@ -10,6 +10,7 @@
  * Peter Harvey		- pharvey@codebydesign.com
  **************************************************/
 
+#include <config.h>
 #define UNICODE
 #include "isql.h"
 #include "ini.h"
@@ -24,6 +25,25 @@
         #include <locale.h>
     #endif 
 #endif
+
+static int OpenDatabase( SQLHENV *phEnv, SQLHDBC *phDbc, char *szDSN, char *szUID, char *szPWD );
+static int ExecuteSQL( SQLHDBC hDbc, char *szSQL, char cDelimiter, int bColumnNames, int bHTMLTable );
+static int ExecuteHelp( SQLHDBC hDbc, char *szSQL, char cDelimiter, int bColumnNames, int bHTMLTable );
+
+static void WriteHeaderHTMLTable( SQLHSTMT hStmt );
+static void WriteHeaderNormal( SQLHSTMT hStmt, SQLCHAR	*szSepLine );
+static void WriteHeaderDelimited( SQLHSTMT hStmt, char cDelimiter );
+static void WriteBodyHTMLTable( SQLHSTMT hStmt );
+static SQLLEN WriteBodyNormal( SQLHSTMT hStmt );
+static void WriteBodyDelimited( SQLHSTMT hStmt, char cDelimiter );
+static void WriteFooterHTMLTable( SQLHSTMT hStmt );
+static void WriteFooterNormal( SQLHSTMT hStmt, SQLCHAR	*szSepLine, SQLLEN nRows );
+
+static int DumpODBCLog( SQLHENV hEnv, SQLHDBC hDbc, SQLHSTMT hStmt );
+static int get_args(char *string, char **args, int maxarg);
+static void free_args(char **args, int maxarg);
+static void output_help(void);
+
 
 int     bVerbose                    = 0;
 SQLHENV hEnv                        = 0;
@@ -78,7 +98,7 @@ int main( int argc, char *argv[] )
 
     if ( argc < 2 )
     {
-        fprintf( stderr, szSyntax );
+        fputs( szSyntax, stderr );
         exit( 1 );
     }
 
@@ -135,7 +155,7 @@ int main( int argc, char *argv[] )
                     break;
 #endif
                 default:
-                    fprintf( stderr, szSyntax );
+                    fputs( szSyntax, stderr );
                     exit( 1 );
             }
             continue;
@@ -248,7 +268,7 @@ int main( int argc, char *argv[] )
 /****************************
  * OpenDatabase - do everything we have to do to get a viable connection to szDSN
  ***************************/
-int OpenDatabase( SQLHENV *phEnv, SQLHDBC *phDbc, char *szDSN, char *szUID, char *szPWD )
+static int OpenDatabase( SQLHENV *phEnv, SQLHDBC *phDbc, char *szDSN, char *szUID, char *szPWD )
 {
     SQLCHAR dsn[ 1024 ], uid[ 1024 ], pwd[ 1024 ];
     SQLTCHAR cstr[ 1024 ];
@@ -347,7 +367,7 @@ int OpenDatabase( SQLHENV *phEnv, SQLHDBC *phDbc, char *szDSN, char *szUID, char
  * ExecuteSQL - create a statement, execute the SQL, and get rid of the statement
  *            - show results as per request; bHTMLTable has precedence over other options
  ***************************/
-int ExecuteSQL( SQLHDBC hDbc, char *szSQL, char cDelimiter, int bColumnNames, int bHTMLTable )
+static int ExecuteSQL( SQLHDBC hDbc, char *szSQL, char cDelimiter, int bColumnNames, int bHTMLTable )
 {
     SQLHSTMT        hStmt;
     SQLTCHAR        szSepLine[32001];   
@@ -456,7 +476,7 @@ int ExecuteSQL( SQLHDBC hDbc, char *szSQL, char cDelimiter, int bColumnNames, in
  * ExecuteHelp - create a statement, execute the SQL, and get rid of the statement
  *             - show results as per request; bHTMLTable has precedence over other options
  ***************************/
-int ExecuteHelp( SQLHDBC hDbc, char *szSQL, char cDelimiter, int bColumnNames, int bHTMLTable )
+static int ExecuteHelp( SQLHDBC hDbc, char *szSQL, char cDelimiter, int bColumnNames, int bHTMLTable )
 {
     char            szTable[250]                        = "";
     SQLHSTMT        hStmt;
@@ -554,7 +574,7 @@ int CloseDatabase( SQLHENV hEnv, SQLHDBC hDbc )
 /****************************
  * WRITE HTML
  ***************************/
-void WriteHeaderHTMLTable( SQLHSTMT hStmt )
+static void WriteHeaderHTMLTable( SQLHSTMT hStmt )
 {
     SQLINTEGER      nCol                            = 0;
     SQLSMALLINT     nColumns                        = 0;
@@ -581,7 +601,7 @@ void WriteHeaderHTMLTable( SQLHSTMT hStmt )
     printf( "</tr>\n" );
 }
 
-void WriteBodyHTMLTable( SQLHSTMT hStmt )
+static void WriteBodyHTMLTable( SQLHSTMT hStmt )
 {
     SQLINTEGER      nCol                            = 0;
     SQLSMALLINT     nColumns                        = 0;
@@ -627,7 +647,7 @@ void WriteBodyHTMLTable( SQLHSTMT hStmt )
     }
 }
 
-void WriteFooterHTMLTable( SQLHSTMT hStmt )
+static void WriteFooterHTMLTable( SQLHSTMT hStmt )
 {
     printf( "</table>\n" );
 }
@@ -638,7 +658,7 @@ void WriteFooterHTMLTable( SQLHSTMT hStmt )
  * - last column no longer has a delimit char (it is implicit)...
  *   this is consistent with odbctxt
  ***************************/
-void WriteHeaderDelimited( SQLHSTMT hStmt, char cDelimiter )
+static void WriteHeaderDelimited( SQLHSTMT hStmt, char cDelimiter )
 {
     SQLINTEGER      nCol                            = 0;
     SQLSMALLINT     nColumns                        = 0;
@@ -659,7 +679,7 @@ void WriteHeaderDelimited( SQLHSTMT hStmt, char cDelimiter )
     putchar( '\n' );
 }
 
-void WriteBodyDelimited( SQLHSTMT hStmt, char cDelimiter )
+static void WriteBodyDelimited( SQLHSTMT hStmt, char cDelimiter )
 {
     SQLINTEGER      nCol                            = 0;
     SQLSMALLINT     nColumns                        = 0;
@@ -742,19 +762,18 @@ void UWriteHeaderNormal( SQLHSTMT hStmt, SQLTCHAR *szSepLine )
         strcat((char*) szSepLine,(char*) szColumn );
 
         /* HDR */
-        sprintf((char*) szColumn, "| %-*s", max( nMaxLength, strlen((char*)szColumnName) ), (char*)szColumnName );
+        sprintf((char*) szColumn, "| %-*s", (int)max( nMaxLength, strlen((char*)szColumnName) ), (char*)szColumnName );
         strcat((char*) szHdrLine,(char*) szColumn );
     }
     strcat((char*) szSepLine, "+\n" );
     strcat((char*) szHdrLine, "|\n" );
 
-    printf((char*) szSepLine );
-    printf((char*) szHdrLine );
-    printf((char*) szSepLine );
-
+    puts((char*) szSepLine );
+    puts((char*) szHdrLine );
+    puts((char*) szSepLine );
 }
 
-SQLLEN WriteBodyNormal( SQLHSTMT hStmt )
+static SQLLEN WriteBodyNormal( SQLHSTMT hStmt )
 {
     SQLINTEGER      nCol                            = 0;
     SQLSMALLINT     nColumns                        = 0;
@@ -817,7 +836,7 @@ SQLLEN WriteBodyNormal( SQLHSTMT hStmt )
             }
             else
             {
-                sprintf((char*)  szColumn, "| %-*s", max( nMaxLength, strlen((char*) szColumnName) ), "" );
+                sprintf((char*)  szColumn, "| %-*s", (int)max( nMaxLength, strlen((char*) szColumnName) ), "" );
             }
             fputs((char*)  szColumn, stdout );
         }
@@ -838,20 +857,20 @@ void UWriteFooterNormal( SQLHSTMT hStmt, SQLTCHAR   *szSepLine, SQLLEN nRows )
 {
     SQLLEN  nRowsAffected   = -1;
 
-    printf( (char*)szSepLine );
+    puts( (char*)szSepLine );
 
     SQLRowCount( hStmt, &nRowsAffected );
-    printf( "SQLRowCount returns %d\n", nRowsAffected );
+    printf( "SQLRowCount returns %ld\n", nRowsAffected );
 
     if ( nRows )
     {
-        printf( "%d rows fetched\n", nRows );
+        printf( "%ld rows fetched\n", nRows );
     }
 }
 
 
 
-int DumpODBCLog( SQLHENV hEnv, SQLHDBC hDbc, SQLHSTMT hStmt )
+static int DumpODBCLog( SQLHENV hEnv, SQLHDBC hDbc, SQLHSTMT hStmt )
 {
     SQLTCHAR        szError[501];
     SQLTCHAR        szSqlState[10];

@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLParamData.c,v 1.6 2007/05/25 16:42:32 lurcher Exp $
+ * $Id: SQLParamData.c,v 1.7 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLParamData.c,v $
+ * Revision 1.7  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.6  2007/05/25 16:42:32  lurcher
  * Sync up
  *
@@ -122,9 +125,10 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
-static char const rcsid[]= "$RCSfile: SQLParamData.c,v $ $Revision: 1.6 $";
+static char const rcsid[]= "$RCSfile: SQLParamData.c,v $ $Revision: 1.7 $";
 
 SQLRETURN SQLParamData( SQLHSTMT statement_handle,
            SQLPOINTER *value )
@@ -153,8 +157,8 @@ SQLRETURN SQLParamData( SQLHSTMT statement_handle,
     if ( log_info.log_flag )
     {
         sprintf( statement -> msg, "\n\t\tEntry:\
-            \n\t\t\tStatement = %p\
-            \n\t\t\tValue = %p",
+\n\t\t\tStatement = %p\
+\n\t\t\tValue = %p",
                 statement,
                 value );
 
@@ -264,7 +268,7 @@ SQLRETURN SQLParamData( SQLHSTMT statement_handle,
 
             if ( ret == SQL_SUCCESS_WITH_INFO )
             {
-                function_return_ex( SQL_HANDLE_STMT, statement, ret, TRUE );
+                function_return_ex( IGNORE_THREAD, statement, ret, TRUE );
             }
 
             local_ret = SQLNUMRESULTCOLS( statement -> connection,
@@ -294,6 +298,7 @@ SQLRETURN SQLParamData( SQLHSTMT statement_handle,
         else
         {
             statement -> state = STATE_S6;
+            statement -> eod = 0;
         }
     }
     else if ( ret == SQL_NEED_DATA )
@@ -335,6 +340,7 @@ SQLRETURN SQLParamData( SQLHSTMT statement_handle,
         else
         {
             statement -> state = STATE_S6;
+            statement -> eod = 0;
         }
     }
 
@@ -342,7 +348,7 @@ SQLRETURN SQLParamData( SQLHSTMT statement_handle,
     {
         sprintf( statement -> msg, 
                 "\n\t\tExit:[%s]\
-                \n\t\t\tValue = %p",
+\n\t\t\tValue = %p",
                     __get_return_status( ret, s1 ),
                     *value );
 

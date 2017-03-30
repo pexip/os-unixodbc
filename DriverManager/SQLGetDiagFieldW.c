@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,15 @@
  *
  **********************************************************************
  *
- * $Id: SQLGetDiagFieldW.c,v 1.8 2007/02/28 15:37:48 lurcher Exp $
+ * $Id: SQLGetDiagFieldW.c,v 1.10 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLGetDiagFieldW.c,v $
+ * Revision 1.10  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
+ * Revision 1.9  2009/02/04 09:30:02  lurcher
+ * Fix some SQLINTEGER/SQLLEN conflicts
+ *
  * Revision 1.8  2007/02/28 15:37:48  lurcher
  * deal with drivers that call internal W functions and end up in the driver manager. controlled by the --enable-handlemap configure arg
  *
@@ -85,6 +91,7 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
 static char const rcsid[]= "$RCSfile: SQLGetDiagFieldW.c,v $";
@@ -364,6 +371,10 @@ static SQLRETURN extract_sql_error_field_w( EHEAD *head,
             ptr = ptr -> next;
             rec_number --;
         }
+		if ( !ptr ) 
+		{
+			return SQL_NO_DATA;
+		}
     }
     else if ( rec_number <= head -> sql_diag_head.internal_count + 
             head -> sql_diag_head.error_count )
@@ -444,6 +455,11 @@ static SQLRETURN extract_sql_error_field_w( EHEAD *head,
                 ptr = ptr -> next;
                 rec_number --;
             }
+
+			if ( !ptr ) 
+			{
+	    		return SQL_NO_DATA;
+			}
         }
     }
     else
@@ -661,12 +677,12 @@ SQLRETURN SQLGetDiagFieldW( SQLSMALLINT handle_type,
         {
             sprintf( environment -> msg, 
                 "\n\t\tEntry:\
-                \n\t\t\tEnvironment = %p\
-                \n\t\t\tRec Number = %d\
-                \n\t\t\tDiag Ident = %d\
-                \n\t\t\tDiag Info Ptr = %p\
-                \n\t\t\tBuffer Length = %d\
-                \n\t\t\tString Len Ptr = %p",
+\n\t\t\tEnvironment = %p\
+\n\t\t\tRec Number = %d\
+\n\t\t\tDiag Ident = %d\
+\n\t\t\tDiag Info Ptr = %p\
+\n\t\t\tBuffer Length = %d\
+\n\t\t\tString Len Ptr = %p",
                     environment,
                     rec_number,
                     diag_identifier,
@@ -759,12 +775,12 @@ SQLRETURN SQLGetDiagFieldW( SQLSMALLINT handle_type,
         {
             sprintf( connection -> msg, 
                 "\n\t\tEntry:\
-                \n\t\t\tConnection = %p\
-                \n\t\t\tRec Number = %d\
-                \n\t\t\tDiag Ident = %d\
-                \n\t\t\tDiag Info Ptr = %p\
-                \n\t\t\tBuffer Length = %d\
-                \n\t\t\tString Len Ptr = %p",
+\n\t\t\tConnection = %p\
+\n\t\t\tRec Number = %d\
+\n\t\t\tDiag Ident = %d\
+\n\t\t\tDiag Info Ptr = %p\
+\n\t\t\tBuffer Length = %d\
+\n\t\t\tString Len Ptr = %p",
                     connection,
                     rec_number,
                     diag_identifier,
@@ -857,12 +873,12 @@ SQLRETURN SQLGetDiagFieldW( SQLSMALLINT handle_type,
         {
             sprintf( statement -> msg, 
                 "\n\t\tEntry:\
-                \n\t\t\tStatement = %p\
-                \n\t\t\tRec Number = %d\
-                \n\t\t\tDiag Ident = %d\
-                \n\t\t\tDiag Info Ptr = %p\
-                \n\t\t\tBuffer Length = %d\
-                \n\t\t\tString Len Ptr = %p",
+\n\t\t\tStatement = %p\
+\n\t\t\tRec Number = %d\
+\n\t\t\tDiag Ident = %d\
+\n\t\t\tDiag Info Ptr = %p\
+\n\t\t\tBuffer Length = %d\
+\n\t\t\tString Len Ptr = %p",
                     statement,
                     rec_number,
                     diag_identifier,
@@ -955,12 +971,12 @@ SQLRETURN SQLGetDiagFieldW( SQLSMALLINT handle_type,
         {
             sprintf( descriptor -> msg, 
                 "\n\t\tEntry:\
-                \n\t\t\tDescriptor = %p\
-                \n\t\t\tRec Number = %d\
-                \n\t\t\tDiag Ident = %d\
-                \n\t\t\tDiag Info Ptr = %p\
-                \n\t\t\tBuffer Length = %d\
-                \n\t\t\tString Len Ptr = %p",
+\n\t\t\tDescriptor = %p\
+\n\t\t\tRec Number = %d\
+\n\t\t\tDiag Ident = %d\
+\n\t\t\tDiag Info Ptr = %p\
+\n\t\t\tBuffer Length = %d\
+\n\t\t\tString Len Ptr = %p",
                     descriptor,
                     rec_number,
                     diag_identifier,

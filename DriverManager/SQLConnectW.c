@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLConnectW.c,v 1.14 2008/09/29 14:02:44 lurcher Exp $
+ * $Id: SQLConnectW.c,v 1.15 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLConnectW.c,v $
+ * Revision 1.15  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.14  2008/09/29 14:02:44  lurcher
  * Fix missing dlfcn group option
  *
@@ -112,6 +115,7 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
 static char const rcsid[]= "$RCSfile: SQLConnectW.c,v $";
@@ -186,10 +190,10 @@ SQLRETURN SQLConnectW( SQLHDBC connection_handle,
     if ( log_info.log_flag )
     {
         sprintf( connection -> msg, "\n\t\tEntry:\
-            \n\t\t\tConnection = %p\
-            \n\t\t\tServer Name = %s\
-            \n\t\t\tUser Name = %s\
-            \n\t\t\tAuthentication = %s",
+\n\t\t\tConnection = %p\
+\n\t\t\tServer Name = %s\
+\n\t\t\tUser Name = %s\
+\n\t\t\tAuthentication = %s",
                 connection,
                 __wstring_with_length( s1, server_name, name_length1 ),
                 __wstring_with_length( s2, user_name, name_length2 ),
@@ -283,7 +287,7 @@ SQLRETURN SQLConnectW( SQLHDBC connection_handle,
         memcpy( dsn, server_name, sizeof( dsn[ 0 ] ) * len );
         dsn[ len ] = (SQLWCHAR) 0;
     }
-    else if ( name_length1 && !server_name )
+    else if ( name_length1 > SQL_MAX_DSN_LENGTH )
     {
         dm_log_write( __FILE__,
                 __LINE__,

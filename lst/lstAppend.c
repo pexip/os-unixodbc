@@ -1,5 +1,5 @@
+#include <config.h>
 #include "lst.h"
-
 
 /*************************
  * lstAppend

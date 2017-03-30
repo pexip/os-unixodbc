@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLMoreResults.c,v 1.7 2006/03/08 09:18:41 lurcher Exp $
+ * $Id: SQLMoreResults.c,v 1.8 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLMoreResults.c,v $
+ * Revision 1.8  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.7  2006/03/08 09:18:41  lurcher
  * fix silly typo that was using sizeof( SQL_WCHAR ) instead of SQLWCHAR
  *
@@ -121,9 +124,10 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
-static char const rcsid[]= "$RCSfile: SQLMoreResults.c,v $ $Revision: 1.7 $";
+static char const rcsid[]= "$RCSfile: SQLMoreResults.c,v $ $Revision: 1.8 $";
 
 SQLRETURN SQLMoreResults( SQLHSTMT statement_handle )
 {
@@ -151,7 +155,7 @@ SQLRETURN SQLMoreResults( SQLHSTMT statement_handle )
     if ( log_info.log_flag )
     {
         sprintf( statement -> msg, "\n\t\tEntry:\
-            \n\t\t\tStatement = %p",
+\n\t\t\tStatement = %p",
                 statement );
 
         dm_log_write( __FILE__, 
@@ -249,7 +253,7 @@ SQLRETURN SQLMoreResults( SQLHSTMT statement_handle )
 
         if ( ret == SQL_SUCCESS_WITH_INFO )
         {
-            function_return_ex( SQL_HANDLE_STMT, statement, ret, TRUE );
+            function_return_ex( IGNORE_THREAD, statement, ret, TRUE );
         }
 
         SQLNUMRESULTCOLS( statement -> connection,

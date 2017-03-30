@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,18 @@
  *
  **********************************************************************
  *
- * $Id: SQLGetDiagField.c,v 1.14 2008/09/29 14:02:45 lurcher Exp $
+ * $Id: SQLGetDiagField.c,v 1.17 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLGetDiagField.c,v $
+ * Revision 1.17  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
+ * Revision 1.16  2009/02/17 09:47:44  lurcher
+ * Clear up a number of bugs
+ *
+ * Revision 1.15  2009/02/04 09:30:01  lurcher
+ * Fix some SQLINTEGER/SQLLEN conflicts
+ *
  * Revision 1.14  2008/09/29 14:02:45  lurcher
  * Fix missing dlfcn group option
  *
@@ -185,9 +194,10 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
-static char const rcsid[]= "$RCSfile: SQLGetDiagField.c,v $ $Revision: 1.14 $";
+static char const rcsid[]= "$RCSfile: SQLGetDiagField.c,v $ $Revision: 1.17 $";
 
 #define ODBC30_SUBCLASS        "01S00,01S01,01S02,01S06,01S07,07S01,08S01,21S01,\
 21S02,25S01,25S02,25S03,42S01,42S02,42S11,42S12,42S21,42S22,HY095,HY097,HY098,\
@@ -314,7 +324,7 @@ static SQLRETURN extract_sql_error_field( EHEAD *head,
             else if ( __get_connection( head ) -> unicode_driver &&
                 CHECK_SQLGETDIAGFIELDW( __get_connection( head )))
             {
-                SQLWCHAR *s1;
+                SQLWCHAR *s1 = NULL;
 
                 if ( buffer_length > 0 )
                 {
@@ -466,6 +476,10 @@ static SQLRETURN extract_sql_error_field( EHEAD *head,
             ptr = ptr -> next;
             rec_number --;
         }
+		if ( !ptr ) 
+		{
+			return SQL_NO_DATA;
+		}
     }
     else if ( !__is_env( head ) && __get_connection( head ) -> state != STATE_C2 )
     {
@@ -557,6 +571,10 @@ static SQLRETURN extract_sql_error_field( EHEAD *head,
                 ptr = ptr -> next;
                 rec_number --;
             }
+			if ( !ptr ) 
+			{
+	    		return SQL_NO_DATA;
+			}
         }
     }
     else 
@@ -801,12 +819,12 @@ SQLRETURN SQLGetDiagField( SQLSMALLINT handle_type,
         {
             sprintf( environment -> msg, 
                 "\n\t\tEntry:\
-                \n\t\t\tEnvironment = %p\
-                \n\t\t\tRec Number = %d\
-                \n\t\t\tDiag Ident = %d\
-                \n\t\t\tDiag Info Ptr = %p\
-                \n\t\t\tBuffer Length = %d\
-                \n\t\t\tString Len Ptr = %p",
+\n\t\t\tEnvironment = %p\
+\n\t\t\tRec Number = %d\
+\n\t\t\tDiag Ident = %d\
+\n\t\t\tDiag Info Ptr = %p\
+\n\t\t\tBuffer Length = %d\
+\n\t\t\tString Len Ptr = %p",
                     environment,
                     rec_number,
                     diag_identifier,
@@ -860,12 +878,12 @@ SQLRETURN SQLGetDiagField( SQLSMALLINT handle_type,
         {
             sprintf( connection -> msg, 
                 "\n\t\tEntry:\
-                \n\t\t\tConnection = %p\
-                \n\t\t\tRec Number = %d\
-                \n\t\t\tDiag Ident = %d\
-                \n\t\t\tDiag Info Ptr = %p\
-                \n\t\t\tBuffer Length = %d\
-                \n\t\t\tString Len Ptr = %p",
+\n\t\t\tConnection = %p\
+\n\t\t\tRec Number = %d\
+\n\t\t\tDiag Ident = %d\
+\n\t\t\tDiag Info Ptr = %p\
+\n\t\t\tBuffer Length = %d\
+\n\t\t\tString Len Ptr = %p",
                     connection,
                     rec_number,
                     diag_identifier,
@@ -919,12 +937,12 @@ SQLRETURN SQLGetDiagField( SQLSMALLINT handle_type,
         {
             sprintf( statement -> msg, 
                 "\n\t\tEntry:\
-                \n\t\t\tStatement = %p\
-                \n\t\t\tRec Number = %d\
-                \n\t\t\tDiag Ident = %d\
-                \n\t\t\tDiag Info Ptr = %p\
-                \n\t\t\tBuffer Length = %d\
-                \n\t\t\tString Len Ptr = %p",
+\n\t\t\tStatement = %p\
+\n\t\t\tRec Number = %d\
+\n\t\t\tDiag Ident = %d\
+\n\t\t\tDiag Info Ptr = %p\
+\n\t\t\tBuffer Length = %d\
+\n\t\t\tString Len Ptr = %p",
                     statement,
                     rec_number,
                     diag_identifier,
@@ -978,12 +996,12 @@ SQLRETURN SQLGetDiagField( SQLSMALLINT handle_type,
         {
             sprintf( descriptor -> msg, 
                 "\n\t\tEntry:\
-                \n\t\t\tDescriptor = %p\
-                \n\t\t\tRec Number = %d\
-                \n\t\t\tDiag Ident = %d\
-                \n\t\t\tDiag Info Ptr = %p\
-                \n\t\t\tBuffer Length = %d\
-                \n\t\t\tString Len Ptr = %p",
+\n\t\t\tDescriptor = %p\
+\n\t\t\tRec Number = %d\
+\n\t\t\tDiag Ident = %d\
+\n\t\t\tDiag Info Ptr = %p\
+\n\t\t\tBuffer Length = %d\
+\n\t\t\tString Len Ptr = %p",
                     descriptor,
                     rec_number,
                     diag_identifier,

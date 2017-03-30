@@ -62,4 +62,5 @@ odbcinst_user_file_name
 _odbcinst_SystemINI
 _odbcinst_UserINI
 _odbcinst_FileINI
+_SQLDriverConnectPrompt
 inst_logPushMsg

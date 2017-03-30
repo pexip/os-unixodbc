@@ -1,6 +1,6 @@
 lib_LTLIBRARIES = libodbcpsql.la
 
-INCLUDES = -I@top_srcdir@/include
+INCLUDES = -I@top_srcdir@/include $(LTDLINCL)
 
 libodbcpsql_la_LDFLAGS = \
 	-version-info 2:0:0 \
@@ -9,8 +9,6 @@ libodbcpsql_la_LDFLAGS = \
 	-export-dynamic \
 	-export-symbols @srcdir@/driver.exp
 	-module
-
-DEFS = -DUNIXODBC @DEFS@
 
 EXTRA_DIST = \
 	bind.h \
@@ -40,7 +38,7 @@ libodbcpsql_la_LIBADD = \
 	../../log/libloglc.la \
 	../../ini/libinilc.la \
 	../../odbcinst/libodbcinstlc.la \
-	$(LIBLTDL) $(LIBADD_DL) \
+	$(LIBLTDL) \
     $(LIBADD_CRYPT) $(LIBADD_POW)
 
 libodbcpsql_la_DEPENDENCIES = \
@@ -48,7 +46,8 @@ libodbcpsql_la_DEPENDENCIES = \
 	../../log/libloglc.la \
 	../../ini/libinilc.la \
 	../../odbcinst/libodbcinstlc.la \
-    ../../extras/libodbcextraslc.la
+    ../../extras/libodbcextraslc.la \
+    $(LTDLDEPS)
 
 libodbcpsql_la_SOURCES = \
 	bind.c \

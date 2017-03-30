@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLCloseCursor.c,v 1.4 2003/10/30 18:20:45 lurcher Exp $
+ * $Id: SQLCloseCursor.c,v 1.5 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLCloseCursor.c,v $
+ * Revision 1.5  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.4  2003/10/30 18:20:45  lurcher
  *
  * Fix broken thread protection
@@ -98,9 +101,10 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
-static char const rcsid[]= "$RCSfile: SQLCloseCursor.c,v $ $Revision: 1.4 $";
+static char const rcsid[]= "$RCSfile: SQLCloseCursor.c,v $ $Revision: 1.5 $";
 
 SQLRETURN SQLCloseCursor( SQLHSTMT statement_handle )
 {
@@ -128,7 +132,7 @@ SQLRETURN SQLCloseCursor( SQLHSTMT statement_handle )
     if ( log_info.log_flag )
     {
         sprintf( statement -> msg, "\n\t\tEntry:\
-            \n\t\t\tStatement = %p",
+\n\t\t\tStatement = %p",
                 statement );
 
         dm_log_write( __FILE__, 

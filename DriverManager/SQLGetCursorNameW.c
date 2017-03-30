@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLGetCursorNameW.c,v 1.8 2008/08/29 08:01:39 lurcher Exp $
+ * $Id: SQLGetCursorNameW.c,v 1.9 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLGetCursorNameW.c,v $
+ * Revision 1.9  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.8  2008/08/29 08:01:39  lurcher
  * Alter the way W functions are passed to the driver
  *
@@ -87,6 +90,7 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
 static char const rcsid[]= "$RCSfile: SQLGetCursorNameW.c,v $";
@@ -150,10 +154,10 @@ SQLRETURN SQLGetCursorNameW( SQLHSTMT statement_handle,
     if ( log_info.log_flag )
     {
         sprintf( statement -> msg, "\n\t\tEntry:\
-            \n\t\t\tStatement = %p\
-            \n\t\t\tCursor Name = %p\
-            \n\t\t\tBuffer Length = %d\
-            \n\t\t\tName Length= %p",
+\n\t\t\tStatement = %p\
+\n\t\t\tCursor Name = %p\
+\n\t\t\tBuffer Length = %d\
+\n\t\t\tName Length= %p",
                 statement,
                 cursor_name,
                 buffer_length, 

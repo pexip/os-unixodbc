@@ -6,6 +6,7 @@
  * Martin Kittel <debian @ martin-kittel.de>, 08.05.2005
  * -----------------------------------------------
  **************************************************/
+#include <config.h>
 #include <odbcinstext.h>
 
 static const char *aHost[] =

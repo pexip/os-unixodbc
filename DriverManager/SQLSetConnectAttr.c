@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLSetConnectAttr.c,v 1.16 2006/04/11 10:22:56 lurcher Exp $
+ * $Id: SQLSetConnectAttr.c,v 1.17 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLSetConnectAttr.c,v $
+ * Revision 1.17  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.16  2006/04/11 10:22:56  lurcher
  * Fix a data type check
  *
@@ -204,9 +207,10 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
-static char const rcsid[]= "$RCSfile: SQLSetConnectAttr.c,v $ $Revision: 1.16 $";
+static char const rcsid[]= "$RCSfile: SQLSetConnectAttr.c,v $ $Revision: 1.17 $";
 
 SQLRETURN SQLSetConnectAttrA( SQLHDBC connection_handle,
            SQLINTEGER attribute,
@@ -233,6 +237,30 @@ SQLRETURN SQLSetConnectAttr( SQLHDBC connection_handle,
      */
     if ( attribute == SQL_ATTR_TRACE )
     {
+        if ((SQLLEN) value != SQL_OPT_TRACE_OFF && 
+            (SQLLEN) value != SQL_OPT_TRACE_ON ) 
+        {
+            if ( __validate_dbc( connection ))
+            {
+                thread_protect( SQL_HANDLE_DBC, connection );
+                dm_log_write( __FILE__, 
+                        __LINE__, 
+                        LOG_INFO, 
+                        LOG_INFO, 
+                        "Error: HY024" );
+        
+                __post_internal_error( &connection -> error,
+                    ERROR_HY024, NULL,
+                    connection -> environment -> requested_version );
+        
+                return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+            }
+            else 
+            {
+                return SQL_INVALID_HANDLE;
+            }
+        }
+
         if ((SQLLEN) value == SQL_OPT_TRACE_OFF )
         {
             char force_string[ 30 ];
@@ -279,11 +307,58 @@ SQLRETURN SQLSetConnectAttr( SQLHDBC connection_handle,
     {
         if ( value )
         {
-            if ( log_info.log_file_name )
+            if (((SQLCHAR*)value)[ 0 ] == '\0' ) 
             {
-                free( log_info.log_file_name );
+                if ( __validate_dbc( connection ))
+                {
+                    thread_protect( SQL_HANDLE_DBC, connection );
+                    dm_log_write( __FILE__, 
+                            __LINE__, 
+                            LOG_INFO, 
+                            LOG_INFO, 
+                            "Error: HY024" );
+            
+                    __post_internal_error( &connection -> error,
+                        ERROR_HY024, NULL,
+                        connection -> environment -> requested_version );
+            
+                    return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+                }
+                else 
+                {
+                    return SQL_INVALID_HANDLE;
+                }
             }
-            log_info.log_file_name = strdup( value );
+            else 
+            {
+                if ( log_info.log_file_name )
+                {
+                    free( log_info.log_file_name );
+                }
+                log_info.log_file_name = strdup( value );
+            }
+        }
+        else 
+        {
+            if ( __validate_dbc( connection ))
+            {
+                thread_protect( SQL_HANDLE_DBC, connection );
+                dm_log_write( __FILE__, 
+                        __LINE__, 
+                        LOG_INFO, 
+                        LOG_INFO, 
+                        "Error: HY009" );
+        
+                __post_internal_error( &connection -> error,
+                    ERROR_HY009, NULL,
+                    connection -> environment -> requested_version );
+        
+                return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+            }
+            else 
+            {
+                return SQL_INVALID_HANDLE;
+            }
         }
         return SQL_SUCCESS;
     }
@@ -308,10 +383,10 @@ SQLRETURN SQLSetConnectAttr( SQLHDBC connection_handle,
     if ( log_info.log_flag )
     {
         sprintf( connection -> msg, "\n\t\tEntry:\
-            \n\t\t\tConnection = %p\
-            \n\t\t\tAttribute = %s\
-            \n\t\t\tValue = %p\
-            \n\t\t\tStrLen = %d",
+\n\t\t\tConnection = %p\
+\n\t\t\tAttribute = %s\
+\n\t\t\tValue = %p\
+\n\t\t\tStrLen = %d",
                 connection,
                 __con_attr_as_string( s1, attribute ),
                 value, 
@@ -390,6 +465,108 @@ SQLRETURN SQLSetConnectAttr( SQLHDBC connection_handle,
 
             return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
         }
+    }
+
+    /*
+     * is it a legitimate value
+     */
+    ret = dm_check_connection_attrs( connection, attribute, value );
+
+    if ( ret != SQL_SUCCESS ) 
+    {
+        dm_log_write( __FILE__, 
+                    __LINE__, 
+                    LOG_INFO, 
+                    LOG_INFO, 
+                    "Error: HY024" );
+
+        __post_internal_error( &connection -> error,
+                ERROR_HY024, NULL,
+                connection -> environment -> requested_version );
+
+        return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+    }
+
+    /*
+     * is it a connection attribute or statement, check state of any active connections
+     */
+
+    switch( attribute ) 
+    {
+      	case SQL_ATTR_CONCURRENCY:
+	  	case SQL_BIND_TYPE:
+      	case SQL_ATTR_CURSOR_SCROLLABLE:
+      	case SQL_ATTR_CURSOR_SENSITIVITY:
+      	case SQL_ATTR_CURSOR_TYPE:
+      	case SQL_ATTR_MAX_LENGTH:
+      	case SQL_MAX_ROWS:
+      	case SQL_ATTR_KEYSET_SIZE:
+      	case SQL_ROWSET_SIZE: 
+      	case SQL_ATTR_NOSCAN:
+      	case SQL_ATTR_QUERY_TIMEOUT:
+      	case SQL_ATTR_RETRIEVE_DATA:
+      	case SQL_ATTR_SIMULATE_CURSOR:
+      	case SQL_ATTR_USE_BOOKMARKS:
+            if( __check_stmt_from_dbc( connection, STATE_S8 ) ||
+                __check_stmt_from_dbc( connection, STATE_S9 ) ||
+                __check_stmt_from_dbc( connection, STATE_S10 ) ||
+                __check_stmt_from_dbc( connection, STATE_S11 ) ||
+                __check_stmt_from_dbc( connection, STATE_S12 )) {
+
+                dm_log_write( __FILE__, 
+                        __LINE__, 
+                        LOG_INFO, 
+                        LOG_INFO, 
+                        "Error: 24000" );
+
+                __post_internal_error( &connection -> error,
+                        ERROR_24000, NULL,
+                        connection -> environment -> requested_version );
+
+                return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+            }
+            break;
+
+        default:
+            if ( attribute == SQL_ATTR_CURRENT_CATALOG ) 
+            {
+                if( __check_stmt_from_dbc( connection, STATE_S5 ) ||
+                    __check_stmt_from_dbc( connection, STATE_S6 ) ||
+                    __check_stmt_from_dbc( connection, STATE_S7 )) {
+
+                    dm_log_write( __FILE__, 
+                            __LINE__, 
+                            LOG_INFO, 
+                            LOG_INFO, 
+                            "Error: 24000" );
+
+                    __post_internal_error( &connection -> error,
+                            ERROR_24000, NULL,
+                            connection -> environment -> requested_version );
+
+                    return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+                }
+            }
+
+            if( __check_stmt_from_dbc( connection, STATE_S8 ) ||
+                __check_stmt_from_dbc( connection, STATE_S9 ) ||
+                __check_stmt_from_dbc( connection, STATE_S10 ) ||
+                __check_stmt_from_dbc( connection, STATE_S11 ) ||
+                __check_stmt_from_dbc( connection, STATE_S12 )) {
+
+                dm_log_write( __FILE__, 
+                        __LINE__, 
+                        LOG_INFO, 
+                        LOG_INFO, 
+                        "Error: HY010" );
+
+                __post_internal_error( &connection -> error,
+                        ERROR_HY010, NULL,
+                        connection -> environment -> requested_version );
+
+                return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+            }
+            break;
     }
 
     /*
@@ -648,7 +825,7 @@ SQLRETURN SQLSetConnectAttr( SQLHDBC connection_handle,
                         connection -> driver_dbc,
                         attribute,
                         s1,
-                        string_length );
+                        string_length * sizeof( SQLWCHAR ));
 
                     if ( s1 )
                         free( s1 );

@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLNumResultCols.c,v 1.4 2007/01/02 10:27:50 lurcher Exp $
+ * $Id: SQLNumResultCols.c,v 1.5 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLNumResultCols.c,v $
+ * Revision 1.5  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.4  2007/01/02 10:27:50  lurcher
  * Fix descriptor leak with unicode only driver
  *
@@ -111,9 +114,10 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
-static char const rcsid[]= "$RCSfile: SQLNumResultCols.c,v $ $Revision: 1.4 $";
+static char const rcsid[]= "$RCSfile: SQLNumResultCols.c,v $ $Revision: 1.5 $";
 
 SQLRETURN SQLNumResultCols( SQLHSTMT statement_handle,
            SQLSMALLINT *column_count )
@@ -143,8 +147,8 @@ SQLRETURN SQLNumResultCols( SQLHSTMT statement_handle,
     if ( log_info.log_flag )
     {
         sprintf( statement -> msg, "\n\t\tEntry:\
-            \n\t\t\tStatement = %p\
-            \n\t\t\tColumn Count = %p",
+\n\t\t\tStatement = %p\
+\n\t\t\tColumn Count = %p",
                 statement,
                 column_count );
 
@@ -230,7 +234,7 @@ SQLRETURN SQLNumResultCols( SQLHSTMT statement_handle,
 		if ( SQL_SUCCEEDED( ret )) {
         	sprintf( statement -> msg, 
                 "\n\t\tExit:[%s]\
-                \n\t\t\tCount = %s",
+\n\t\t\tCount = %s",
                     __get_return_status( ret, s2 ),
                     __sptr_as_string( s1, column_count ));
 		}

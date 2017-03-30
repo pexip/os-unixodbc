@@ -11,6 +11,9 @@
  * Comments:        See "notice.txt" for copyright and license information.
  *
  */
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #include <stdio.h>
 #include <stdarg.h>

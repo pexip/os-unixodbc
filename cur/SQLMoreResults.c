@@ -3,7 +3,7 @@
  * unixODBC Cursor Library
  *
  * Created by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * copyright (c) 1999 Nick Gorham
  *
@@ -23,9 +23,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLMoreResults.c,v 1.2 2008/11/03 14:53:29 lurcher Exp $
+ * $Id: SQLMoreResults.c,v 1.3 2009/02/18 17:59:17 lurcher Exp $
  *
  * $Log: SQLMoreResults.c,v $
+ * Revision 1.3  2009/02/18 17:59:17  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.2  2008/11/03 14:53:29  lurcher
  * Allow cursor lib to handle multiple result sets
  *
@@ -45,6 +48,7 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "cursorlibrary.h"
 
 SQLRETURN CLMoreResults( SQLHSTMT statement_handle )

@@ -10,6 +10,7 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "driver.h"
 
 SQLRETURN SQLColAttribute(	SQLHSTMT        hDrvStmt,
@@ -18,7 +19,7 @@ SQLRETURN SQLColAttribute(	SQLHSTMT        hDrvStmt,
 							SQLPOINTER      pszValue,
 							SQLSMALLINT     nValueLengthMax,
 							SQLSMALLINT     *pnValueLength,
-							SQLPOINTER      pnValue )
+							SQLLEN      	*pnValue )
 {
     HDRVSTMT	hStmt	= (HDRVSTMT)hDrvStmt;
 	COLUMNHDR	*pColumnHeader;

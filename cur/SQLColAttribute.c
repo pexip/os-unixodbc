@@ -3,7 +3,7 @@
  * unixODBC Cursor Library
  *
  * Created by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * copyright (c) 1999 Nick Gorham
  *
@@ -23,9 +23,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLColAttribute.c,v 1.4 2007/11/13 15:04:57 lurcher Exp $
+ * $Id: SQLColAttribute.c,v 1.5 2009/02/18 17:59:17 lurcher Exp $
  *
  * $Log: SQLColAttribute.c,v $
+ * Revision 1.5  2009/02/18 17:59:17  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.4  2007/11/13 15:04:57  lurcher
  * Fix 64 bit cursor lib issues
  *
@@ -53,6 +56,7 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "cursorlibrary.h"
 
 SQLRETURN CLColAttribute ( SQLHSTMT statement_handle,

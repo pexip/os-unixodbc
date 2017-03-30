@@ -1,3 +1,4 @@
+#include <config.h>
 #include "lst.h"
 
 int lstSetFreeFunc( HLST hLst, void (*pFree)( void *pData ) )

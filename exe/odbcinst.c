@@ -9,6 +9,7 @@
  * -----------------------------------------------
  * Peter Harvey		- pharvey@codebydesign.com
  **************************************************/
+#include <config.h>
 #include <odbcinstext.h>
 
 
@@ -350,6 +351,15 @@ int DSNUninstall( char *pszDSN )
     UWORD   nConfigMode;
     char    *pMode;
 
+    if ( system_dsn )
+    {
+        SQLSetConfigMode( ODBC_SYSTEM_DSN );
+    }
+    else if ( user_dsn )
+    {
+        SQLSetConfigMode( ODBC_USER_DSN );
+    }
+
     if ( SQLGetConfigMode( &nConfigMode ) == FALSE )
     {
         SQLInstallerError( 1, &nError, szError, ODBC_FILENAME_MAX, NULL );
@@ -412,8 +422,9 @@ int DSNQuery( char *pszDSN )
             printf( "%s=", ptr );
             if ( SQLGetPrivateProfileString( pszDSN, ptr, "", szValue, sizeof( szValue ) - 1, "ODBC.INI" ) > 0 )
             {
-                printf( "%s\n", szValue );
+                printf( "%s", szValue );
             }
+            printf( "\n" );
             ptr += strlen( ptr ) + 1;
         }
     }
@@ -445,7 +456,7 @@ void Syntax()
     if ( cVerbose != 0 )
         return;
 
-    printf( szSyntax );
+    puts( szSyntax );
 }
 
 void PrintConfigInfo()
@@ -456,7 +467,7 @@ void PrintConfigInfo()
     printf( "unixODBC " VERSION "\n" );
 
     *szFileName = '\0';
-    sprintf( szFileName, "%s/odbcinst.ini", odbcinst_system_file_path( b1 ), odbcinst_system_file_name( b2 ));
+    sprintf( szFileName, "%s/%s", odbcinst_system_file_path( b1 ), odbcinst_system_file_name( b2 ));
     printf( "DRIVERS............: %s\n", szFileName ); 
 
     *szFileName = '\0';
@@ -471,9 +482,9 @@ void PrintConfigInfo()
     _odbcinst_UserINI( szFileName, FALSE );
     printf( "USER DATA SOURCES..: %s\n", szFileName ); 
 
-	printf( "SQLULEN Size.......: %d\n", sizeof( SQLULEN )); 
-	printf( "SQLLEN Size........: %d\n", sizeof( SQLLEN )); 
-	printf( "SQLSETPOSIROW Size.: %d\n", sizeof( SQLSETPOSIROW )); 
+	printf( "SQLULEN Size.......: %ld\n", (long) sizeof( SQLULEN )); 
+	printf( "SQLLEN Size........: %ld\n", (long) sizeof( SQLLEN )); 
+	printf( "SQLSETPOSIROW Size.: %ld\n", (long) sizeof( SQLSETPOSIROW )); 
 }
 
 int main( int argc, char *argv[] )

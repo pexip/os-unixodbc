@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLGetFunctions.c,v 1.4 2003/10/30 18:20:46 lurcher Exp $
+ * $Id: SQLGetFunctions.c,v 1.5 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLGetFunctions.c,v $
+ * Revision 1.5  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.4  2003/10/30 18:20:46  lurcher
  *
  * Fix broken thread protection
@@ -105,9 +108,10 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
-static char const rcsid[]= "$RCSfile: SQLGetFunctions.c,v $ $Revision: 1.4 $";
+static char const rcsid[]= "$RCSfile: SQLGetFunctions.c,v $ $Revision: 1.5 $";
 
 SQLRETURN SQLGetFunctions( SQLHDBC connection_handle,
            SQLUSMALLINT function_id,
@@ -136,9 +140,9 @@ SQLRETURN SQLGetFunctions( SQLHDBC connection_handle,
     if ( log_info.log_flag )
     {
         sprintf( connection -> msg, "\n\t\tEntry:\
-            \n\t\t\tConnection = %p\
-            \n\t\t\tId = %s\
-            \n\t\t\tSupported = %p",
+\n\t\t\tConnection = %p\
+\n\t\t\tId = %s\
+\n\t\t\tSupported = %p",
                 connection,
                 __fid_as_string( s1, function_id ),
                 supported );
@@ -174,7 +178,7 @@ SQLRETURN SQLGetFunctions( SQLHDBC connection_handle,
     {
         sprintf( connection -> msg, 
                 "\n\t\tExit:[%s]\
-                \n\t\t\tSupported = %s",
+\n\t\t\tSupported = %s",
                     __get_return_status( SQL_SUCCESS, s1 ),
                     __sptr_as_string( s1, (short*)supported ));
 

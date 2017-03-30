@@ -8,6 +8,7 @@
  * -----------------------------------------------
  * Peter Harvey		- pharvey@codebydesign.com
  **************************************************/
+#include <config.h>
 #include <odbcinstext.h>
 
 /*
@@ -143,7 +144,6 @@ char *odbcinst_user_file_path( char *buffer )
     char *path;
     static char save_path[ 512 ];
     static int saved = 0;
-    struct passwd  *pPasswd = NULL;
 
     if ( saved ) {
 	    return save_path;

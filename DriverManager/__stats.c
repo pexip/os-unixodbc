@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,15 @@
  *
  **********************************************************************
  *
- * $Id: __stats.c,v 1.2 2004/05/07 09:53:13 lurcher Exp $
+ * $Id: __stats.c,v 1.4 2009/02/18 17:59:09 lurcher Exp $
  *
  * $Log: __stats.c,v $
+ * Revision 1.4  2009/02/18 17:59:09  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
+ * Revision 1.3  2009/02/17 09:47:44  lurcher
+ * Clear up a number of bugs
+ *
  * Revision 1.2  2004/05/07 09:53:13  lurcher
  *
  *
@@ -90,6 +96,8 @@
  *
  **********************************************************************/
 
+#include <config.h>
+
 #ifdef HAVE_SYS_SEM_H
  
 #include <stdio.h>
@@ -111,7 +119,7 @@
 #include <uodbc_stats.h>
 #include "drivermanager.h"
 
-static char const rcsid[]= "$RCSfile: __stats.c,v $ $Revision: 1.2 $";
+static char const rcsid[]= "$RCSfile: __stats.c,v $ $Revision: 1.4 $";
 
 #ifdef COLLECT_STATS
 #ifdef HAVE_LIBPTHREAD
@@ -147,7 +155,6 @@ int uodbc_open_stats(
     unsigned int mode)
 {
     key_t                       ipc_key;
-    uodbc_stats_t               *stats;
     int                         shm_created = 0;
     uodbc_stats_handle_t        *h = NULL;
     uodbc_stats_handle_t        lh;
@@ -621,19 +628,6 @@ int uodbc_get_stats(
 /************************************************************************/
 static int acquire_sem_lock(int sem_id)
 {
-#ifdef NEED_SEMUNDO_UNION
-    union semun
-    {
-        int                     val;
-        struct semid_ds         *buf;
-        unsigned short int      *array;
-        struct seminfo          *__buf;
-    }semctl_arg;
-#else
-    union semun                 semctl_arg;
-#endif
-    int                         sts;
-    
     /*
      *  Semaphore operations:
      */
@@ -674,19 +668,6 @@ static int acquire_sem_lock(int sem_id)
 /************************************************************************/
 static int release_sem_lock(int sem_id)
 {
-#ifdef NEED_SEMUNDO_UNION
-    union semun
-    {
-        int                     val;
-        struct semid_ds         *buf;
-        unsigned short int      *array;
-        struct seminfo          *__buf;
-    }semctl_arg;
-#else
-    union semun                 semctl_arg;
-#endif
-    int                         sts;
-    
     /*
      *  Semaphore operations:
      */

@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,27 @@
  *
  **********************************************************************
  *
- * $Id: SQLDriverConnect.c,v 1.22 2008/09/29 14:02:44 lurcher Exp $
+ * $Id: SQLDriverConnect.c,v 1.28 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLDriverConnect.c,v $
+ * Revision 1.28  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
+ * Revision 1.27  2009/02/17 09:47:44  lurcher
+ * Clear up a number of bugs
+ *
+ * Revision 1.26  2009/01/16 11:02:38  lurcher
+ * Interface to GUI for DSN selection
+ *
+ * Revision 1.25  2009/01/14 10:01:42  lurcher
+ * remove debug printf
+ *
+ * Revision 1.24  2009/01/12 15:18:15  lurcher
+ * Add interface into odbcinstQ to allow for a dialog if SQLDriverConnect is called without a DSN=
+ *
+ * Revision 1.23  2008/11/24 12:44:23  lurcher
+ * Try and tidu up the connection version checking
+ *
  * Revision 1.22  2008/09/29 14:02:44  lurcher
  * Fix missing dlfcn group option
  *
@@ -288,10 +306,11 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include <string.h>
 #include "drivermanager.h"
 
-static char const rcsid[]= "$RCSfile: SQLDriverConnect.c,v $ $Revision: 1.22 $";
+static char const rcsid[]= "$RCSfile: SQLDriverConnect.c,v $ $Revision: 1.28 $";
 
 /*
  * connection pooling stuff
@@ -366,10 +385,13 @@ int len;
     memcpy( *keyword, ptr, len );
     (*keyword)[ len ] = '\0';
 
-    (**cp != ';') && (*cp)++;
+    if (**cp != ';') {
+		(*cp)++;
+	}
+
     ptr = *cp;
 
-    if ( strcmp( *keyword, "DRIVER" ) == 0 )
+    if ( strcasecmp( *keyword, "DRIVER" ) == 0 )
     {
         if ( **cp && **cp == '{' )
         {
@@ -441,7 +463,7 @@ struct con_pair *ptr, *end;
         ptr = con_str -> list;
         while( ptr )
         {
-            if( strcmp( kword, ptr -> keyword ) == 0 )
+            if( strcasecmp( kword, ptr -> keyword ) == 0 )
             {
                 free( ptr -> attribute );
                 ptr -> attribute = malloc( strlen( value ) + 1 );
@@ -505,8 +527,6 @@ int got_driver = 0;    /* if we have a DRIVER or FILEDSN then ignore any DSN */
         /* connection-string ::= empty-string [;] */
         if ( str_len != SQL_NTS )
             free( local_str );
-
-        __append_pair( con_str, "DSN", "DEFAULT" );
         return 0;
     }
 
@@ -516,16 +536,26 @@ int got_driver = 0;    /* if we have a DRIVER or FILEDSN then ignore any DSN */
     {
         if ( strcasecmp( cp -> keyword, "DSN" ) == 0 )
         {
-            if ( got_driver && exclude )
+            if ( got_driver && exclude ) {
+                /* 11-29-2010 JM Modify to free the allocated memory before continuing. */
+                free( cp -> keyword );
+                free( cp -> attribute );
+                free( cp );
                 continue;
+            }
 
             got_dsn = 1;
         }
         else if ( strcasecmp( cp -> keyword, "DRIVER" ) == 0 ||
-            strcmp( cp -> keyword, "FILEDSN" ) == 0 )
+            strcasecmp( cp -> keyword, "FILEDSN" ) == 0 )
         {
-            if ( got_dsn && exclude )
+            if ( got_dsn && exclude ) {
+                /* 11-29-2010 JM Modify to free the allocated memory before continuing. */
+                free( cp -> keyword );
+                free( cp -> attribute );
+                free( cp );
                 continue;
+            }
 
             got_driver = 1;
         }
@@ -534,12 +564,6 @@ int got_driver = 0;    /* if we have a DRIVER or FILEDSN then ignore any DSN */
         free( cp -> keyword );
         free( cp -> attribute );
         free( cp );
-    }
-
-    /* if no dsn or DRIVER, then set DSN=DEFAULT */
-    if ( !got_driver && !got_dsn )
-    {
-        __append_pair( con_str, "DSN", "DEFAULT" );
     }
 
     if ( str_len != SQL_NTS )
@@ -593,6 +617,21 @@ void __release_conn( struct con_struct *con_str )
     con_str -> count = 0;
 }
 
+void __handle_attr_extensions_cs( DMHDBC connection, struct con_struct *con_str )
+{
+    char *ptr;
+
+    if (( ptr = __get_attribute_value( con_str, "DMEnvAttr" )) != NULL ) {
+        __parse_attribute_string( &connection -> env_attribute, ptr, SQL_NTS );
+    }
+    if (( ptr = __get_attribute_value( con_str, "DMConnAttr" )) != NULL ) {
+        __parse_attribute_string( &connection -> dbc_attribute, ptr, SQL_NTS );
+    }
+    if (( ptr = __get_attribute_value( con_str, "DMStmtAttr" )) != NULL ) {
+        __parse_attribute_string( &connection -> stmt_attribute, ptr, SQL_NTS );
+    }
+}
+
 SQLRETURN SQLDriverConnectA(
     SQLHDBC            hdbc,
     SQLHWND            hwnd,
@@ -625,7 +664,7 @@ SQLRETURN SQLDriverConnect(
 {
     DMHDBC connection = (DMHDBC)hdbc;
     struct con_struct con_struct;
-    char *driver, *dsn = NULL, *filedsn, *tsavefile, savefile[ 128 ];
+    char *driver, *dsn = NULL, *filedsn, *tsavefile, savefile[ INI_MAX_PROPERTY_VALUE + 1 ];
     char lib_name[ INI_MAX_PROPERTY_VALUE + 1 ];
     char driver_name[ INI_MAX_PROPERTY_VALUE + 1 ];
     SQLRETURN ret_from_connect;
@@ -667,13 +706,13 @@ SQLRETURN SQLDriverConnect(
     if ( log_info.log_flag )
     {
         sprintf( connection -> msg, "\n\t\tEntry:\
-            \n\t\t\tConnection = %p\
-            \n\t\t\tWindow Hdl = %p\
-            \n\t\t\tStr In = %s\
-            \n\t\t\tStr Out = %p\
-            \n\t\t\tStr Out Max = %d\
-            \n\t\t\tStr Out Ptr = %p\
-            \n\t\t\tCompletion = %d",
+\n\t\t\tConnection = %p\
+\n\t\t\tWindow Hdl = %p\
+\n\t\t\tStr In = %s\
+\n\t\t\tStr Out = %p\
+\n\t\t\tStr Out Max = %d\
+\n\t\t\tStr Out Ptr = %p\
+\n\t\t\tCompletion = %d",
                 connection,
                 hwnd,
                 __string_with_length_hide_pwd( s1, conn_str_in, 
@@ -761,18 +800,69 @@ SQLRETURN SQLDriverConnect(
     }
 
     /*
-     * parse the connection string
+     * parse the connection string, and call the GUI if needed
      */
 
-    if ( !conn_str_in )
-    {
-        /*
-         * not quite by the book, but better than nothing
-         */
+	if ( driver_completion == SQL_DRIVER_NOPROMPT ) 
+	{
+    	if ( !conn_str_in )
+    	{
+        	conn_str_in = (SQLCHAR*)"DSN=DEFAULT;";
+        	len_conn_str_in = strlen((char*) conn_str_in );
+		}
 
-        conn_str_in = (SQLCHAR*)"DSN=DEFAULT;";
-        len_conn_str_in = strlen((char*) conn_str_in );
+		__parse_connection_string( &con_struct,
+				(char*)conn_str_in, len_conn_str_in );
     }
+	else {
+    	if ( !conn_str_in )
+    	{
+        	conn_str_in = (SQLCHAR*)"";
+        	len_conn_str_in = strlen((char*) conn_str_in );
+		}
+
+    	__parse_connection_string( &con_struct,
+            	(char*)conn_str_in, len_conn_str_in );
+
+		if ( !__get_attribute_value( &con_struct, "DSN" ) && 
+			!__get_attribute_value( &con_struct, "DRIVER" ) && 
+			!__get_attribute_value( &con_struct, "FILEDSN" ))
+		{
+			int ret;
+			SQLCHAR returned_dsn[ 128 ], *prefix, *target;
+
+			/*
+			 * try and call GUI to obtain a DSN
+			 */
+
+			ret = _SQLDriverConnectPrompt( hwnd, returned_dsn, sizeof( returned_dsn ));
+			if ( !ret || returned_dsn[ 0 ] == '\0' ) 
+			{
+        		__append_pair( &con_struct, "DSN", "DEFAULT" );
+			}
+			else 
+			{
+				prefix = returned_dsn;
+				target = (SQLCHAR*)strchr( returned_dsn, '=' );
+				if ( target ) 
+				{
+					*target = '\0';
+					target ++;
+        			__append_pair( &con_struct, (char*)prefix, (char*)target );
+				}
+				else {
+        			__append_pair( &con_struct, "DSN", (char*)returned_dsn );
+				}
+			}
+
+			/*
+			 * regenerate to pass to driver
+			 */
+			__generate_connection_string( &con_struct, (char*)local_conn_str_in, sizeof( local_conn_str_in ));
+			conn_str_in = local_conn_str_in;
+        	len_conn_str_in = strlen((char*) conn_str_in );
+		}
+	}
 
     /*
      * can we find a pooled connection to use here ?
@@ -840,6 +930,8 @@ SQLRETURN SQLDriverConnect(
 
         connection -> state = STATE_C4;
 
+        __release_conn( &con_struct );
+
         return function_return( SQL_HANDLE_DBC, connection, ret_from_connect );
     }
 
@@ -870,9 +962,6 @@ SQLRETURN SQLDriverConnect(
     }
 
 
-    __parse_connection_string( &con_struct,
-            (char*)conn_str_in, len_conn_str_in );
-
     /*
      * get for later
      */
@@ -880,7 +969,13 @@ SQLRETURN SQLDriverConnect(
     tsavefile = __get_attribute_value( &con_struct, "SAVEFILE" );
     if ( tsavefile )
     {
-        strcpy( savefile, tsavefile );
+        if ( strlen( tsavefile ) > INI_MAX_PROPERTY_VALUE ) {
+            memcpy( savefile, tsavefile, INI_MAX_PROPERTY_VALUE );
+            savefile[ INI_MAX_PROPERTY_VALUE ] = '\0';
+        }
+        else {
+            strcpy( savefile, tsavefile );
+        }
     }
     else
     {
@@ -930,8 +1025,8 @@ SQLRETURN SQLDriverConnect(
 			 			* Don't pass FILEDSN down
 			 			*/
 
-						if ( strcmp( cp -> keyword, "FILEDSN" ) &&
-							strcmp( cp -> keyword, "FILEDSN" ) )
+						if ( strcasecmp( cp -> keyword, "FILEDSN" ) &&
+							strcasecmp( cp -> keyword, "FILEDSN" ) )
 						{
 							if ( strlen((char*) conn_str_in ) > 0 )
 							{
@@ -998,7 +1093,6 @@ SQLRETURN SQLDriverConnect(
      *
      * have we got a DRIVER= attribute
      */
-
     driver = __get_attribute_value( &con_struct, "DRIVER" );
     if ( driver )
     {
@@ -1022,26 +1116,12 @@ SQLRETURN SQLDriverConnect(
                 lib_name, sizeof( lib_name ), "ODBCINST.INI" );
 #endif
 
-        if ( lib_name[ 0 ] == '\0' )
-        {
-            /*
-             * at this point a box could pop up to allow the selection of a driver
-             *
-             * do this later
-             */
+        /*
+         * Assume if its not in a odbcinst,ini then its a direct reference
+         */
 
-            dm_log_write( __FILE__, 
-                    __LINE__, 
-                    LOG_INFO, 
-                    LOG_INFO, 
-                    "Error: IM002" );
-
-            __post_internal_error( &connection -> error,
-                    ERROR_IM002, NULL,
-                    connection -> environment -> requested_version );
-            __release_conn( &con_struct );
-
-            return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+        if ( lib_name[ 0 ] == '\0' ) {
+            strcpy( lib_name, driver );
         }
 
         strcpy( connection -> dsn, "" );
@@ -1117,6 +1197,12 @@ SQLRETURN SQLDriverConnect(
          */
 
         __handle_attr_extensions( connection, dsn, driver_name );
+    }
+    else {
+        /* 
+         * the attributes may be in the connection string
+         */
+        __handle_attr_extensions_cs( connection, &con_struct );
     }
 
     __release_conn( &con_struct );
@@ -1271,7 +1357,7 @@ SQLRETURN SQLDriverConnect(
 
             return function_return( SQL_HANDLE_DBC, connection, ret_from_connect );
         }
-	connection -> unicode_driver = 0;
+		connection -> unicode_driver = 0;
     }
     else
     {
@@ -1478,7 +1564,7 @@ SQLRETURN SQLDriverConnect(
         {
             sprintf( connection -> msg, 
                     "\n\t\tExit:[%s]\
-                    \n\t\t\tConnection Out [%.64s...]",
+\n\t\t\tConnection Out [%.64s...]",
                         __get_return_status( ret_from_connect, s1 ),
                         conn_str_out );
         }
@@ -1486,7 +1572,7 @@ SQLRETURN SQLDriverConnect(
         {
             sprintf( connection -> msg, 
                     "\n\t\tExit:[%s]\
-                    \n\t\t\tConnection Out [%s]",
+\n\t\t\tConnection Out [%s]",
                         __get_return_status( ret_from_connect, s1 ),
                         __string_with_length_hide_pwd( s1, 
                             conn_str_out ? conn_str_out : (SQLCHAR*)"NULL", SQL_NTS ));
@@ -1567,7 +1653,7 @@ SQLRETURN SQLDriverConnect(
                     	cp = cp -> next;
                         continue;
                     }
-		    else if ( strcasecmp( cp -> keyword, "SAVEFILE" ) == 0 )
+		    		else if ( strcasecmp( cp -> keyword, "SAVEFILE" ) == 0 )
                     {
                         /*
                          * or this

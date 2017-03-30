@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLGetStmtOption.c,v 1.3 2003/10/30 18:20:46 lurcher Exp $
+ * $Id: SQLGetStmtOption.c,v 1.4 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLGetStmtOption.c,v $
+ * Revision 1.4  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.3  2003/10/30 18:20:46  lurcher
  *
  * Fix broken thread protection
@@ -112,9 +115,10 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
-static char const rcsid[]= "$RCSfile: SQLGetStmtOption.c,v $ $Revision: 1.3 $";
+static char const rcsid[]= "$RCSfile: SQLGetStmtOption.c,v $ $Revision: 1.4 $";
 
 SQLRETURN SQLGetStmtOption( SQLHSTMT statement_handle,
            SQLUSMALLINT option,
@@ -144,9 +148,9 @@ SQLRETURN SQLGetStmtOption( SQLHSTMT statement_handle,
     if ( log_info.log_flag )
     {
         sprintf( statement -> msg, "\n\t\tEntry:\
-            \n\t\t\tStatement = %p\
-            \n\t\t\tOption = %s\
-            \n\t\t\tValue = %p",
+\n\t\t\tStatement = %p\
+\n\t\t\tOption = %s\
+\n\t\t\tValue = %p",
                 statement,
                 __stmt_attr_as_string( s1, option ),
                 value );

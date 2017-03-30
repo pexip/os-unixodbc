@@ -10,6 +10,7 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "driver.h"
 
 SQLRETURN SQLBrowseConnect(
@@ -26,7 +27,7 @@ SQLRETURN SQLBrowseConnect(
 	if ( hDbc == NULL )
 		return SQL_INVALID_HANDLE;
 	
-	sprintf((char*) hDbc->szSqlMsg, "hDbc = $%08lX", hDbc );
+	sprintf((char*) hDbc->szSqlMsg, "hDbc = $%08lX", (long)hDbc );
     logPushMsg( hDbc->hLog, __FILE__, __FILE__, __LINE__, LOG_WARNING, LOG_WARNING,(char*) hDbc->szSqlMsg );
 
 	logPushMsg( hDbc->hLog, __FILE__, __FILE__, __LINE__, LOG_WARNING, LOG_WARNING, "SQL_ERROR This function not currently supported" );

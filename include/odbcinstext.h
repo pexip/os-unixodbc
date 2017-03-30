@@ -26,7 +26,9 @@
 #endif
 #include <stdio.h>
 
-#define ODBCVER 0x0351
+#ifndef ODBCVER
+#define ODBCVER 0x0380
+#endif
 
 #include <ini.h>
 #include <log.h>
@@ -195,6 +197,11 @@ BOOL _SQLWriteInstalledDrivers(
 	LPCSTR	pszSection,
 	LPCSTR	pszEntry,
 	LPCSTR	pszString );
+
+BOOL _SQLDriverConnectPrompt( 
+	HWND hwnd, 
+	SQLCHAR *dsn, 
+	SQLSMALLINT len_dsn );
 
 void __set_config_mode( int mode );
 int __get_config_mode( void );

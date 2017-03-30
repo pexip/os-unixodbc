@@ -8,6 +8,7 @@
  * -----------------------------------------------
  * Peter Harvey		- pharvey@codebydesign.com
  **************************************************/
+#include <config.h>
 #include <odbcinstext.h>
 
 /*!
@@ -31,29 +32,29 @@ typedef struct tODBCINSTErrorMsg
  */
 static ODBCINSTErrorMsg aODBCINSTErrorMsgs[] =
 {
-    0,                                      "Filler",
-	ODBC_ERROR_GENERAL_ERR,					"General installer error",
-	ODBC_ERROR_INVALID_BUFF_LEN,			"Invalid buffer length",
-	ODBC_ERROR_INVALID_HWND,				"Invalid window handle",
-	ODBC_ERROR_INVALID_STR,					"Invalid string",
-	ODBC_ERROR_INVALID_REQUEST_TYPE,		"Invalid type of request",
-	ODBC_ERROR_COMPONENT_NOT_FOUND,			"Unable to find component name",
-	ODBC_ERROR_INVALID_NAME,				"Invalid driver or translator name",
-	ODBC_ERROR_INVALID_KEYWORD_VALUE,		"Invalid keyword-value pairs",
-	ODBC_ERROR_INVALID_DSN,					"Invalid DSN",
-	ODBC_ERROR_INVALID_INF,					"Invalid INF",
-	ODBC_ERROR_REQUEST_FAILED,				"General error request failed",
-	ODBC_ERROR_INVALID_PATH,				"Invalid install path",
-	ODBC_ERROR_LOAD_LIB_FAILED,				"Could not load the driver or translator setup library",
-	ODBC_ERROR_INVALID_PARAM_SEQUENCE,		"Invalid parameter sequence",
-	ODBC_ERROR_INVALID_LOG_FILE,			"INvalid log file",
-	ODBC_ERROR_USER_CANCELED,				"User canceled operation",
-	ODBC_ERROR_USAGE_UPDATE_FAILED,			"Could not increment or decrement the component usage count",
-	ODBC_ERROR_CREATE_DSN_FAILED,			"Could not create the requested DSN",
-	ODBC_ERROR_WRITING_SYSINFO_FAILED,		"Error writing sysinfo",
-	ODBC_ERROR_REMOVE_DSN_FAILED,			"Removing DSN failed",
-	ODBC_ERROR_OUT_OF_MEM,					"Out of memory",
-	ODBC_ERROR_OUTPUT_STRING_TRUNCATED,		"String right truncated"
+	{ 0,                                      	"Filler" },
+	{ ODBC_ERROR_GENERAL_ERR,					"General installer error" },
+	{ ODBC_ERROR_INVALID_BUFF_LEN,				"Invalid buffer length" },
+	{ ODBC_ERROR_INVALID_HWND,					"Invalid window handle" },
+	{ ODBC_ERROR_INVALID_STR,					"Invalid string" },
+	{ ODBC_ERROR_INVALID_REQUEST_TYPE,			"Invalid type of request" },
+	{ ODBC_ERROR_COMPONENT_NOT_FOUND,			"Unable to find component name" },
+	{ ODBC_ERROR_INVALID_NAME,					"Invalid driver or translator name" },
+	{ ODBC_ERROR_INVALID_KEYWORD_VALUE,			"Invalid keyword-value pairs" },
+	{ ODBC_ERROR_INVALID_DSN,					"Invalid DSN" },
+	{ ODBC_ERROR_INVALID_INF,					"Invalid INF" },
+	{ ODBC_ERROR_REQUEST_FAILED,				"General error request failed" },
+	{ ODBC_ERROR_INVALID_PATH,					"Invalid install path" },
+	{ ODBC_ERROR_LOAD_LIB_FAILED,				"Could not load the driver or translator setup library" },
+	{ ODBC_ERROR_INVALID_PARAM_SEQUENCE,		"Invalid parameter sequence" },
+	{ ODBC_ERROR_INVALID_LOG_FILE,				"Invalid log file" },
+	{ ODBC_ERROR_USER_CANCELED,					"User canceled operation" },
+	{ ODBC_ERROR_USAGE_UPDATE_FAILED,			"Could not increment or decrement the component usage count" },
+	{ ODBC_ERROR_CREATE_DSN_FAILED,				"Could not create the requested DSN" },
+	{ ODBC_ERROR_WRITING_SYSINFO_FAILED,		"Error writing sysinfo" },
+	{ ODBC_ERROR_REMOVE_DSN_FAILED,				"Removing DSN failed" },
+	{ ODBC_ERROR_OUT_OF_MEM,					"Out of memory" },
+	{ ODBC_ERROR_OUTPUT_STRING_TRUNCATED,		"String right truncated" }
 };
 
 /*! 

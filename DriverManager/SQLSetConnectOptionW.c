@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLSetConnectOptionW.c,v 1.9 2007/02/28 15:37:48 lurcher Exp $
+ * $Id: SQLSetConnectOptionW.c,v 1.10 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLSetConnectOptionW.c,v $
+ * Revision 1.10  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.9  2007/02/28 15:37:48  lurcher
  * deal with drivers that call internal W functions and end up in the driver manager. controlled by the --enable-handlemap configure arg
  *
@@ -89,6 +92,7 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
 static char const rcsid[]= "$RCSfile: SQLSetConnectOptionW.c,v $";
@@ -108,6 +112,30 @@ SQLRETURN SQLSetConnectOptionW( SQLHDBC connection_handle,
 
     if ( option == SQL_ATTR_TRACE )
     {
+        if ((SQLLEN) value != SQL_OPT_TRACE_OFF && 
+            (SQLLEN) value != SQL_OPT_TRACE_ON ) 
+        {
+            if ( __validate_dbc( connection ))
+            {
+                thread_protect( SQL_HANDLE_DBC, connection );
+                dm_log_write( __FILE__, 
+                        __LINE__, 
+                        LOG_INFO, 
+                        LOG_INFO, 
+                        "Error: HY024" );
+        
+                __post_internal_error( &connection -> error,
+                    ERROR_HY024, NULL,
+                    connection -> environment -> requested_version );
+        
+                return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+            }
+            else 
+            {
+                return SQL_INVALID_HANDLE;
+            }
+        }
+
         if ( value == SQL_OPT_TRACE_OFF )
         {
             log_info.log_flag = 0;
@@ -123,11 +151,58 @@ SQLRETURN SQLSetConnectOptionW( SQLHDBC connection_handle,
     {
         if ( value )
         {
-            if ( log_info.log_file_name )
+            if (((SQLWCHAR*)value)[ 0 ] == 0 ) 
             {
-                free( log_info.log_file_name );
+                if ( __validate_dbc( connection ))
+                {
+                    thread_protect( SQL_HANDLE_DBC, connection );
+                    dm_log_write( __FILE__, 
+                            __LINE__, 
+                            LOG_INFO, 
+                            LOG_INFO, 
+                            "Error: HY024" );
+            
+                    __post_internal_error( &connection -> error,
+                        ERROR_HY024, NULL,
+                        connection -> environment -> requested_version );
+            
+                    return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+                }
+                else 
+                {
+                    return SQL_INVALID_HANDLE;
+                }
             }
-            log_info.log_file_name = unicode_to_ansi_alloc((SQLWCHAR *) value, SQL_NTS, connection );
+            else 
+            {
+                if ( log_info.log_file_name )
+                {
+                    free( log_info.log_file_name );
+                }
+                log_info.log_file_name = unicode_to_ansi_alloc((SQLWCHAR *) value, SQL_NTS, connection );
+            }
+        }
+        else 
+        {
+            if ( __validate_dbc( connection ))
+            {
+                thread_protect( SQL_HANDLE_DBC, connection );
+                dm_log_write( __FILE__, 
+                        __LINE__, 
+                        LOG_INFO, 
+                        LOG_INFO, 
+                        "Error: HY009" );
+        
+                __post_internal_error( &connection -> error,
+                    ERROR_HY009, NULL,
+                    connection -> environment -> requested_version );
+        
+                return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+            }
+            else 
+            {
+                return SQL_INVALID_HANDLE;
+            }
         }
         return SQL_SUCCESS;
     }
@@ -181,9 +256,9 @@ SQLRETURN SQLSetConnectOptionW( SQLHDBC connection_handle,
     if ( log_info.log_flag )
     {
         sprintf( connection -> msg, "\n\t\tEntry:\
-            \n\t\t\tConnection = %p\
-            \n\t\t\tOption = %s\
-            \n\t\t\tValue = %d",
+\n\t\t\tConnection = %p\
+\n\t\t\tOption = %s\
+\n\t\t\tValue = %d",
                 connection,
                 __con_attr_as_string( s1, option ),
                 (int)value );
@@ -277,6 +352,26 @@ SQLRETURN SQLSetConnectOptionW( SQLHDBC connection_handle,
 
             return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
         }
+    }
+
+    /*
+     * is it a legitimate value
+     */
+    ret = dm_check_connection_attrs( connection, option, (SQLPOINTER)value );
+
+    if ( ret != SQL_SUCCESS ) 
+    {
+        dm_log_write( __FILE__, 
+                    __LINE__, 
+                    LOG_INFO, 
+                    LOG_INFO, 
+                    "Error: HY024" );
+
+        __post_internal_error( &connection -> error,
+                ERROR_HY024, NULL,
+                connection -> environment -> requested_version );
+
+        return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
     }
 
     /*

@@ -12,6 +12,7 @@
  * -----------------------------------------------
  * Peter Harvey		- pharvey@codebydesign.com
  **************************************************/
+#include <config.h>
 #include <odbcinstext.h>
 
 static BOOL SQLConfigDataSourceWide(	HWND	hWnd,

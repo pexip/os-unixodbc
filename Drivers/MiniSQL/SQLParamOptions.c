@@ -10,6 +10,7 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "driver.h"
 
 SQLRETURN SQLParamOptions(	SQLHSTMT    hDrvStmt,

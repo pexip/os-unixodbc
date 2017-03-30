@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLGetData.c,v 1.14 2007/04/02 10:50:19 lurcher Exp $
+ * $Id: SQLGetData.c,v 1.15 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLGetData.c,v $
+ * Revision 1.15  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.14  2007/04/02 10:50:19  lurcher
  * Fix some 64bit problems (only when sizeof(SQLLEN) == 8 )
  *
@@ -176,9 +179,10 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
-static char const rcsid[]= "$RCSfile: SQLGetData.c,v $ $Revision: 1.14 $";
+static char const rcsid[]= "$RCSfile: SQLGetData.c,v $ $Revision: 1.15 $";
 
 SQLRETURN SQLGetData( SQLHSTMT statement_handle,
            SQLUSMALLINT column_number,
@@ -215,12 +219,12 @@ SQLRETURN SQLGetData( SQLHSTMT statement_handle,
     if ( log_info.log_flag )
     {
         sprintf( statement -> msg, "\n\t\tEntry:\
-            \n\t\t\tStatement = %p\
-            \n\t\t\tColumn Number = %d\
-            \n\t\t\tTarget Type = %d %s\
-            \n\t\t\tBuffer Length = %d\
-            \n\t\t\tTarget Value = %p\
-            \n\t\t\tStrLen Or Ind = %p",
+\n\t\t\tStatement = %p\
+\n\t\t\tColumn Number = %d\
+\n\t\t\tTarget Type = %d %s\
+\n\t\t\tBuffer Length = %d\
+\n\t\t\tTarget Value = %p\
+\n\t\t\tStrLen Or Ind = %p",
                 statement,
                 column_number,
                 target_type, 

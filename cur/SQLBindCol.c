@@ -3,7 +3,7 @@
  * unixODBC Cursor Library
  *
  * Created by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * copyright (c) 1999 Nick Gorham
  *
@@ -23,9 +23,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLBindCol.c,v 1.5 2007/11/13 15:04:57 lurcher Exp $
+ * $Id: SQLBindCol.c,v 1.6 2009/02/18 17:59:17 lurcher Exp $
  *
  * $Log: SQLBindCol.c,v $
+ * Revision 1.6  2009/02/18 17:59:17  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.5  2007/11/13 15:04:57  lurcher
  * Fix 64 bit cursor lib issues
  *
@@ -70,6 +73,7 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "cursorlibrary.h"
 
 /*
@@ -177,6 +181,17 @@ SQLRETURN CLBindCol( SQLHSTMT statement_handle,
     CLBCOL *bcol;
     int b_len;
     SQLRETURN ret;
+
+	if ( cl_statement -> not_from_select )
+	{
+		return  SQLBINDCOL( cl_statement -> cl_connection,
+			cl_statement -> driver_stmt,
+			column_number,
+			target_type,
+			target_value,
+			buffer_length,
+			strlen_or_ind );
+	}
 
     /*
      * check in the list of bound columns for a entry

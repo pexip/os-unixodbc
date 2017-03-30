@@ -14,6 +14,7 @@
  * PAH	19.MAR.99	Now sets hCurProperty to hFirstProperty when found
  **************************************************/
 
+#include <config.h>
 #include "ini.h"
 
 int iniObjectNext( HINI hIni )

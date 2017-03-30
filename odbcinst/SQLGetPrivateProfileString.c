@@ -16,6 +16,7 @@
  * -----------------------------------------------
  * Peter Harvey		- pharvey@codebydesign.com
  **************************************************/
+#include <config.h>
 #include <time.h>
 #include <odbcinstext.h>
 

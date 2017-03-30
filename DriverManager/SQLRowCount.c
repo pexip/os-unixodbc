@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLRowCount.c,v 1.7 2007/04/02 10:50:19 lurcher Exp $
+ * $Id: SQLRowCount.c,v 1.8 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLRowCount.c,v $
+ * Revision 1.8  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.7  2007/04/02 10:50:19  lurcher
  * Fix some 64bit problems (only when sizeof(SQLLEN) == 8 )
  *
@@ -124,9 +127,10 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
-static char const rcsid[]= "$RCSfile: SQLRowCount.c,v $ $Revision: 1.7 $";
+static char const rcsid[]= "$RCSfile: SQLRowCount.c,v $ $Revision: 1.8 $";
 
 SQLRETURN SQLRowCount( SQLHSTMT statement_handle,
        SQLLEN *rowcount )
@@ -160,8 +164,8 @@ SQLRETURN SQLRowCount( SQLHSTMT statement_handle,
     if ( log_info.log_flag )
     {
         sprintf( statement -> msg, "\n\t\tEntry:\
-            \n\t\t\tStatement = %p\
-            \n\t\t\tRow Count = %p",
+\n\t\t\tStatement = %p\
+\n\t\t\tRow Count = %p",
                 statement,
                 rowcount );
 
@@ -232,7 +236,7 @@ SQLRETURN SQLRowCount( SQLHSTMT statement_handle,
     {
         sprintf( statement -> msg, 
                 "\n\t\tExit:[%s]\
-                \n\t\t\tRow Count = %s",
+\n\t\t\tRow Count = %s",
                     __get_return_status( ret, s1 ),
                     __ptr_as_string( s1, rowcount ));
 

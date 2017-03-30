@@ -10,6 +10,7 @@
  * Peter Harvey		- pharvey@codebydesign.com
  **************************************************/
 
+#include <config.h>
 #include "ini.h"
 
 int _iniScanUntilObject( HINI hIni, FILE *hFile, char *pszLine )

@@ -1,3 +1,4 @@
+#include <config.h>
 #include "lst.h"
 
 HLST lstOpenCursor( HLST hBase, int (*pFilterFunc)( HLST, void * ), void *pExtras )

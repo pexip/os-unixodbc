@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLSetScrollOptions.c,v 1.8 2007/01/02 10:27:50 lurcher Exp $
+ * $Id: SQLSetScrollOptions.c,v 1.9 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLSetScrollOptions.c,v $
+ * Revision 1.9  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.8  2007/01/02 10:27:50  lurcher
  * Fix descriptor leak with unicode only driver
  *
@@ -133,9 +136,10 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
-static char const rcsid[]= "$RCSfile: SQLSetScrollOptions.c,v $ $Revision: 1.8 $";
+static char const rcsid[]= "$RCSfile: SQLSetScrollOptions.c,v $ $Revision: 1.9 $";
 
 SQLRETURN SQLSetScrollOptions(
     SQLHSTMT           statement_handle,
@@ -167,10 +171,10 @@ SQLRETURN SQLSetScrollOptions(
     if ( log_info.log_flag )
     {
         sprintf( statement -> msg, "\n\t\tEntry:\
-            \n\t\t\tStatement = %p\
-            \n\t\t\tConcurrency = %d\
-            \n\t\t\tKeyset = %d\
-            \n\t\t\tRowset = %d",
+\n\t\t\tStatement = %p\
+\n\t\t\tConcurrency = %d\
+\n\t\t\tKeyset = %d\
+\n\t\t\tRowset = %d",
                 statement,
                 f_concurrency,
                 (int)crow_keyset,

@@ -14,6 +14,7 @@
  * PAH	18.MAR.99	Created.
  **************************************************/
 
+#include <config.h>
 #include "ini.h"
 
 int iniGetBookmark( HINI hIni, HINIBOOKMARK hIniBookmark )

@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLDescribeParam.c,v 1.6 2008/05/20 13:43:47 lurcher Exp $
+ * $Id: SQLDescribeParam.c,v 1.7 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLDescribeParam.c,v $
+ * Revision 1.7  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.6  2008/05/20 13:43:47  lurcher
  * Vms fixes
  *
@@ -127,9 +130,10 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
-static char const rcsid[]= "$RCSfile: SQLDescribeParam.c,v $ $Revision: 1.6 $";
+static char const rcsid[]= "$RCSfile: SQLDescribeParam.c,v $ $Revision: 1.7 $";
 
 SQLRETURN SQLDescribeParam(
     SQLHSTMT           statement_handle,
@@ -164,12 +168,12 @@ SQLRETURN SQLDescribeParam(
     if ( log_info.log_flag )
     {
         sprintf( statement -> msg, "\n\t\tEntry:\
-            \n\t\t\tStatement = %p\
-            \n\t\t\tParameter Number = %d\
-            \n\t\t\tSQL Type = %p\
-            \n\t\t\tParam Def = %p\
-            \n\t\t\tScale = %p\
-            \n\t\t\tNullable = %p",
+\n\t\t\tStatement = %p\
+\n\t\t\tParameter Number = %d\
+\n\t\t\tSQL Type = %p\
+\n\t\t\tParam Def = %p\
+\n\t\t\tScale = %p\
+\n\t\t\tNullable = %p",
                 statement,
                 ipar,
                 pf_sql_type,

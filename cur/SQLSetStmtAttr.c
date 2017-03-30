@@ -3,7 +3,7 @@
  * unixODBC Cursor Library
  *
  * Created by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * copyright (c) 1999 Nick Gorham
  *
@@ -23,9 +23,15 @@
  *
  **********************************************************************
  *
- * $Id: SQLSetStmtAttr.c,v 1.6 2005/10/27 17:54:49 lurcher Exp $
+ * $Id: SQLSetStmtAttr.c,v 1.8 2009/02/18 17:59:18 lurcher Exp $
  *
  * $Log: SQLSetStmtAttr.c,v $
+ * Revision 1.8  2009/02/18 17:59:18  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
+ * Revision 1.7  2009/02/17 09:47:45  lurcher
+ * Clear up a number of bugs
+ *
  * Revision 1.6  2005/10/27 17:54:49  lurcher
  * fix what I suspect is a typo in qt.m4
  *
@@ -64,6 +70,7 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "cursorlibrary.h"
 
 SQLRETURN CLSetStmtAttr( SQLHSTMT statement_handle,
@@ -142,7 +149,7 @@ SQLRETURN CLSetStmtAttr( SQLHSTMT statement_handle,
         break;
 
       case SQL_ATTR_ROWS_FETCHED_PTR:
-        cl_statement -> rows_fetched_ptr = ( SQLUINTEGER * ) value;
+        cl_statement -> rows_fetched_ptr = ( SQLULEN * ) value;
         break;
 
       case SQL_ATTR_SIMULATE_CURSOR:

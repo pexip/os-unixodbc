@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLSpecialColumns.c,v 1.6 2004/01/12 09:54:39 lurcher Exp $
+ * $Id: SQLSpecialColumns.c,v 1.7 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLSpecialColumns.c,v $
+ * Revision 1.7  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.6  2004/01/12 09:54:39  lurcher
  *
  * Fix problem where STATE_S5 stops metadata calls
@@ -125,9 +128,10 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
-static char const rcsid[]= "$RCSfile: SQLSpecialColumns.c,v $ $Revision: 1.6 $";
+static char const rcsid[]= "$RCSfile: SQLSpecialColumns.c,v $ $Revision: 1.7 $";
 
 SQLRETURN SQLSpecialColumnsA( SQLHSTMT statement_handle,
            SQLUSMALLINT identifier_type,
@@ -187,13 +191,13 @@ SQLRETURN SQLSpecialColumns( SQLHSTMT statement_handle,
     if ( log_info.log_flag )
     {
         sprintf( statement -> msg, "\n\t\tEntry:\
-            \n\t\t\tStatement = %p\
-            \n\t\t\tIdentifier Type = %d\
-            \n\t\t\tCatalog Name = %s\
-            \n\t\t\tSchema Name = %s\
-            \n\t\t\tTable Name = %s\
-            \n\t\t\tScope = %d\
-            \n\t\t\tNullable = %d",
+\n\t\t\tStatement = %p\
+\n\t\t\tIdentifier Type = %d\
+\n\t\t\tCatalog Name = %s\
+\n\t\t\tSchema Name = %s\
+\n\t\t\tTable Name = %s\
+\n\t\t\tScope = %d\
+\n\t\t\tNullable = %d",
                 statement,
                 identifier_type,
                 __string_with_length( s1, catalog_name, name_length1 ), 

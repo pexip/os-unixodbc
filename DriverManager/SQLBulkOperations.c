@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLBulkOperations.c,v 1.3 2003/10/30 18:20:45 lurcher Exp $
+ * $Id: SQLBulkOperations.c,v 1.4 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLBulkOperations.c,v $
+ * Revision 1.4  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.3  2003/10/30 18:20:45  lurcher
  *
  * Fix broken thread protection
@@ -98,9 +101,10 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
-static char const rcsid[]= "$RCSfile: SQLBulkOperations.c,v $ $Revision: 1.3 $";
+static char const rcsid[]= "$RCSfile: SQLBulkOperations.c,v $ $Revision: 1.4 $";
 
 SQLRETURN SQLBulkOperations(
     SQLHSTMT        statement_handle,
@@ -130,8 +134,8 @@ SQLRETURN SQLBulkOperations(
     if ( log_info.log_flag )
     {
         sprintf( statement -> msg, "\n\t\tEntry:\
-            \n\t\t\tStatement = %p\
-            \n\t\t\tOption = %d",
+\n\t\t\tStatement = %p\
+\n\t\t\tOption = %d",
                 statement,
                 operation );
 

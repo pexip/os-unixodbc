@@ -11,6 +11,7 @@
  * Peter Harvey		- pharvey@codebydesign.com
  **************************************************/
 
+#include <config.h>
 #include "isql.h"
 #ifdef HAVE_READLINE
     #include <readline/readline.h>
@@ -23,6 +24,27 @@
     #endif 
 #endif
 
+static int OpenDatabase( SQLHENV *phEnv, SQLHDBC *phDbc, char *szDSN, char *szUID, char *szPWD );
+static int ExecuteSQL( SQLHDBC hDbc, char *szSQL, char cDelimiter, int bColumnNames, int bHTMLTable );
+static int ExecuteHelp( SQLHDBC hDbc, char *szSQL, char cDelimiter, int bColumnNames, int bHTMLTable );
+static int ExecuteSlash( SQLHDBC hDbc, char *szSQL, char cDelimiter, int bColumnNames, int bHTMLTable );
+static int	CloseDatabase( SQLHENV hEnv, SQLHDBC hDbc );
+
+static void WriteHeaderHTMLTable( SQLHSTMT hStmt );
+static void WriteHeaderNormal( SQLHSTMT hStmt, SQLCHAR	*szSepLine );
+static void WriteHeaderDelimited( SQLHSTMT hStmt, char cDelimiter );
+static void WriteBodyHTMLTable( SQLHSTMT hStmt );
+static SQLLEN WriteBodyNormal( SQLHSTMT hStmt );
+static void WriteBodyDelimited( SQLHSTMT hStmt, char cDelimiter );
+static void WriteFooterHTMLTable( SQLHSTMT hStmt );
+static void WriteFooterNormal( SQLHSTMT hStmt, SQLCHAR	*szSepLine, SQLLEN nRows );
+
+static int DumpODBCLog( SQLHENV hEnv, SQLHDBC hDbc, SQLHSTMT hStmt );
+static int get_args(char *string, char **args, int maxarg);
+static void free_args(char **args, int maxarg);
+static void output_help(void);
+
+
 int     bVerbose                    = 0;
 int     nUserWidth                  = 0;
 SQLHENV hEnv                        = 0;
@@ -34,22 +56,20 @@ int     ac_off                      = 0;
 int     bHTMLTable                  = 0;
 int     cDelimiter                  = 0;
 int     bColumnNames                = 0;
+int     buseDC                      = 0;
 SQLUSMALLINT    has_moreresults     = 1;
 
 int main( int argc, char *argv[] )
 {
     int     nArg, count;
     int     bNewStyle                   = 0;
-    int rc = 0;
     char    *szDSN;
     char    *szUID;
     char    *szPWD;
     char    *szSQL;
     char    *line_buffer;
-    char    *pEscapeChar;
     int     buffer_size = 9000;
     int     line_buffer_size = 9000;
-    int     contget = 1;
     int     bufpos,linen;
     char    prompt[24];
 
@@ -59,7 +79,7 @@ int main( int argc, char *argv[] )
 
     if ( argc < 2 )
     {
-        fprintf( stderr, szSyntax );
+        fputs( szSyntax, stderr );
         exit( 1 );
     }
 
@@ -110,6 +130,9 @@ int main( int argc, char *argv[] )
                 case 'n':
                     bNewStyle = 1;
                     break;
+                case 'k':
+                    buseDC = 1;
+                    break;
                 case '-':
                     printf( "unixODBC " VERSION "\n" );
                     exit(0);
@@ -129,7 +152,7 @@ int main( int argc, char *argv[] )
 #endif
 
                 default:
-                    fprintf( stderr, szSyntax );
+                    fputs( szSyntax, stderr );
                     exit( 1 );
             }
             continue;
@@ -227,7 +250,7 @@ int main( int argc, char *argv[] )
 
             add_history(line);
 #else
-            printf( prompt );
+            fputs( prompt, stdout );
 
             line = fgets( line_buffer, line_buffer_size, stdin );
             if ( !line )        /* EOF - ctrl D */
@@ -237,15 +260,20 @@ int main( int argc, char *argv[] )
             }
             else
             {
-                malloced = 0;
+				if ( line[ 0 ] == '\n' ) 
+				{
+					malloced = 1;
+					line = strdup( "quit" );
+				}
+				else 
+				{
+					malloced = 0;
+				}
             }
 #endif
         }
         else
         {
-            char *line;
-            int malloced;
-
             line = fgets( line_buffer, line_buffer_size, stdin );
             if ( !line )        /* EOF - ctrl D */
             {
@@ -254,7 +282,15 @@ int main( int argc, char *argv[] )
             }
             else
             {
-                malloced = 0;
+				if ( line[ 0 ] == '\n' ) 
+				{
+					malloced = 1;
+					line = strdup( "quit" );
+				}
+				else 
+				{
+					malloced = 0;
+				}
             }
         }
 
@@ -300,7 +336,7 @@ int main( int argc, char *argv[] )
                 exec_now = 1;
                 len --;
             }
-            else if ( len == 2 && memcmp( line, "go", 2 ) == 0 )
+            else if ( len == 3 && memcmp( line, "go", 2 ) == 0 )
             {
                 exec_now = 1;
                 dont_copy = 1;
@@ -468,13 +504,25 @@ OpenDatabase( SQLHENV *phEnv, SQLHDBC *phDbc, char *szDSN, char *szUID, char *sz
             return 0;
         }
 
-        if ( !SQL_SUCCEEDED( SQLConnect( *phDbc, (SQLCHAR*)szDSN, SQL_NTS, (SQLCHAR*)szUID, SQL_NTS, (SQLCHAR*)szPWD, SQL_NTS )))
-        {
-            if ( bVerbose ) DumpODBCLog( hEnv, hDbc, 0 );
-            fprintf( stderr, "[ISQL]ERROR: Could not SQLConnect\n" );
-            SQLFreeHandle( SQL_HANDLE_DBC, *phDbc );
-            SQLFreeHandle( SQL_HANDLE_ENV, *phEnv );
-            return 0;
+        if ( buseDC ) {
+            if ( !SQL_SUCCEEDED( SQLDriverConnect( *phDbc, NULL, (SQLCHAR*)szDSN, SQL_NTS, NULL, 0, NULL, SQL_DRIVER_NOPROMPT )))
+            {
+                if ( bVerbose ) DumpODBCLog( hEnv, hDbc, 0 );
+                fprintf( stderr, "[ISQL]ERROR: Could not SQLDriverConnect\n" );
+                SQLFreeHandle( SQL_HANDLE_DBC, *phDbc );
+                SQLFreeHandle( SQL_HANDLE_ENV, *phEnv );
+                return 0;
+            }
+        }
+        else {
+            if ( !SQL_SUCCEEDED( SQLConnect( *phDbc, (SQLCHAR*)szDSN, SQL_NTS, (SQLCHAR*)szUID, SQL_NTS, (SQLCHAR*)szPWD, SQL_NTS )))
+            {
+                if ( bVerbose ) DumpODBCLog( hEnv, hDbc, 0 );
+                fprintf( stderr, "[ISQL]ERROR: Could not SQLConnect\n" );
+                SQLFreeHandle( SQL_HANDLE_DBC, *phDbc );
+                SQLFreeHandle( SQL_HANDLE_ENV, *phEnv );
+                return 0;
+            }
         }
     }
     else
@@ -493,13 +541,25 @@ OpenDatabase( SQLHENV *phEnv, SQLHDBC *phDbc, char *szDSN, char *szUID, char *sz
             return 0;
         }
 
-        if ( !SQL_SUCCEEDED( SQLConnect( *phDbc, (SQLCHAR*)szDSN, SQL_NTS, (SQLCHAR*)szUID, SQL_NTS, (SQLCHAR*)szPWD, SQL_NTS )))
-        {
-            if ( bVerbose ) DumpODBCLog( hEnv, hDbc, 0 );
-            fprintf( stderr, "[ISQL]ERROR: Could not SQLConnect\n" );
-            SQLFreeConnect( *phDbc );
-            SQLFreeEnv( *phEnv );
-            return 0;
+        if ( buseDC ) {
+            if ( !SQL_SUCCEEDED( SQLDriverConnect( *phDbc, NULL, (SQLCHAR*)szDSN, SQL_NTS, NULL, 0, NULL, SQL_DRIVER_NOPROMPT )))
+            {
+                if ( bVerbose ) DumpODBCLog( hEnv, hDbc, 0 );
+                fprintf( stderr, "[ISQL]ERROR: Could not SQLDriverConnect\n" );
+                SQLFreeConnect( *phDbc );
+                SQLFreeEnv( *phEnv );
+                return 0;
+            }
+        }
+        else {
+            if ( !SQL_SUCCEEDED( SQLConnect( *phDbc, (SQLCHAR*)szDSN, SQL_NTS, (SQLCHAR*)szUID, SQL_NTS, (SQLCHAR*)szPWD, SQL_NTS )))
+            {
+                if ( bVerbose ) DumpODBCLog( hEnv, hDbc, 0 );
+                fprintf( stderr, "[ISQL]ERROR: Could not SQLConnect\n" );
+                SQLFreeConnect( *phDbc );
+                SQLFreeEnv( *phEnv );
+                return 0;
+            }
         }
     }
 
@@ -867,7 +927,7 @@ ExecuteSQL( SQLHDBC hDbc, char *szSQL, char cDelimiter, int bColumnNames, int bH
         }
     }
 
-    if ( SQLPrepare( hStmt, (SQLCHAR*)szSQL, SQL_NTS ) != SQL_SUCCESS )
+    if ( SQLPrepare( hStmt, (SQLCHAR*)szSQL, strlen( szSQL )) != SQL_SUCCESS )
     {
         if ( bVerbose ) DumpODBCLog( hEnv, hDbc, hStmt );
         fprintf( stderr, "[ISQL]ERROR: Could not SQLPrepare\n" );
@@ -1364,18 +1424,18 @@ static void WriteHeaderNormal( SQLHSTMT hStmt, SQLCHAR *szSepLine )
 
         /* HDR */
         sret = sprintf( (char*)szColumn, "| %-*.*s",
-                        nOptimalDisplayWidth, nOptimalDisplayWidth, szColumnName );
+                        (int)nOptimalDisplayWidth, (int)nOptimalDisplayWidth, szColumnName );
         if (sret < 0)
             sprintf((char *)szColumn, "| %-*.*s",
-                    nOptimalDisplayWidth, nOptimalDisplayWidth, "**ERROR**");
+                    (int)nOptimalDisplayWidth, (int)nOptimalDisplayWidth, "**ERROR**");
         strcat( (char*)szHdrLine,(char*) szColumn );
     }
     strcat((char*) szSepLine, "+\n" );
     strcat((char*) szHdrLine, "|\n" );
 
-    printf((char*) szSepLine );
-    printf((char*) szHdrLine );
-    printf((char*) szSepLine );
+    fputs((char*) szSepLine, stdout );
+    fputs((char*) szHdrLine, stdout );
+    fputs((char*) szSepLine, stdout );
     free(szHdrLine);
 }
 
@@ -1413,9 +1473,9 @@ static SQLLEN WriteBodyNormal( SQLHSTMT hStmt )
             if ( nReturn == SQL_SUCCESS && nIndicator != SQL_NULL_DATA )
             {
                 sret = sprintf( (char*)szColumn, "| %-*.*s",
-                                nOptimalDisplayWidth, nOptimalDisplayWidth, szColumnValue );
+                                (int)nOptimalDisplayWidth, (int)nOptimalDisplayWidth, szColumnValue );
                 if (sret < 0) sprintf( (char*)szColumn, "| %-*.*s",
-                                       nOptimalDisplayWidth, nOptimalDisplayWidth, "**ERROR**" );
+                                       (int)nOptimalDisplayWidth, (int)nOptimalDisplayWidth, "**ERROR**" );
 
             }
             else if ( nReturn == SQL_ERROR )
@@ -1424,7 +1484,7 @@ static SQLLEN WriteBodyNormal( SQLHSTMT hStmt )
             }
             else
             {
-                sprintf( (char*)szColumn, "| %-*s", nOptimalDisplayWidth, "" );
+                sprintf( (char*)szColumn, "| %-*s", (int)nOptimalDisplayWidth, "" );
             }
             fputs( (char*)szColumn, stdout );
         } /* for columns */
@@ -1447,14 +1507,14 @@ WriteFooterNormal( SQLHSTMT hStmt, SQLCHAR  *szSepLine, SQLLEN nRows )
 {
     SQLLEN  nRowsAffected   = -1;
 
-    printf( (char*)szSepLine );
+    fputs( (char*)szSepLine, stdout );
 
     SQLRowCount( hStmt, &nRowsAffected );
-    printf( "SQLRowCount returns %d\n", nRowsAffected );
+    printf( "SQLRowCount returns %ld\n", nRowsAffected );
 
     if ( nRows )
     {
-        printf( "%d rows fetched\n", nRows );
+        printf( "%ld rows fetched\n", nRows );
     }
 }
 

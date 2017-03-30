@@ -15,6 +15,7 @@
  * Peter Harvey		- pharvey@codebydesign.com
  **************************************************/
 
+#include <config.h>
 #include "ini.h"
 
 int iniElement( char *pszData, char cSeperator, char cTerminator, int nElement, char *pszElement, int nMaxElement )

@@ -3,7 +3,7 @@
  * unixODBC Cursor Library
  *
  * Created by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * copyright (c) 1999 Nick Gorham
  *
@@ -23,9 +23,15 @@
  *
  **********************************************************************
  *
- * $Id: SQLGetDiagRec.c,v 1.5 2008/01/02 15:10:33 lurcher Exp $
+ * $Id: SQLGetDiagRec.c,v 1.7 2009/02/18 17:59:17 lurcher Exp $
  *
  * $Log: SQLGetDiagRec.c,v $
+ * Revision 1.7  2009/02/18 17:59:17  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
+ * Revision 1.6  2009/02/17 09:47:45  lurcher
+ * Clear up a number of bugs
+ *
  * Revision 1.5  2008/01/02 15:10:33  lurcher
  * Fix problems trying to use the cursor lib on a non select statement
  *
@@ -54,6 +60,7 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "cursorlibrary.h"
 
 SQLRETURN CLGetDiagRec( SQLSMALLINT handle_type,
@@ -65,7 +72,6 @@ SQLRETURN CLGetDiagRec( SQLSMALLINT handle_type,
         SQLSMALLINT buffer_length,
         SQLSMALLINT *text_length_ptr )
 {
-    SQLRETURN ret;
     CLHDBC cl_connection = (CLHDBC) handle;
     DRV_SQLHANDLE dhandle;
 

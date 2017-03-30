@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,18 @@
  *
  **********************************************************************
  *
- * $Id: SQLDriverConnectW.c,v 1.15 2008/09/29 14:02:44 lurcher Exp $
+ * $Id: SQLDriverConnectW.c,v 1.18 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLDriverConnectW.c,v $
+ * Revision 1.18  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
+ * Revision 1.17  2009/01/16 11:02:38  lurcher
+ * Interface to GUI for DSN selection
+ *
+ * Revision 1.16  2009/01/12 15:18:15  lurcher
+ * Add interface into odbcinstQ to allow for a dialog if SQLDriverConnect is called without a DSN=
+ *
  * Revision 1.15  2008/09/29 14:02:44  lurcher
  * Fix missing dlfcn group option
  *
@@ -114,6 +123,7 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include <string.h>
 #include "drivermanager.h"
 
@@ -149,8 +159,6 @@ int got_driver = 0;    /* if we have a DRIVER or FILEDSN then ignore any DSN */
     {
         /* connection-string ::= empty-string [;] */
         free( local_str );
-
-        __append_pair( con_str, "DSN", "DEFAULT" );
         return 0;
     }
 
@@ -166,7 +174,7 @@ int got_driver = 0;    /* if we have a DRIVER or FILEDSN then ignore any DSN */
             got_dsn = 1;
         }
         else if ( strcasecmp( cp -> keyword, "DRIVER" ) == 0 ||
-            strcmp( cp -> keyword, "FILEDSN" ) == 0 )
+            strcasecmp( cp -> keyword, "FILEDSN" ) == 0 )
         {
             if ( got_dsn )
                 continue;
@@ -178,12 +186,6 @@ int got_driver = 0;    /* if we have a DRIVER or FILEDSN then ignore any DSN */
         free( cp -> keyword );
         free( cp -> attribute );
         free( cp );
-    }
-
-    /* if no dsn or DRIVER, then set DSN=DEFAULT */
-    if ( !got_driver && !got_dsn )
-    {
-        __append_pair( con_str, "DSN", "DEFAULT" );
     }
 
     free( local_str );
@@ -206,6 +208,8 @@ SQLRETURN SQLDriverConnectW(
     char *driver = NULL, *dsn = NULL;
     char lib_name[ INI_MAX_PROPERTY_VALUE + 1 ];
     char driver_name[ INI_MAX_PROPERTY_VALUE + 1 ];
+	SQLWCHAR local_conn_string[ 1024 ];
+	SQLCHAR local_conn_str_in[ 1024 ];
     SQLRETURN ret_from_connect;
     SQLCHAR s1[ 2048 ];
     int warnings;
@@ -266,13 +270,13 @@ SQLRETURN SQLDriverConnectW(
     if ( log_info.log_flag )
     {
         sprintf( connection -> msg, "\n\t\tEntry:\
-            \n\t\t\tConnection = %p\
-            \n\t\t\tWindow Hdl = %p\
-            \n\t\t\tStr In = %s\
-            \n\t\t\tStr Out = %p\
-            \n\t\t\tStr Out Max = %d\
-            \n\t\t\tStr Out Ptr = %p\
-            \n\t\t\tCompletion = %d",
+\n\t\t\tConnection = %p\
+\n\t\t\tWindow Hdl = %p\
+\n\t\t\tStr In = %s\
+\n\t\t\tStr Out = %p\
+\n\t\t\tStr Out Max = %d\
+\n\t\t\tStr Out Ptr = %p\
+\n\t\t\tCompletion = %d",
                 connection,
                 hwnd,
                 __wstring_with_length_hide_pwd( s1, conn_str_in, 
@@ -363,25 +367,83 @@ SQLRETURN SQLDriverConnectW(
      * parse the connection string
      */
 
-    if ( !conn_str_in )
-    {
+	if ( driver_completion == SQL_DRIVER_NOPROMPT ) 
+	{
         char *ansi_conn_str_in;
 
-        /*
-         * not quite by the book, but better than nothing
-         */
+    	if ( !conn_str_in )
+    	{
+        	ansi_conn_str_in = "DSN=DEFAULT;";
+        	len_conn_str_in = strlen( ansi_conn_str_in );
 
-        ansi_conn_str_in = "DSN=DEFAULT;";
-        len_conn_str_in = strlen( ansi_conn_str_in );
+			ansi_to_unicode_copy( local_conn_string, ansi_conn_str_in, len_conn_str_in, connection );
+			conn_str_in = local_conn_string;
 
-        __parse_connection_string( &con_struct,
-                ansi_conn_str_in, len_conn_str_in );
+			__parse_connection_string( &con_struct,
+				ansi_conn_str_in, len_conn_str_in );
+		}
+		else 
+		{
+			__parse_connection_string_w( &con_struct,
+				conn_str_in, len_conn_str_in );
+		}
     }
-    else
-    {
-        __parse_connection_string_w( &con_struct,
-                conn_str_in, len_conn_str_in );
-    }
+	else {
+        char *ansi_conn_str_in;
+
+    	if ( !conn_str_in )
+    	{
+        	ansi_conn_str_in = "";
+        	len_conn_str_in = strlen( ansi_conn_str_in );
+
+    		__parse_connection_string( &con_struct,
+            		ansi_conn_str_in, len_conn_str_in );
+		}
+		else {
+    		__parse_connection_string_w( &con_struct,
+            		conn_str_in, len_conn_str_in );
+		}
+
+		if ( !__get_attribute_value( &con_struct, "DSN" ) && 
+			!__get_attribute_value( &con_struct, "DRIVER" ) && 
+			!__get_attribute_value( &con_struct, "FILEDSN" ))
+		{
+			int ret;
+			SQLCHAR returned_dsn[ 128 ], *prefix, *target;
+
+			/*
+			 * try and call GUI to obtain a DSN
+			 */
+
+			ret = _SQLDriverConnectPrompt( hwnd, returned_dsn, sizeof( returned_dsn ));
+			if ( !ret || returned_dsn[ 0 ] == '\0' ) 
+			{
+        		__append_pair( &con_struct, "DSN", "DEFAULT" );
+			}
+			else 
+			{
+				prefix = returned_dsn;
+				target = strchr( returned_dsn, '=' );
+				if ( target ) 
+				{
+					*target = '\0';
+					target ++;
+        			__append_pair( &con_struct, prefix, target );
+				}
+				else {
+        			__append_pair( &con_struct, "DSN", returned_dsn );
+				}
+			}
+
+			/*
+			 * regenerate to pass to driver
+			 */
+			__generate_connection_string( &con_struct, local_conn_str_in, sizeof( local_conn_str_in ));
+        	len_conn_str_in = strlen((char*) local_conn_str_in );
+			ansi_to_unicode_copy( local_conn_string, local_conn_str_in, len_conn_str_in, connection );
+			conn_str_in = local_conn_string;
+		}
+	}
 
     /*
      * look for some keywords
@@ -494,6 +556,12 @@ SQLRETURN SQLDriverConnectW(
          */
 
         __handle_attr_extensions( connection, dsn, driver_name );
+    }
+    else {
+        /* 
+         * the attributes may be in the connection string
+         */
+        __handle_attr_extensions_cs( connection, &con_struct );
     }
 
     __release_conn( &con_struct );

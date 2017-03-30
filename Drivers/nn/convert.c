@@ -12,6 +12,7 @@
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
 **/
+#include <config.h>
 #include "driver.h"
 
 /* It looks silly to use a MEM_ALLOC() in function char2str(), etc,

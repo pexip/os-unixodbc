@@ -9,14 +9,17 @@
  * -----------------------------------------------
  * Peter Harvey		- pharvey@codebydesign.com
  **************************************************/
+#include <config.h>
 #include <odbcinstext.h>
 
+/*
 static const char *aYesNo[] =
 {
 	"Yes",
 	"No",
 	NULL
 };
+*/
 
 /*! 
  * \brief   Builds a property list for pszDriver.

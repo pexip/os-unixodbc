@@ -1,7 +1,7 @@
 /*********************************************************************
  *
  * Written by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * copyright (c) 1999 Nick Gorham
  *
@@ -21,9 +21,15 @@
  *
  **********************************************************************
  *
- * $Id: __attribute.c,v 1.7 2007/07/13 09:01:08 lurcher Exp $
+ * $Id: __attribute.c,v 1.9 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: __attribute.c,v $
+ * Revision 1.9  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
+ * Revision 1.8  2009/02/17 09:47:44  lurcher
+ * Clear up a number of bugs
+ *
  * Revision 1.7  2007/07/13 09:01:08  lurcher
  * Add isql option to quote field data
  *
@@ -57,6 +63,7 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include <string.h>
 #include "drivermanager.h"
 
@@ -1227,6 +1234,7 @@ void *__attr_override( void *handle, int type, int attribute, void *value, SQLIN
 
       default:
         as = NULL;
+		msg = NULL;
         break;
     }
 
@@ -1288,6 +1296,7 @@ void *__attr_override_wide( void *handle, int type, int attribute, void *value, 
 
       default:
         as = NULL;
+		msg = NULL;
         break;
     }
 
@@ -1338,3 +1347,235 @@ void *__attr_override_wide( void *handle, int type, int attribute, void *value, 
         return value;
     }
 }
+
+/*
+ * check for valid attributes in the setting functions
+ */
+
+int dm_check_connection_attrs( DMHDBC connection, SQLINTEGER attribute, SQLPOINTER value )
+{
+    SQLINTEGER ival;
+
+    ival = (SQLINTEGER) value;
+
+    switch( attribute ) 
+    {
+        case SQL_ACCESS_MODE:
+            if ( ival != SQL_MODE_READ_ONLY && ival != SQL_MODE_READ_WRITE ) 
+            {
+                return SQL_ERROR;
+            }
+            break;
+
+        case SQL_ATTR_ASYNC_ENABLE:
+            if ( ival != SQL_ASYNC_ENABLE_OFF && ival != SQL_ASYNC_ENABLE_ON ) 
+            {
+                return SQL_ERROR;
+            }
+            break;
+
+        case SQL_ATTR_AUTO_IPD:
+            if ( ival != SQL_TRUE && ival != SQL_FALSE ) 
+            {
+                return SQL_ERROR;
+            }
+            break;
+
+        case SQL_ATTR_AUTOCOMMIT:
+            if ( ival != SQL_AUTOCOMMIT_ON && ival != SQL_AUTOCOMMIT_OFF ) 
+            {
+                return SQL_ERROR;
+            }
+            break;
+
+        case SQL_ATTR_METADATA_ID:
+            if ( ival != SQL_TRUE && ival != SQL_FALSE ) 
+            {
+                return SQL_ERROR;
+            }
+            break;
+
+        case SQL_ATTR_ODBC_CURSORS:
+            if ( ival != SQL_CUR_USE_IF_NEEDED && ival != SQL_CUR_USE_ODBC &&
+                ival != SQL_CUR_USE_DRIVER ) 
+            {
+                return SQL_ERROR;
+            }
+            break;
+
+        case SQL_ATTR_TRACE:
+            if ( ival != SQL_OPT_TRACE_ON && ival != SQL_OPT_TRACE_OFF ) 
+            {
+                return SQL_ERROR;
+            }
+            break;
+
+        /*
+         * include statement attributes as well
+         */
+
+        case SQL_ATTR_CONCURRENCY:
+            if ( ival != SQL_CONCUR_READ_ONLY && ival != SQL_CONCUR_LOCK &&
+                ival != SQL_CONCUR_ROWVER && ival != SQL_CONCUR_VALUES ) 
+            {
+                return SQL_ERROR;
+            }
+            break;
+
+        case SQL_ATTR_CURSOR_SCROLLABLE:
+            if ( ival != SQL_NONSCROLLABLE && ival != SQL_SCROLLABLE )
+            {
+                return SQL_ERROR;
+            }
+            break;
+
+        case SQL_ATTR_CURSOR_SENSITIVITY:
+            if ( ival != SQL_UNSPECIFIED && ival != SQL_INSENSITIVE 
+                && ival != SQL_SENSITIVE )
+            {
+                return SQL_ERROR;
+            }
+            break;
+
+        case SQL_ATTR_CURSOR_TYPE:
+            if ( ival != SQL_CURSOR_FORWARD_ONLY && ival != SQL_CURSOR_STATIC &&
+                ival != SQL_CURSOR_KEYSET_DRIVEN && ival != SQL_CURSOR_DYNAMIC ) 
+            {
+                return SQL_ERROR;
+            }
+            break;
+
+        case SQL_ATTR_ENABLE_AUTO_IPD:
+            if ( ival != SQL_TRUE && ival != SQL_FALSE )
+            {
+                return SQL_ERROR;
+            }
+            break;
+
+        case SQL_ATTR_NOSCAN:
+            if ( ival != SQL_NOSCAN_ON && ival != SQL_NOSCAN_OFF )
+            {
+                return SQL_ERROR;
+            }
+            break;
+
+        case SQL_ATTR_RETRIEVE_DATA:
+            if ( ival != SQL_RD_ON && ival != SQL_RD_OFF )
+            {
+                return SQL_ERROR;
+            }
+            break;
+
+        case SQL_ATTR_SIMULATE_CURSOR:
+            if ( ival != SQL_SC_NON_UNIQUE && ival != SQL_SC_TRY_UNIQUE &&
+                ival != SQL_SC_UNIQUE )
+            {
+                return SQL_ERROR;
+            }
+            break;
+
+        case SQL_ATTR_USE_BOOKMARKS:
+            if ( ival != SQL_UB_OFF && ival != SQL_UB_VARIABLE &&
+                ival != SQL_UB_FIXED )
+            {
+                return SQL_ERROR;
+            }
+            break;
+
+        default:
+            return SQL_SUCCESS;
+    }
+
+    return SQL_SUCCESS;
+}
+
+int dm_check_statement_attrs( DMHSTMT statement, SQLINTEGER attribute, SQLPOINTER value )
+{
+    SQLUINTEGER ival;
+
+    ival = (SQLUINTEGER) value;
+
+    switch( attribute ) 
+    {
+        case SQL_ATTR_ASYNC_ENABLE:
+            if ( ival != SQL_ASYNC_ENABLE_OFF && ival != SQL_ASYNC_ENABLE_ON ) 
+            {
+                return SQL_ERROR;
+            }
+            break;
+
+        case SQL_ATTR_CONCURRENCY:
+            if ( ival != SQL_CONCUR_READ_ONLY && ival != SQL_CONCUR_LOCK &&
+                ival != SQL_CONCUR_ROWVER && ival != SQL_CONCUR_VALUES ) 
+            {
+                return SQL_ERROR;
+            }
+            break;
+
+        case SQL_ATTR_CURSOR_SCROLLABLE:
+            if ( ival != SQL_NONSCROLLABLE && ival != SQL_SCROLLABLE )
+            {
+                return SQL_ERROR;
+            }
+            break;
+
+        case SQL_ATTR_CURSOR_SENSITIVITY:
+            if ( ival != SQL_UNSPECIFIED && ival != SQL_INSENSITIVE 
+                && ival != SQL_SENSITIVE )
+            {
+                return SQL_ERROR;
+            }
+            break;
+
+        case SQL_ATTR_CURSOR_TYPE:
+            if ( ival != SQL_CURSOR_FORWARD_ONLY && ival != SQL_CURSOR_STATIC &&
+                ival != SQL_CURSOR_KEYSET_DRIVEN && ival != SQL_CURSOR_DYNAMIC ) 
+            {
+                return SQL_ERROR;
+            }
+            break;
+
+        case SQL_ATTR_ENABLE_AUTO_IPD:
+            if ( ival != SQL_TRUE && ival != SQL_FALSE )
+            {
+                return SQL_ERROR;
+            }
+            break;
+
+        case SQL_ATTR_NOSCAN:
+            if ( ival != SQL_NOSCAN_ON && ival != SQL_NOSCAN_OFF )
+            {
+                return SQL_ERROR;
+            }
+            break;
+
+        case SQL_ATTR_RETRIEVE_DATA:
+            if ( ival != SQL_RD_ON && ival != SQL_RD_OFF )
+            {
+                return SQL_ERROR;
+            }
+            break;
+
+        case SQL_ATTR_SIMULATE_CURSOR:
+            if ( ival != SQL_SC_NON_UNIQUE && ival != SQL_SC_TRY_UNIQUE &&
+                ival != SQL_SC_UNIQUE )
+            {
+                return SQL_ERROR;
+            }
+            break;
+
+        case SQL_ATTR_USE_BOOKMARKS:
+            if ( ival != SQL_UB_OFF && ival != SQL_UB_VARIABLE &&
+                ival != SQL_UB_FIXED )
+            {
+                return SQL_ERROR;
+            }
+            break;
+
+        default:
+            return SQL_SUCCESS;
+    }
+
+    return SQL_SUCCESS;
+}
+

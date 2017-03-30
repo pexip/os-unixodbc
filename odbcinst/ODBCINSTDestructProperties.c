@@ -9,13 +9,13 @@
  * -----------------------------------------------
  * Peter Harvey		- pharvey@codebydesign.com
  **************************************************/
+#include <config.h>
 #include <odbcinstext.h>
 
 int ODBCINSTDestructProperties( HODBCINSTPROPERTY *hFirstProperty )
 {
 	HODBCINSTPROPERTY	hNextProperty;
 	HODBCINSTPROPERTY	hCurProperty;
-	int					nData;
 
 	/* SANITY CHECKS */
 	if ( (*hFirstProperty) == NULL )

@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,15 @@
  *
  **********************************************************************
  *
- * $Id: SQLColAttributesW.c,v 1.12 2008/08/29 08:01:38 lurcher Exp $
+ * $Id: SQLColAttributesW.c,v 1.14 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLColAttributesW.c,v $
+ * Revision 1.14  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
+ * Revision 1.13  2009/02/17 09:47:44  lurcher
+ * Clear up a number of bugs
+ *
  * Revision 1.12  2008/08/29 08:01:38  lurcher
  * Alter the way W functions are passed to the driver
  *
@@ -98,6 +104,7 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
 static char const rcsid[]= "$RCSfile: SQLColAttributesW.c,v $";
@@ -166,13 +173,13 @@ SQLRETURN SQLColAttributesW( SQLHSTMT statement_handle,
     if ( log_info.log_flag )
     {
         sprintf( statement -> msg, "\n\t\tEntry:\
-            \n\t\t\tStatement = %p\
-            \n\t\t\tColumn Number = %d\
-            \n\t\t\tField Identifier = %s\
-            \n\t\t\tCharacter Attr = %p\
-            \n\t\t\tBuffer Length = %d\
-            \n\t\t\tString Length = %p\
-            \n\t\t\tNumeric Attribute = %p",
+\n\t\t\tStatement = %p\
+\n\t\t\tColumn Number = %d\
+\n\t\t\tField Identifier = %s\
+\n\t\t\tCharacter Attr = %p\
+\n\t\t\tBuffer Length = %d\
+\n\t\t\tString Length = %p\
+\n\t\t\tNumeric Attribute = %p",
                 statement,
                 column_number,
                 __col_attr_as_string( s1, field_identifier ),
@@ -368,7 +375,7 @@ SQLRETURN SQLColAttributesW( SQLHSTMT statement_handle,
         {
             if ( CHECK_SQLCOLATTRIBUTE( statement -> connection ))
             {
-                SQLCHAR *as1;
+                SQLCHAR *as1 = NULL;
 
                 /*
                  * map to the ODBC3 function
@@ -460,7 +467,7 @@ SQLRETURN SQLColAttributesW( SQLHSTMT statement_handle,
         }
         else
         {
-            SQLCHAR *as1;
+            SQLCHAR *as1 = NULL;
 
             switch( field_identifier )
             {

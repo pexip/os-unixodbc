@@ -3,6 +3,9 @@
  *  unixODBC (http://www.unixodbc.org) to define tds DSNs.
  *
  *  $Log: oraodbcS.c,v $
+ *  Revision 1.4  2009/02/18 17:59:08  lurcher
+ *  Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  *  Revision 1.3  2003/07/21 17:10:09  lurcher
  *
  *  Start new version and add missing comma to oracle setup
@@ -24,6 +27,7 @@
  *
  */
 
+#include <config.h>
 #include <odbcinstext.h>
 
 static const char *aYesNo[] =

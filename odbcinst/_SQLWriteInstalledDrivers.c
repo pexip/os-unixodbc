@@ -15,6 +15,7 @@
  * Peter Harvey		- pharvey@codebydesign.com
  **************************************************/
 
+#include <config.h>
 #include <odbcinstext.h>
 
 BOOL _SQLWriteInstalledDrivers(

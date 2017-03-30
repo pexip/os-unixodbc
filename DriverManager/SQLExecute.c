@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * copyright (c) 1999 Nick Gorham
  *
@@ -27,9 +27,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLExecute.c,v 1.8 2004/07/25 00:42:02 peteralexharvey Exp $
+ * $Id: SQLExecute.c,v 1.9 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLExecute.c,v $
+ * Revision 1.9  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.8  2004/07/25 00:42:02  peteralexharvey
  * for OS2 port
  *
@@ -146,9 +149,10 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
-static char const rcsid[]= "$RCSfile: SQLExecute.c,v $ $Revision: 1.8 $";
+static char const rcsid[]= "$RCSfile: SQLExecute.c,v $ $Revision: 1.9 $";
 
 SQLRETURN SQLExecute( SQLHSTMT statement_handle )
 {
@@ -176,7 +180,7 @@ SQLRETURN SQLExecute( SQLHSTMT statement_handle )
     if ( log_info.log_flag )
     {
         sprintf( statement -> msg, "\n\t\tEntry:\
-            \n\t\t\tStatement = %p",
+\n\t\t\tStatement = %p",
                 statement );
 
         dm_log_write( __FILE__, 
@@ -197,7 +201,7 @@ SQLRETURN SQLExecute( SQLHSTMT statement_handle )
             statement -> state == STATE_S6 ||
             statement -> state == STATE_S7 )
 #else
-    if ( statement -> state == STATE_S6 ||
+    if (( statement -> state == STATE_S6 && statement -> eod == 0 ) ||
             statement -> state == STATE_S7 )
 #endif
     {
@@ -294,7 +298,7 @@ SQLRETURN SQLExecute( SQLHSTMT statement_handle )
 
         if ( ret == SQL_SUCCESS_WITH_INFO )
         {
-            function_return_ex( SQL_HANDLE_STMT, statement, ret, TRUE );
+            function_return_ex( IGNORE_THREAD, statement, ret, TRUE );
         }
 
         local_ret = SQLNUMRESULTCOLS( statement -> connection,

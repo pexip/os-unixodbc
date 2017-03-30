@@ -3,7 +3,7 @@
  * unixODBC Cursor Library
  *
  * Created by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * copyright (c) 1999 Nick Gorham
  *
@@ -23,9 +23,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLParamOptions.c,v 1.2 2007/02/12 11:49:35 lurcher Exp $
+ * $Id: SQLParamOptions.c,v 1.3 2009/02/18 17:59:18 lurcher Exp $
  *
  * $Log: SQLParamOptions.c,v $
+ * Revision 1.3  2009/02/18 17:59:18  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.2  2007/02/12 11:49:35  lurcher
  * Add QT4 support to existing GUI parts
  *
@@ -45,6 +48,7 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "cursorlibrary.h"
 
 SQLRETURN CLParamOptions(

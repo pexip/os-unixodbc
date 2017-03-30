@@ -10,6 +10,7 @@
  * Peter Harvey		- pharvey@codebydesign.com
  **************************************************/
 
+#include <config.h>
 #include "ini.h"
 
 int iniElementCount( char *pszData, char cSeperator, char cTerminator )

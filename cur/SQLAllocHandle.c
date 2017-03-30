@@ -3,7 +3,7 @@
  * unixODBC Cursor Library
  *
  * Created by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * copyright (c) 1999 Nick Gorham
  *
@@ -23,9 +23,15 @@
  *
  **********************************************************************
  *
- * $Id: SQLAllocHandle.c,v 1.4 2005/07/08 12:11:23 lurcher Exp $
+ * $Id: SQLAllocHandle.c,v 1.6 2009/02/18 17:59:17 lurcher Exp $
  *
  * $Log: SQLAllocHandle.c,v $
+ * Revision 1.6  2009/02/18 17:59:17  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
+ * Revision 1.5  2009/02/17 09:47:45  lurcher
+ * Clear up a number of bugs
+ *
  * Revision 1.4  2005/07/08 12:11:23  lurcher
  *
  * Fix a cursor lib problem (it was broken if you did metadata calls)
@@ -66,6 +72,7 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "cursorlibrary.h"
 
 SQLRETURN CLAllocHandle( SQLSMALLINT handle_type,
@@ -148,4 +155,6 @@ SQLRETURN CLAllocHandle( SQLSMALLINT handle_type,
            }
            break;
     }
+
+	return SQL_ERROR;
 }

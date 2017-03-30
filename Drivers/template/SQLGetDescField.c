@@ -10,6 +10,7 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "driver.h"
 
 SQLRETURN  SQLGetDescField(  SQLHDESC            DescriptorHandle,

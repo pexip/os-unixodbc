@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLBrowseConnectW.c,v 1.12 2007/10/19 10:14:05 lurcher Exp $
+ * $Id: SQLBrowseConnectW.c,v 1.13 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLBrowseConnectW.c,v $
+ * Revision 1.13  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.12  2007/10/19 10:14:05  lurcher
  * Pull errors from SQLBrowseConnect when it returns SQL_NEED_DATA
  *
@@ -114,6 +117,7 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
 static char const rcsid[]= "$RCSfile: SQLBrowseConnectW.c,v $";
@@ -192,10 +196,10 @@ SQLRETURN SQLBrowseConnectW(
     if ( log_info.log_flag )
     {
         sprintf( connection -> msg, "\n\t\tEntry:\
-            \n\t\t\tConnection = %p\
-            \n\t\t\tStr In = %s\
-            \n\t\t\tStr Out = %s\
-            \n\t\t\tPtr Conn Str Out = %p",
+\n\t\t\tConnection = %p\
+\n\t\t\tStr In = %s\
+\n\t\t\tStr Out = %s\
+\n\t\t\tPtr Conn Str Out = %p",
                 connection,
                 __wstring_with_length( s1, conn_str_in, len_conn_str_in ), 
                 __wstring_with_length( s2, conn_str_out, conn_str_out_max ), 
@@ -620,7 +624,7 @@ SQLRETURN SQLBrowseConnectW(
 
         if( ret == SQL_SUCCESS_WITH_INFO )
         {
-            function_return_ex( SQL_HANDLE_DBC, connection, ret, TRUE );
+            function_return_ex( IGNORE_THREAD, connection, ret, TRUE );
         }
 
         if ( !__connect_part_two( connection ))

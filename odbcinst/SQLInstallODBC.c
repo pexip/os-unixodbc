@@ -5,6 +5,7 @@
  *
  **************************************************/
 
+#include <config.h>
 #include <odbcinstext.h>
 
 BOOL INSTAPI SQLInstallODBC(HWND       hwndParent,

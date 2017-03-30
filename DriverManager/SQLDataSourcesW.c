@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLDataSourcesW.c,v 1.5 2003/10/30 18:20:45 lurcher Exp $
+ * $Id: SQLDataSourcesW.c,v 1.6 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLDataSourcesW.c,v $
+ * Revision 1.6  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.5  2003/10/30 18:20:45  lurcher
  *
  * Fix broken thread protection
@@ -72,6 +75,7 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
 static char const rcsid[]= "$RCSfile: SQLDataSourcesW.c,v $";
@@ -118,7 +122,7 @@ SQLRETURN SQLDataSourcesW( SQLHENV environment_handle,
     if ( log_info.log_flag )
     {
         sprintf( environment -> msg, "\n\t\tEntry:\
-            \n\t\t\tEnvironment = %p",
+\n\t\t\tEnvironment = %p",
                 environment );
 
         dm_log_write( __FILE__, 

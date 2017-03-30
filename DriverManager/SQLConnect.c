@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,27 @@
  *
  **********************************************************************
  *
- * $Id: SQLConnect.c,v 1.60 2008/09/29 14:02:43 lurcher Exp $
+ * $Id: SQLConnect.c,v 1.66 2009/05/15 15:23:56 lurcher Exp $
  *
  * $Log: SQLConnect.c,v $
+ * Revision 1.66  2009/05/15 15:23:56  lurcher
+ * Fix pooled connection thread problems
+ *
+ * Revision 1.65  2009/03/26 14:39:21  lurcher
+ * Fix typo in isql
+ *
+ * Revision 1.64  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
+ * Revision 1.63  2009/02/17 09:47:44  lurcher
+ * Clear up a number of bugs
+ *
+ * Revision 1.62  2009/01/13 10:54:13  lurcher
+ * Allow setting of default Threading level
+ *
+ * Revision 1.61  2008/11/24 12:44:23  lurcher
+ * Try and tidu up the connection version checking
+ *
  * Revision 1.60  2008/09/29 14:02:43  lurcher
  * Fix missing dlfcn group option
  *
@@ -568,16 +586,22 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
-static char const rcsid[]= "$RCSfile: SQLConnect.c,v $ $Revision: 1.60 $";
+static char const rcsid[]= "$RCSfile: SQLConnect.c,v $ $Revision: 1.66 $";
 
 #ifdef __OS2__
 #define CURSOR_LIB	"ODBCCR"
 #else
 #define CURSOR_LIB      "libodbccr"
 #endif
-#define CURSOR_LIB_VER  ".1"
+
+#ifndef CURSOR_LIB_VER
+#ifdef  DEFINE_CURSOR_LIB_VER
+#define CURSOR_LIB_VER  "2"
+#endif
+#endif
 
 /*
  * structure to contain the loaded lib entry points
@@ -700,6 +724,7 @@ static struct driver_func  template_func[] =
     /* 76 */ { SQL_API_SQLTRANSACT,          "SQLTransact", (void*)SQLTransact },
     /* 77 */ { SQL_API_SQLGETDIAGREC,        "SQLGetDiagRec", 
                 (void*)SQLGetDiagRec, (void*)SQLGetDiagRecW },
+    /* 78 */ { SQL_API_SQLCANCELHANDLE,      "SQLCancelHandle", (void*)SQLCancelHandle },
 };
 
 /*
@@ -827,7 +852,7 @@ static void *odbc_dlopen( char *libname )
     return hand;
 }
 
-static odbc_dlclose( void *handle )
+static void odbc_dlclose( void *handle )
 {
     struct lib_count *list, *prev;
 
@@ -905,7 +930,6 @@ int __connect_part_one( DMHDBC connection, char *driver_lib, char *driver_name, 
 {
     int i;
     int ret;
-    SQLCHAR s0[ 20 ];
     int threading_level;
     char threading_string[ 50 ];
     char mapping_string[ 50 ];
@@ -921,11 +945,35 @@ int __connect_part_one( DMHDBC connection, char *driver_lib, char *driver_name, 
 
     *warnings = FALSE;
 
-    SQLGetPrivateProfileString( driver_name, "Threading", "3",
-				threading_string, sizeof( threading_string ), 
-                "ODBCINST.INI" );
+    /*
+     * if the driver comes from odbc.ini not via odbcinst.ini the driver name will be empty
+     * so only look for the entry if its set
+     */
 
-    threading_level = atoi( threading_string );
+    if ( driver_name[ 0 ] != '\0' ) 
+	{
+    	SQLGetPrivateProfileString( driver_name, "Threading", "99",
+					threading_string, sizeof( threading_string ), 
+                	"ODBCINST.INI" );
+    	threading_level = atoi( threading_string );
+    }
+    else 
+	{
+	    threading_level = 99;
+    }
+
+	/*
+	 * look for default in [ODBC] section
+	 */
+
+	if ( threading_level == 99 ) 
+	{
+    	SQLGetPrivateProfileString( "ODBC", "Threading", "0",
+				threading_string, sizeof( threading_string ), 
+                		"ODBCINST.INI" );
+
+    	threading_level = atoi( threading_string );
+	}
 
     if ( threading_level >= 0 && threading_level <= 3 )
     {
@@ -1208,12 +1256,13 @@ int __connect_part_one( DMHDBC connection, char *driver_lib, char *driver_name, 
         env_lib_list = env_lib_list -> next;
     }
 
+    connection -> driver_act_ver = 0;
     if ( env_lib_list )
     {
         /*
          * Fix by qcai@starquest.com
          */
-        int actual_version = 0;
+        SQLUINTEGER actual_version = 0;
         int ret;
 
         env_lib_list -> count ++;
@@ -1259,6 +1308,12 @@ int __connect_part_one( DMHDBC connection, char *driver_lib, char *driver_name, 
             connection -> environment -> requested_version;
         }
         /* end of fix */
+
+        /*
+         * get value that has been pushed up by the initial connection to this driver
+         */
+
+        connection -> driver_act_ver = connection -> environment -> driver_act_ver;
     }
     else
     {
@@ -1284,11 +1339,13 @@ int __connect_part_one( DMHDBC connection, char *driver_lib, char *driver_name, 
                     SQL_NULL_HENV,
                     &connection -> driver_env,
                     connection );
+			connection -> driver_act_ver = SQL_OV_ODBC3;
         }
         else if ( CHECK_SQLALLOCENV( connection ))
         {
             ret = SQLALLOCENV( connection,
                     &connection -> driver_env );
+			connection -> driver_act_ver = SQL_OV_ODBC2;
         }
         else
         {
@@ -1324,6 +1381,12 @@ int __connect_part_one( DMHDBC connection, char *driver_lib, char *driver_name, 
     		mutex_lib_exit();
             return 0;
         }
+
+        /*
+         * push up to environment to be reused
+         */
+
+        connection -> environment -> driver_act_ver = connection -> driver_act_ver;
 
         env_lib_list -> env_handle = connection -> driver_env;
 
@@ -1366,8 +1429,8 @@ int __connect_part_one( DMHDBC connection, char *driver_lib, char *driver_name, 
          * if it looks like a 3.x driver, try setting the interface type
          * to 3.x
          */
-        if ( CHECK_SQLSETENVATTR( connection ))
-        {
+		if ( connection -> driver_act_ver == SQL_OV_ODBC3 && CHECK_SQLSETENVATTR( connection ))
+		{
             ret = SQLSETENVATTR( connection,
                     connection -> driver_env,
                     SQL_ATTR_ODBC_VERSION,
@@ -1786,7 +1849,6 @@ int __connect_part_one( DMHDBC connection, char *driver_lib, char *driver_name, 
 int __connect_part_two( DMHDBC connection )
 {
     int i, use_cursor;
-    SQLCHAR s0[ 20 ];
 
     /*
      * Call SQLFunctions to get the supported list and
@@ -1797,13 +1859,14 @@ int __connect_part_two( DMHDBC connection )
     {
         SQLRETURN ret;
         SQLUSMALLINT supported_funcs[ SQL_API_ODBC3_ALL_FUNCTIONS_SIZE ];
+		SQLUSMALLINT supported_array[ 100 ];
 
         /*
          * try using fast version, but only if the driver is set to ODBC 3, 
          * some drivers (SAPDB) fail to return the correct values in this situation
          */
 
-        if ( CHECK_SQLALLOCHANDLE( connection ) && connection -> driver_version == SQL_OV_ODBC3 )
+        if ( connection -> driver_act_ver == SQL_OV_ODBC3 )
         {
             ret = SQLGETFUNCTIONS( connection,
                 connection -> driver_dbc,
@@ -1812,7 +1875,10 @@ int __connect_part_two( DMHDBC connection )
         }
         else
         {
-            ret = SQL_ERROR;
+			ret = SQLGETFUNCTIONS( connection,
+				connection -> driver_dbc,
+				SQL_API_ALL_FUNCTIONS,
+				supported_array );
         }
 
         if ( ret == SQL_SUCCESS )
@@ -1826,20 +1892,37 @@ int __connect_part_two( DMHDBC connection )
                     SQLRETURN ret;
                     SQLUSMALLINT supported;
 
-                    if ( i > 100 )
-                    {
-                        supported = SQL_FALSE;
-                    }
-                    else
-                    {
+					if ( connection -> driver_act_ver == SQL_OV_ODBC3 )
+					{
                         supported = SQL_FUNC_EXISTS( supported_funcs, connection -> functions[ i ].ordinal );
-                    }
 
-                    if ( supported == SQL_FALSE )
-                    {
-                        connection -> functions[ i ].func = NULL;
-                        connection -> functions[ i ].can_supply = 0;
-                    }
+                    	if ( supported == SQL_FALSE )
+                    	{
+                        	connection -> functions[ i ].func = NULL;
+                        	connection -> functions[ i ].can_supply = 0;
+                    	}
+					}
+					else 
+					{
+                        if ( connection -> functions[ i ].ordinal >= 100 )
+						{
+							ret = SQLGETFUNCTIONS( connection,
+								connection -> driver_dbc,
+								connection -> functions[ i ].ordinal,
+								&supported );
+						}
+						else
+						{
+							supported = supported_array[ connection -> functions[ i ].ordinal ];
+							ret = SQL_SUCCESS;
+						}
+
+                    	if ( supported == SQL_FALSE || ret != SQL_SUCCESS )
+                    	{
+                        	connection -> functions[ i ].func = NULL;
+                        	connection -> functions[ i ].can_supply = 0;
+                    	}
+					}
                 }
             }
         }
@@ -1854,19 +1937,12 @@ int __connect_part_two( DMHDBC connection )
                     SQLRETURN ret;
                     SQLUSMALLINT supported;
 
-                    if ( i > 100 )
-                    {
-                        supported = SQL_FALSE;
-                    }
-                    else
-                    {
-                        ret = SQLGETFUNCTIONS( connection,
-                                connection -> driver_dbc,
-                                connection -> functions[ i ].ordinal,
-                                &supported );
-                    }
+					ret = SQLGETFUNCTIONS( connection,
+							connection -> driver_dbc,
+							connection -> functions[ i ].ordinal,
+							&supported );
 
-                    if ( supported == SQL_FALSE )
+                    if ( supported == SQL_FALSE || ret != SQL_SUCCESS )
                     {
                         connection -> functions[ i ].func = NULL;
                         connection -> functions[ i ].can_supply = 0;
@@ -2075,27 +2151,10 @@ int __connect_part_two( DMHDBC connection )
      * it supports
      */
 
-    /*
-     * see if it's a version 3 driver so we can do descriptor
-     * stuff.
-     */
-
-    connection -> driver_act_ver = 0;
     if ( CHECK_SQLGETINFO( connection ) || CHECK_SQLGETINFOW( connection ))
     {
         char txt[ 20 ];
         SQLRETURN ret;
-
-        ret = __SQLGetInfo( connection,
-                    SQL_DRIVER_ODBC_VER,
-                    txt,
-                    sizeof( txt ),
-                    NULL );
-
-        if ( SQL_SUCCEEDED( ret ))
-        {
-            connection -> driver_act_ver = atoi( txt );
-        }
 
         if ( connection -> driver_act_ver == SQL_OV_ODBC3 )
         {
@@ -2234,22 +2293,40 @@ int __connect_part_two( DMHDBC connection )
 			strcpy( ext, SHLIBEXT );
 		}
 
-        sprintf( name, "%s%s%s", CURSOR_LIB, ext, CURSOR_LIB_VER );
+#ifdef CURSOR_LIB_VER
+            sprintf( name, "%s%s.%s", CURSOR_LIB, ext, CURSOR_LIB_VER );
+#else
+            sprintf( name, "%s%s", CURSOR_LIB, ext );
+#endif
 
         if ( !(connection -> cl_handle = odbc_dlopen( name )))
         {
+            char b1[ 1024 ];
             /*
              * try again
              */
 
+#ifdef CURSOR_LIB_VER
 #ifdef __VMS
-            sprintf( name, "%s:%s%s%s", SYSTEM_LIB_PATH, CURSOR_LIB, ext, CURSOR_LIB_VER );
+                sprintf( name, "%s:%s%s.%s", odbcinst_system_file_path( b1 ), CURSOR_LIB, ext, CURSOR_LIB_VER );
 #else
 #ifdef __OS2__
-	/* OS/2 does not use the system_lib_path or version defines to construct a name */
-            sprintf( name, "%s%s", CURSOR_LIB, ext );
+	            /* OS/2 does not use the system_lib_path or version defines to construct a name */
+                sprintf( name, "%s.%s", CURSOR_LIB, ext );
 #else
-            sprintf( name, "%s/%s%s%s", SYSTEM_LIB_PATH, CURSOR_LIB, ext, CURSOR_LIB_VER );
+                sprintf( name, "%s/%s%s.%s", odbcinst_system_file_path( b1 ), CURSOR_LIB, ext, CURSOR_LIB_VER );
+#endif
+#endif
+#else 
+#ifdef __VMS
+                sprintf( name, "%s:%s%s", odbcinst_system_file_path( b1 ), CURSOR_LIB, ext );
+#else
+#ifdef __OS2__
+	            /* OS/2 does not use the system_lib_path or version defines to construct a name */
+                sprintf( name, "%s%s", CURSOR_LIB, ext );
+#else
+                sprintf( name, "%s/%s%s", odbcinst_system_file_path( b1 ), CURSOR_LIB, ext );
+#endif
 #endif
 #endif
             if ( !(connection -> cl_handle = odbc_dlopen( name )))
@@ -2257,7 +2334,7 @@ int __connect_part_two( DMHDBC connection )
                 char txt[ 256 ];
 
                 sprintf( txt, "Can't open cursor lib '%s' : %s", 
-                    CURSOR_LIB, lt_dlerror());
+                    name, lt_dlerror());
 
                 dm_log_write( __FILE__,
                         __LINE__,
@@ -2596,8 +2673,6 @@ void __disconnect_part_four( DMHDBC connection )
 
 void __disconnect_part_three( DMHDBC connection )
 {
-    struct env_lib_struct *env_lib_list, *env_lib_prev;
-
     if ( connection -> driver_version == SQL_OV_ODBC3 )
     {
         if ( CHECK_SQLFREEHANDLE( connection ))
@@ -2641,6 +2716,11 @@ void  __check_for_function( DMHDBC connection,
         SQLUSMALLINT *supported )
 {
     int i;
+
+    if ( !supported ) 
+    {
+        return;
+    }
 
     if ( function_id == SQL_API_ODBC3_ALL_FUNCTIONS )
     {
@@ -2700,7 +2780,7 @@ static int sql_strcmp( SQLCHAR *s1, SQLCHAR *s2, SQLSMALLINT l1, SQLSMALLINT l2 
     }
     else
     {
-        return memcmp( s1, s1, l1 );
+        return memcmp( s1, s2, l1 );
     }
 }
 
@@ -2892,7 +2972,6 @@ int search_for_pool( DMHDBC connection,
     time_t current_time;
     SQLINTEGER dead;
     CPOOL *ptr, *prev;
-    static int ij = 0;
     int has_checked = 0;
 
     mutex_pool_entry();
@@ -3301,21 +3380,8 @@ restart:;
         connection -> cursors = ptr -> connection.cursors;
         connection -> cl_handle = ptr -> connection.cl_handle;
 
-#ifdef HAVE_LIBPTHREAD
-        connection -> mutex = ptr -> connection.mutex;
-        connection -> protection_level = ptr -> connection.protection_level;
-#elif HAVE_LIBTHREAD
-        connection -> mutex = ptr -> connection.mutex;
-        connection -> protection_level = ptr -> connection.protection_level;
-#endif
-
         connection -> env_list_ent = ptr -> connection.env_list_ent;
         strcpy( connection -> probe_sql, ptr -> connection.probe_sql );
-
-        /*
-         * TODO
-         * alter the mutex level here
-         */
 
         connection -> ex_fetch_mapping = ptr -> connection.ex_fetch_mapping;
         connection -> dont_dlclose = ptr -> connection.dont_dlclose;
@@ -3323,6 +3389,10 @@ restart:;
         connection -> environment = ptr -> connection.environment;
 
         strcpy( connection -> dsn, ptr -> connection.dsn );
+
+#if defined( HAVE_LIBPTH ) || defined( HAVE_LIBPTHREAD ) || defined( HAVE_LIBTHREAD )
+        dbc_change_thread_support(connection, ptr -> connection.protection_level);
+#endif
 
         mutex_pool_exit();
 
@@ -3484,6 +3554,22 @@ void return_to_pool( DMHDBC connection )
     }
 
     /*
+     * allow the driver to reset itself if its a 3.8 driver
+     */
+
+    if ( connection -> driver_version == SQL_OV_ODBC3_80 ) 
+    {
+        if ( CHECK_SQLSETCONNECTATTR( connection ))
+        {
+            SQLSETCONNECTATTR( connection,
+                    connection -> driver_dbc,
+                    SQL_ATTR_RESET_CONNECTION,
+                    SQL_RESET_CONNECTION_YES,
+                    0 );
+        }
+    }
+
+    /*
      * remove all information from the connection
      */
 
@@ -3601,10 +3687,10 @@ SQLRETURN SQLConnect( SQLHDBC connection_handle,
     if ( log_info.log_flag )
     {
         sprintf( connection -> msg, "\n\t\tEntry:\
-            \n\t\t\tConnection = %p\
-            \n\t\t\tServer Name = %s\
-            \n\t\t\tUser Name = %s\
-            \n\t\t\tAuthentication = %s",
+\n\t\t\tConnection = %p\
+\n\t\t\tServer Name = %s\
+\n\t\t\tUser Name = %s\
+\n\t\t\tAuthentication = %s",
                 connection,
                 __string_with_length( s1, server_name, name_length1 ),
                 __string_with_length( s2, user_name, name_length2 ),
@@ -3699,7 +3785,7 @@ SQLRETURN SQLConnect( SQLHDBC connection_handle,
         memcpy( dsn, server_name, len );
         dsn[ len ] ='\0';
     }
-    else if ( name_length1 && !server_name )
+    else if ( name_length1 > SQL_MAX_DSN_LENGTH )
     {
         dm_log_write( __FILE__,
                 __LINE__,
@@ -3721,7 +3807,6 @@ SQLRETURN SQLConnect( SQLHDBC connection_handle,
     /*
      * can we find a pooled connection to use here ?
      */
-
 
     connection -> pooled_connection = NULL;
 
@@ -4211,7 +4296,7 @@ BOOL ODBCSetTryWaitValue ( DWORD dwValue )
 #ifdef __cplusplus
 DWORD ODBCGetTryWaitValue ( )
 #else
-DWORD ODBCGetTryWaitValue ( VOID )
+DWORD ODBCGetTryWaitValue ( void )
 #endif
 {
 	return 0;

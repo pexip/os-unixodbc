@@ -1,3 +1,4 @@
+#include <config.h>
 #include "lst.h"
 
 void *lstFirst( HLST hLst )

@@ -189,6 +189,7 @@ struct sockaddr_un sadr;
  * cope with different path for debian distrib
  */
 
+int 
 SOCK_connect_to_unix(SocketClass *self, unsigned short port, char *path )
     {
     if ( strlen( path ) > 0 )

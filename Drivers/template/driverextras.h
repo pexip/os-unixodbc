@@ -178,6 +178,10 @@ char 		*_NativeTypeDesc(          	char 			*pszTypeName,
 int			_NativeTypeLength( 			void 			*pNativeColumnHeader );
 int			_NativeTypePrecision( 		void 			*pNativeColumnHeader );
 
+SQLRETURN template_SQLPrepare(	SQLHSTMT    hDrvStmt,
+						SQLCHAR     *szSqlStr,
+						SQLINTEGER  nSqlStrLength );
+
 #endif
 
 

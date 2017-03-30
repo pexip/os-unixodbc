@@ -1,4 +1,4 @@
-if DRIVERS
+if DRIVERC
 
 SUBDIRS = \
 	drvcfg1 \

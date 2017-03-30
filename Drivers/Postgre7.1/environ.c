@@ -13,6 +13,9 @@
  *
  */
 
+#include <config.h>
+
+#include <stdio.h>
 #include "environ.h"
 #include "connection.h"
 #include "statement.h"

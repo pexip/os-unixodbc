@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,15 @@
  *
  **********************************************************************
  *
- * $Id: __info.c,v 1.48 2008/09/29 14:02:45 lurcher Exp $
+ * $Id: __info.c,v 1.50 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: __info.c,v $
+ * Revision 1.50  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
+ * Revision 1.49  2009/02/17 09:47:44  lurcher
+ * Clear up a number of bugs
+ *
  * Revision 1.48  2008/09/29 14:02:45  lurcher
  * Fix missing dlfcn group option
  *
@@ -447,6 +453,7 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -461,7 +468,7 @@
 
 #include "drivermanager.h"
 
-static char const rcsid[]= "$RCSfile: __info.c,v $ $Revision: 1.48 $";
+static char const rcsid[]= "$RCSfile: __info.c,v $ $Revision: 1.50 $";
 
 struct log_structure log_info = { NULL, NULL, 0 };
 
@@ -622,7 +629,6 @@ void unicode_shutdown( DMHDBC connection )
 SQLWCHAR *ansi_to_unicode_alloc( SQLCHAR *str, SQLINTEGER len, DMHDBC connection )
 {
     SQLWCHAR *ustr;
-    int i;
 
     if( !str )
     {
@@ -631,16 +637,16 @@ SQLWCHAR *ansi_to_unicode_alloc( SQLCHAR *str, SQLINTEGER len, DMHDBC connection
 
     if ( len == SQL_NTS )
     {
-        len = strlen((char*) str ) + 1;
+        len = strlen((char*) str );
     }
 
-    ustr = malloc( sizeof( SQLWCHAR ) * len );
+    ustr = malloc( sizeof( SQLWCHAR ) * ( len + 1 ));
     if ( !ustr )
     {
         return NULL;
     }
 
-    return ansi_to_unicode_copy( ustr, (char*) str, len, connection );
+    return ansi_to_unicode_copy( ustr, (char*) str, len + 1, connection );
 }
 
 /*
@@ -651,7 +657,6 @@ SQLWCHAR *ansi_to_unicode_alloc( SQLCHAR *str, SQLINTEGER len, DMHDBC connection
 char *unicode_to_ansi_alloc( SQLWCHAR *str, SQLINTEGER len, DMHDBC connection )
 {
     char *aptr;
-    int i;
 
     if ( !str )
     {
@@ -663,7 +668,7 @@ char *unicode_to_ansi_alloc( SQLWCHAR *str, SQLINTEGER len, DMHDBC connection )
         len = wide_strlen( str ) + 1;
     }
 
-    aptr = malloc( len );
+    aptr = malloc( len + 1 );
     if ( !aptr )
     {
         return NULL;
@@ -678,7 +683,6 @@ char *unicode_to_ansi_alloc( SQLWCHAR *str, SQLINTEGER len, DMHDBC connection )
 
 char *unicode_to_ansi_copy( char * dest, int dest_len, SQLWCHAR *src, SQLINTEGER buffer_len, DMHDBC connection )
 {
-    char *aptr = (char*) src;
     int i;
 
     if ( !src || !dest )
@@ -735,7 +739,6 @@ char *unicode_to_ansi_copy( char * dest, int dest_len, SQLWCHAR *src, SQLINTEGER
 
 SQLWCHAR *ansi_to_unicode_copy( SQLWCHAR * dest, char *src, SQLINTEGER buffer_len, DMHDBC connection )
 {
-    char *aptr = (char*) src;
     int i;
 
     if ( !src || !dest )
@@ -950,6 +953,24 @@ char * __type_as_string( SQLCHAR *s, SQLSMALLINT type )
 
 char * __sdata_as_string( SQLCHAR *s, SQLINTEGER type, 
         SQLSMALLINT *ptr, SQLPOINTER buf )
+{
+    SQLLEN iptr;
+
+    if ( ptr )
+    {
+        iptr = *ptr;
+        return __data_as_string( s, type, &iptr, buf );
+    }
+    else
+    {
+        return __data_as_string( s, type, NULL, buf );
+    }
+
+    return (char*) s;
+}
+
+char * __idata_as_string( SQLCHAR *s, SQLINTEGER type, 
+        SQLINTEGER *ptr, SQLPOINTER buf )
 {
     SQLLEN iptr;
 
@@ -2902,6 +2923,7 @@ static const struct state_map state_mapping_3_2[] = {
     { "S1002", "07009" },
     { "S1003", "HY003" },
     { "S1004", "HY004" },
+    { "S1007", "HY007" },
     { "S1008", "HY008" },
     { "S1009", "HY009" },
     { "S1010", "HY010" },
@@ -2954,6 +2976,7 @@ static const struct state_map state_mapping_2_3[] = {
     { "S1002", "07009" },
     { "S1003", "HY003" },
     { "S1004", "HY004" },
+    { "S1007", "HY007" },
     { "S1008", "HY008" },
     { "S1009", "HY009" },
     { "S1010", "HY010" },
@@ -3062,20 +3085,20 @@ char * __string_with_length( SQLCHAR *ostr, SQLCHAR *instr, SQLINTEGER len )
     {
         if ( strlen((char*) instr ) > LOG_MESSAGE_LEN )
         {
-            sprintf((char*) ostr, "[%.*s...][length = %d (SQL_NTS)]",
-                LOG_MESSAGE_LEN, instr, strlen((char*) instr ));
+            sprintf((char*) ostr, "[%.*s...][length = %ld (SQL_NTS)]",
+                LOG_MESSAGE_LEN, instr, (long int)strlen((char*) instr ));
         }
         else
         {
-            sprintf((char*) ostr, "[%s][length = %d (SQL_NTS)]",
-                instr, strlen((char*) instr ));
+            sprintf((char*) ostr, "[%s][length = %ld (SQL_NTS)]",
+                instr, (long int)strlen((char*) instr ));
         }
 
     }
     else
     {
         if ( len < LOG_MESSAGE_LEN )
-            sprintf((char*) ostr, "[%.*s][length = %d]", len, instr, (int)len );
+            sprintf((char*) ostr, "[%.*s][length = %d]", (int)len, instr, (int)len );
         else
             sprintf((char*) ostr, "[%.*s...][length = %d]", LOG_MESSAGE_LEN, instr, (int)len );
     }
@@ -3087,7 +3110,6 @@ char * __wstring_with_length( SQLCHAR *ostr, SQLWCHAR *instr, SQLINTEGER len )
 {
     int i = 0;
     char tmp[ LOG_MESSAGE_LEN ];
-    char *cptr = (char*) instr;
 
     if ( instr == NULL )
     {
@@ -3124,7 +3146,7 @@ char * __wstring_with_length( SQLCHAR *ostr, SQLWCHAR *instr, SQLINTEGER len )
             unicode_to_ansi_copy((char*) ostr + 1, LOG_MESSAGE_LEN, instr, LOG_MESSAGE_LEN, NULL );
             strcat((char*) ostr, "...]" );
         }
-        sprintf( tmp, "[length = %d]", len );
+        sprintf( tmp, "[length = %d]", (int)len );
         strcat((char*) ostr, tmp );
     }
 
@@ -3636,7 +3658,7 @@ int wide_strlen( SQLWCHAR *str1 )
 static int check_error_order( ERROR *e1, ERROR *e2, EHEAD *head )
 {
     char *s1, *s2;
-    int i, ret;
+    int ret;
 
     /*
      * as far as I can see, a simple strcmp gives the order we need 
@@ -3672,7 +3694,7 @@ static void insert_into_error_list( EHEAD *error_header, ERROR *e1 )
 
         prev = NULL;
         curr = error_header -> sql_error_head.error_list_head;
-        while ( curr && check_error_order( curr, e1, error_header ) > 0 )
+        while ( curr && check_error_order( curr, e1, error_header ) >= 0 )
         {
             prev = curr;
             curr = curr -> next;
@@ -3735,7 +3757,7 @@ static void insert_into_diag_list( EHEAD *error_header, ERROR *e2 )
 
         prev = NULL;
         curr = error_header -> sql_diag_head.internal_list_head;
-        while ( curr && check_error_order( curr, e2, error_header ) > 0 )
+        while ( curr && check_error_order( curr, e2, error_header ) >= 0 )
         {
             prev = curr;
             curr = curr -> next;
@@ -4081,8 +4103,12 @@ static void extract_diag_error( int htype,
             SQLWCHAR *tmp;
             SQLINTEGER len;
 
+#ifdef STRICT_ODBC_ERROR
+            strcpy((char*) msg, (char*)msg1 );
+#else
             strcpy((char*) msg, ERROR_PREFIX );
             strcat((char*) msg, (char*)msg1 );
+#endif
 
             /*
              * add to the SQLError list
@@ -4339,8 +4365,12 @@ static void extract_sql_error( DRV_SQLHANDLE henv,
              * add our prefix
              */
 
+#ifdef STRICT_ODBC_ERROR
+            strcpy((char*) msg, (char*)msg1 );
+#else
             strcpy((char*) msg, ERROR_PREFIX );
             strcat((char*) msg, (char*)msg1 );
+#endif
 
             e -> native_error = native;
             tmp = ansi_to_unicode_alloc( sqlstate, SQL_NTS, connection );
@@ -4429,10 +4459,14 @@ static void extract_diag_error_w( int htype,
             ERROR *e = malloc( sizeof( ERROR ));
             SQLWCHAR *tmp;
 
+#ifdef STRICT_ODBC_ERROR
+            wide_strcpy( msg, msg1 );
+#else
             tmp = ansi_to_unicode_alloc((SQLCHAR*) ERROR_PREFIX, SQL_NTS, connection );
             wide_strcpy( msg, tmp );
             free( tmp );
             wide_strcat( msg, msg1 );
+#endif
 
             /*
              * add to the SQLError list
@@ -4661,10 +4695,14 @@ static void extract_sql_error_w( DRV_SQLHANDLE henv,
              * add our prefix
              */
 
+#ifdef STRICT_ODBC_ERROR
+            wide_strcpy( msg, msg1 );
+#else
             tmp = ansi_to_unicode_alloc((SQLCHAR*) ERROR_PREFIX, SQL_NTS, connection );
             wide_strcpy( msg, tmp );
             free( tmp );
             wide_strcat( msg, msg1 );
+#endif
 
             e -> native_error = native;
             wide_strcpy( e -> sqlstate, sqlstate );
@@ -4760,14 +4798,21 @@ int function_return_ex( int level, void * handle, int ret_code, int save_to_diag
                                     ret_code,
                                     save_to_diag );
                         }
-                        else
+                        else if ( CHECK_SQLERRORW( hdbc )) 
                         {
+                        printf( "wibble\n" );
                             extract_sql_error_w( SQL_NULL_HENV, 
                                     hdbc -> driver_dbc, 
                                     SQL_NULL_HSTMT, 
                                     hdbc,
                                     &hdbc -> error, 
                                     ret_code );
+                        }
+                        else 
+                        {
+                            __post_internal_error( &hdbc -> error,
+                                ERROR_HY000, "Driver returned SQL_ERROR or SQL_SUCCESS_WITH_INFO but no error reporting API found",
+                                hdbc -> environment -> requested_version );
                         }
                     }
                     else
@@ -4782,7 +4827,7 @@ int function_return_ex( int level, void * handle, int ret_code, int save_to_diag
                                     ret_code,
                                     save_to_diag );
                         }
-                        else
+                        else if ( CHECK_SQLERROR( hdbc )) 
                         {
                             extract_sql_error( SQL_NULL_HENV, 
                                     hdbc -> driver_dbc, 
@@ -4790,6 +4835,12 @@ int function_return_ex( int level, void * handle, int ret_code, int save_to_diag
                                     hdbc,
                                     &hdbc -> error, 
                                     ret_code );
+                        }
+                        else 
+                        {
+                            __post_internal_error( &hdbc -> error,
+                                ERROR_HY000, "Driver returned SQL_ERROR or SQL_SUCCESS_WITH_INFO but no error reporting API found",
+                                hdbc -> environment -> requested_version );
                         }
                     }
                 }
@@ -4816,7 +4867,7 @@ int function_return_ex( int level, void * handle, int ret_code, int save_to_diag
                                 ret_code,
                                 save_to_diag );
                     }
-                    else
+                    else if ( CHECK_SQLERRORW( hstmt -> connection )) 
                     {
                         extract_sql_error_w( SQL_NULL_HENV, 
                                 SQL_NULL_HDBC, 
@@ -4824,6 +4875,12 @@ int function_return_ex( int level, void * handle, int ret_code, int save_to_diag
                                 hstmt -> connection,
                                 &hstmt -> error, 
                                 ret_code );
+                    }
+                    else 
+                    {
+                        __post_internal_error( &hstmt -> error,
+                            ERROR_HY000, "Driver returned SQL_ERROR or SQL_SUCCESS_WITH_INFO but no error reporting API found",
+                            hstmt -> connection -> environment -> requested_version );
                     }
                 }
                 else
@@ -4838,7 +4895,7 @@ int function_return_ex( int level, void * handle, int ret_code, int save_to_diag
                                 ret_code,
                                 save_to_diag );
                     }
-                    else
+                    else if ( CHECK_SQLERROR( hstmt -> connection )) 
                     {
                         extract_sql_error( SQL_NULL_HENV, 
                                 SQL_NULL_HDBC, 
@@ -4846,6 +4903,12 @@ int function_return_ex( int level, void * handle, int ret_code, int save_to_diag
                                 hstmt -> connection,
                                 &hstmt -> error, 
                                 ret_code );
+                    }
+                    else 
+                    {
+                        __post_internal_error( &hstmt -> error,
+                            ERROR_HY000, "Driver returned SQL_ERROR or SQL_SUCCESS_WITH_INFO but no error reporting API found",
+                            hstmt -> connection -> environment -> requested_version );
                     }
                 }
             }
@@ -4867,6 +4930,12 @@ int function_return_ex( int level, void * handle, int ret_code, int save_to_diag
                                 ret_code,
                                 save_to_diag );
                     }
+                    else 
+                    {
+                        __post_internal_error( &hdesc -> error,
+                            ERROR_HY000, "Driver returned SQL_ERROR or SQL_SUCCESS_WITH_INFO but no error reporting API found",
+                            hdesc -> connection -> environment -> requested_version );
+                    }
                 }
                 else
                 {
@@ -4879,6 +4948,12 @@ int function_return_ex( int level, void * handle, int ret_code, int save_to_diag
                                 &hdesc -> error,
                                 ret_code,
                                 save_to_diag );
+                    }
+                    else 
+                    {
+                        __post_internal_error( &hdesc -> error,
+                            ERROR_HY000, "Driver returned SQL_ERROR or SQL_SUCCESS_WITH_INFO but no error reporting API found",
+                            hdesc -> connection -> environment -> requested_version );
                     }
                 }
             }
@@ -5160,6 +5235,14 @@ void __post_internal_error_api( EHEAD *error_handle,
         message = "Invalid SQL data type";
         break;
 
+      case ERROR_HY007:
+        if ( connection_mode == SQL_OV_ODBC3 )
+            strcpy( sqlstate, "HY007" );
+        else
+            strcpy( sqlstate, "S1007" );
+        message = "Invalid use of null pointer";
+        break;
+
       case ERROR_HY009:
         if ( connection_mode == SQL_OV_ODBC3 )
             strcpy( sqlstate, "HY009" );
@@ -5393,6 +5476,15 @@ void __post_internal_error_api( EHEAD *error_handle,
         subclass = SUBCLASS_ODBC;
         class = SUBCLASS_ODBC;
         break;
+
+      case ERROR_HY000:
+        if ( connection_mode == SQL_OV_ODBC3 )
+            strcpy( sqlstate, "HY000" );
+        else
+            strcpy( sqlstate, "S1000" );
+        message = "General error";
+        break;
+
 
 	  default:
         strcpy( sqlstate, "?????" );

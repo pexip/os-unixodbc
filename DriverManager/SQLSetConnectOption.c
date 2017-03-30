@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLSetConnectOption.c,v 1.11 2003/10/30 18:20:46 lurcher Exp $
+ * $Id: SQLSetConnectOption.c,v 1.12 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLSetConnectOption.c,v $
+ * Revision 1.12  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.11  2003/10/30 18:20:46  lurcher
  *
  * Fix broken thread protection
@@ -180,9 +183,19 @@
  *
  **********************************************************************/
 
+#include <config.h>
+#ifdef HAVE_STRING_H
+#include <string.h>
+#endif
+#ifdef HAVE_STRINGS_H
+#include <strings.h>
+#endif
+#ifdef HAVE_STDLIB_H
+#include <stdlib.h>
+#endif
 #include "drivermanager.h"
 
-static char const rcsid[]= "$RCSfile: SQLSetConnectOption.c,v $ $Revision: 1.11 $";
+static char const rcsid[]= "$RCSfile: SQLSetConnectOption.c,v $ $Revision: 1.12 $";
 
 SQLRETURN SQLSetConnectOptionA( SQLHDBC connection_handle,
            SQLUSMALLINT option,
@@ -207,6 +220,30 @@ SQLRETURN SQLSetConnectOption( SQLHDBC connection_handle,
 
     if ( option == SQL_ATTR_TRACE )
     {
+        if ((SQLLEN) value != SQL_OPT_TRACE_OFF && 
+            (SQLLEN) value != SQL_OPT_TRACE_ON ) 
+        {
+            if ( __validate_dbc( connection ))
+            {
+                thread_protect( SQL_HANDLE_DBC, connection );
+                dm_log_write( __FILE__, 
+                        __LINE__, 
+                        LOG_INFO, 
+                        LOG_INFO, 
+                        "Error: HY024" );
+        
+                __post_internal_error( &connection -> error,
+                    ERROR_HY024, NULL,
+                    connection -> environment -> requested_version );
+        
+                return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+            }
+            else 
+            {
+                return SQL_INVALID_HANDLE;
+            }
+        }
+
         if ( value == SQL_OPT_TRACE_OFF )
         {
             log_info.log_flag = 0;
@@ -222,13 +259,59 @@ SQLRETURN SQLSetConnectOption( SQLHDBC connection_handle,
     {
         if ( value )
         {
-            if ( log_info.log_file_name )
+            if (((SQLCHAR*)value)[ 0 ] == '\0' ) 
             {
-                free( log_info.log_file_name );
+                if ( __validate_dbc( connection ))
+                {
+                    thread_protect( SQL_HANDLE_DBC, connection );
+                    dm_log_write( __FILE__, 
+                            __LINE__, 
+                            LOG_INFO, 
+                            LOG_INFO, 
+                            "Error: HY024" );
+            
+                    __post_internal_error( &connection -> error,
+                        ERROR_HY024, NULL,
+                        connection -> environment -> requested_version );
+            
+                    return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+                }
+                else 
+                {
+                    return SQL_INVALID_HANDLE;
+                }
             }
-            log_info.log_file_name = (char*)strdup((char*)(void*) value );
+            else 
+            {
+                if ( log_info.log_file_name )
+                {
+                    free( log_info.log_file_name );
+                }
+                log_info.log_file_name = strdup((char*) value );
+            }
         }
-        return SQL_SUCCESS;
+        else 
+        {
+            if ( __validate_dbc( connection ))
+            {
+                thread_protect( SQL_HANDLE_DBC, connection );
+                dm_log_write( __FILE__, 
+                        __LINE__, 
+                        LOG_INFO, 
+                        LOG_INFO, 
+                        "Error: HY009" );
+        
+                __post_internal_error( &connection -> error,
+                    ERROR_HY009, NULL,
+                    connection -> environment -> requested_version );
+        
+                return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+            }
+            else 
+            {
+                return SQL_INVALID_HANDLE;
+            }
+        }
     }
 
     /*
@@ -251,9 +334,9 @@ SQLRETURN SQLSetConnectOption( SQLHDBC connection_handle,
     if ( log_info.log_flag )
     {
         sprintf( connection -> msg, "\n\t\tEntry:\
-            \n\t\t\tConnection = %p\
-            \n\t\t\tOption = %s\
-            \n\t\t\tValue = %d",
+\n\t\t\tConnection = %p\
+\n\t\t\tOption = %s\
+\n\t\t\tValue = %d",
                 connection,
                 __con_attr_as_string( s1, option ),
                 (int)value );
@@ -347,6 +430,26 @@ SQLRETURN SQLSetConnectOption( SQLHDBC connection_handle,
 
             return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
         }
+    }
+
+    /*
+     * is it a legitimate value
+     */
+    ret = dm_check_connection_attrs( connection, option, (SQLPOINTER)value );
+
+    if ( ret != SQL_SUCCESS ) 
+    {
+        dm_log_write( __FILE__, 
+                    __LINE__, 
+                    LOG_INFO, 
+                    LOG_INFO, 
+                    "Error: HY024" );
+
+        __post_internal_error( &connection -> error,
+                ERROR_HY024, NULL,
+                connection -> environment -> requested_version );
+
+        return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
     }
 
     /*

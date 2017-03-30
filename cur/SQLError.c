@@ -3,7 +3,7 @@
  * unixODBC Cursor Library
  *
  * Created by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * copyright (c) 1999 Nick Gorham
  *
@@ -23,9 +23,15 @@
  *
  **********************************************************************
  *
- * $Id: SQLError.c,v 1.3 2008/01/02 15:10:33 lurcher Exp $
+ * $Id: SQLError.c,v 1.5 2009/02/18 17:59:17 lurcher Exp $
  *
  * $Log: SQLError.c,v $
+ * Revision 1.5  2009/02/18 17:59:17  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
+ * Revision 1.4  2009/02/17 09:47:45  lurcher
+ * Clear up a number of bugs
+ *
  * Revision 1.3  2008/01/02 15:10:33  lurcher
  * Fix problems trying to use the cursor lib on a non select statement
  *
@@ -52,6 +58,7 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "cursorlibrary.h"
 
 SQLRETURN CLError( SQLHENV environment_handle,
@@ -160,4 +167,6 @@ SQLRETURN CLError( SQLHENV environment_handle,
 
         return SQL_NO_DATA;
     }
+
+    return SQL_NO_DATA;
 }

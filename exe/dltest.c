@@ -9,6 +9,7 @@
  * -----------------------------------------------
  * Peter Harvey		- pharvey@codebydesign.com
  **************************************************/
+#include <config.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <ltdl.h>
@@ -61,7 +62,7 @@ int main( int argc, char *argv[] )
 
 	if ( argc < 2  )
 	{
-		printf( szSyntax );
+		puts( szSyntax );
 		exit( 1 );
 	}
 

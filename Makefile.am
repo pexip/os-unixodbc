@@ -1,29 +1,22 @@
+ACLOCAL_AMFLAGS=-I libltdl/m4
+
 SUBDIRS = \
 	extras \
 	log \
 	lst \
 	ini \
-	libltdl \
+    libltdl \
 	odbcinst \
 	DriverManager \
-	odbcinstQ \
-	odbcinstQ4 \
 	exe \
 	cur \
 	DRVConfig \
 	Drivers \
 	include \
 	doc \
-	ODBCConfig \
-	DataManager \
-	DataManagerII \
-	odbctest \
-	autotest \
 	samples 
 
 EXTRA_DIST = \
-	unixODBC.spec \
-	unixODBC-sr.spec \
 	README.OSX \
 	README.VMS \
 	README.QNX \
@@ -41,10 +34,12 @@ EXTRA_DIST = \
 	Interix/configure \
 	Interix/config.guess \
 	Interix/libtool \
-	qt.m4 
+    m4 \
+    configure.in \
+    Makefile.svn
 
 install-data-am:
 	-touch $(DESTDIR)${sysconfdir}/odbcinst.ini
 	-touch $(DESTDIR)${sysconfdir}/odbc.ini
 	-mkdir -p $(DESTDIR)${sysconfdir}/ODBCDataSources
-	$(DESTDIR)${bindir}/odbc_config --header > $(DESTDIR)${includedir}/unixodbc_conf.h
+	cp unixodbc_conf.h $(DESTDIR)${includedir}/unixodbc_conf.h

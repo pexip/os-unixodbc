@@ -3,6 +3,7 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "driver.h"
 
 SQLRETURN _FreeResults( HSTMTEXTRAS hStmt )

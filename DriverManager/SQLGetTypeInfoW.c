@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLGetTypeInfoW.c,v 1.6 2008/08/29 08:01:39 lurcher Exp $
+ * $Id: SQLGetTypeInfoW.c,v 1.7 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLGetTypeInfoW.c,v $
+ * Revision 1.7  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.6  2008/08/29 08:01:39  lurcher
  * Alter the way W functions are passed to the driver
  *
@@ -70,6 +73,7 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
 static char const rcsid[]= "$RCSfile: SQLGetTypeInfoW.c,v $";
@@ -129,8 +133,8 @@ SQLRETURN SQLGetTypeInfoW( SQLHSTMT statement_handle,
     if ( log_info.log_flag )
     {
         sprintf( statement -> msg, "\n\t\tEntry:\
-            \n\t\t\tStatement = %p\
-            \n\t\t\tData Type = %s",
+\n\t\t\tStatement = %p\
+\n\t\t\tData Type = %s",
                 statement,
                 __type_as_string( s1, data_type ));
 
@@ -152,7 +156,7 @@ SQLRETURN SQLGetTypeInfoW( SQLHSTMT statement_handle,
             statement -> state == STATE_S6 ||
             statement -> state == STATE_S7 )
 #else
-    if ( statement -> state == STATE_S6 ||
+    if (( statement -> state == STATE_S6 && statement -> eod == 0 ) ||
             statement -> state == STATE_S7 )
 #endif
     {

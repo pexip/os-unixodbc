@@ -4,7 +4,7 @@
  * (pharvey@codebydesign.com).
  *
  * Modified and extended by Nick Gorham
- * (nick@easysoft.com).
+ * (nick@lurcher.org).
  *
  * Any bugs or problems should be considered the fault of Nick and not
  * Peter.
@@ -27,9 +27,12 @@
  *
  **********************************************************************
  *
- * $Id: SQLFreeConnect.c,v 1.1.1.1 2001/10/17 16:40:05 lurcher Exp $
+ * $Id: SQLFreeConnect.c,v 1.2 2009/02/18 17:59:08 lurcher Exp $
  *
  * $Log: SQLFreeConnect.c,v $
+ * Revision 1.2  2009/02/18 17:59:08  lurcher
+ * Shift to using config.h, the compile lines were making it hard to spot warnings
+ *
  * Revision 1.1.1.1  2001/10/17 16:40:05  lurcher
  *
  * First upload to SourceForge
@@ -53,9 +56,10 @@
  *
  **********************************************************************/
 
+#include <config.h>
 #include "drivermanager.h"
 
-static char const rcsid[]= "$RCSfile: SQLFreeConnect.c,v $ $Revision: 1.1.1.1 $";
+static char const rcsid[]= "$RCSfile: SQLFreeConnect.c,v $ $Revision: 1.2 $";
 
 SQLRETURN SQLFreeConnect( SQLHDBC connection_handle )
 {
