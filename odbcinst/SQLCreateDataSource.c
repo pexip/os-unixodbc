@@ -24,6 +24,11 @@ char* _multi_string_alloc_and_copy( LPCWSTR in )
     char *chr;
     int len = 0;
 
+    if ( !in )
+    {
+        return NULL;
+    }
+
     while ( in[ len ] != 0 || in[ len + 1 ] != 0 )
     {
         len ++;
@@ -48,6 +53,11 @@ char* _single_string_alloc_and_copy( LPCWSTR in )
     char *chr;
     int len = 0;
 
+    if ( !in )
+    {
+        return NULL;
+    }
+
     while ( in[ len ] != 0 )
     {
         len ++;
@@ -71,6 +81,11 @@ SQLWCHAR* _multi_string_alloc_and_expand( LPCSTR in )
     SQLWCHAR *chr;
     int len = 0;
 
+    if ( !in )
+    {
+        return NULL;
+    }
+    
     while ( in[ len ] != 0 || in[ len + 1 ] != 0 )
     {
         len ++;
@@ -94,6 +109,11 @@ SQLWCHAR* _single_string_alloc_and_expand( LPCSTR in )
 {
     SQLWCHAR *chr;
     int len = 0;
+
+    if ( !in )
+    {
+        return NULL;
+    }
 
     while ( in[ len ] != 0 )
     {
@@ -196,7 +216,6 @@ BOOL SQLCreateDataSource( HWND hWnd, LPCSTR pszDS )
         inst_logPushMsg( __FILE__, __FILE__, __LINE__, LOG_CRITICAL, ODBC_ERROR_GENERAL_ERR, "lt_dlinit() failed" );
         return FALSE;
     }
-    lt_dlsetsearchpath(MODULEDIR);
 
     /* get plugin name */
     _appendUIPluginExtension( szNameAndExtension, _getUIPluginName( szName, hODBCInstWnd->szUI ) );

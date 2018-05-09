@@ -1,0 +1,20 @@
+Description: Do not create odbc.ini if it does not exist.
+Author: Steve Langasek <vorlon@debian.org>
+Last-Update: 2018-04-09
+Forwarded: no
+
+--- unixodbc-2.3.6.orig/odbcinst/_SQLGetInstalledDrivers.c
++++ unixodbc-2.3.6/odbcinst/_SQLGetInstalledDrivers.c
+@@ -55,9 +55,9 @@ int _SQLGetInstalledDrivers(    LPCSTR
+ 
+     /* PROCESS ODBC INI FILE */
+ #ifdef __OS2__
+-    if ( iniOpen( &hIni, szIniName, "#;", '[', ']', '=', 1, 1L ) != INI_SUCCESS )
++    if ( iniOpen( &hIni, szIniName, "#;", '[', ']', '=', FALSE, 1L ) != INI_SUCCESS )
+ #else
+-    if ( iniOpen( &hIni, szIniName, "#;", '[', ']', '=', 1 ) != INI_SUCCESS )
++    if ( iniOpen( &hIni, szIniName, "#;", '[', ']', '=', FALSE ) != INI_SUCCESS )
+ #endif
+     {
+         inst_logPushMsg( __FILE__, __FILE__, __LINE__, LOG_CRITICAL, ODBC_ERROR_COMPONENT_NOT_FOUND, "" );
+

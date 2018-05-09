@@ -147,7 +147,7 @@ SQLRETURN SQLGetConnectAttrW( SQLHDBC connection_handle,
             }
             else
             {
-                *((SQLINTEGER*)value) = SQL_OPT_TRACE_ON;
+                *((SQLINTEGER*)value) = SQL_OPT_TRACE_OFF;
             }
         }
 
@@ -253,7 +253,7 @@ SQLRETURN SQLGetConnectAttrW( SQLHDBC connection_handle,
                 ERROR_HY010, NULL,
                 connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_DBC, connection, SQL_ERROR );
     }
 
     if ( connection -> state == STATE_C2 )
@@ -269,7 +269,58 @@ SQLRETURN SQLGetConnectAttrW( SQLHDBC connection_handle,
           case SQL_ATTR_ASYNC_ENABLE:
             break;
 
+          case SQL_ATTR_PACKET_SIZE:
+            if ( connection -> packet_size_set )
+                break;
+          case SQL_ATTR_QUIET_MODE:
+            if ( connection -> quite_mode_set )
+                break;
+
           default:
+            {
+                struct save_attr *sa = connection -> save_attr;
+                while (sa)
+                {
+                    if (sa -> attr_type == attribute)
+                    {
+                        SQLRETURN rc = SQL_SUCCESS;
+                        if (sa -> str_len == SQL_NTS || sa -> str_len > 0)
+                        {
+                            SQLLEN realLen = sa->str_attr ? strlen(sa->str_attr) : 0;
+                            if(value && sa->str_attr)
+                            {
+                                strncpy(value, sa->str_attr, buffer_length - 1);
+                                ((SQLCHAR*)value)[buffer_length - 1] = 0;
+                            }
+                            if(string_length)
+                            {
+                                *string_length = realLen;
+                            }
+                            if(realLen > buffer_length - 1)
+                            {
+                                __post_internal_error( &connection -> error,
+                                ERROR_01004, NULL,
+                                connection -> environment -> requested_version );
+                                rc = SQL_SUCCESS_WITH_INFO;
+                            }
+                        }
+                        else if(buffer_length >= sizeof(SQLLEN))
+                        {
+                            *(SQLLEN*)value = sa -> int_attr;
+                            if(string_length)
+                            {
+                                *string_length = sizeof(SQLLEN);
+                            }
+                        }
+                        else
+                        {
+                            memcpy(value, &sa->int_attr, buffer_length);
+                        }
+                        return function_return_nodrv( SQL_HANDLE_DBC, connection, rc );
+                    }
+                    sa = sa -> next;
+                }
+            }
             dm_log_write( __FILE__, 
                     __LINE__, 
                     LOG_INFO, 
@@ -280,7 +331,7 @@ SQLRETURN SQLGetConnectAttrW( SQLHDBC connection_handle,
                     ERROR_08003, NULL,
                     connection -> environment -> requested_version );
 
-            return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+            return function_return_nodrv( SQL_HANDLE_DBC, connection, SQL_ERROR );
         }
     }
 
@@ -500,7 +551,7 @@ SQLRETURN SQLGetConnectAttrW( SQLHDBC connection_handle,
                 LOG_INFO, 
                 connection -> msg );
 
-        return function_return( SQL_HANDLE_DBC, connection, ret );
+        return function_return_nodrv( SQL_HANDLE_DBC, connection, ret );
     }
     else
     {
@@ -534,7 +585,7 @@ SQLRETURN SQLGetConnectAttrW( SQLHDBC connection_handle,
                                 ERROR_HY092, NULL,
                                 connection -> environment -> requested_version );
 
-                        return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+                        return function_return_nodrv( SQL_HANDLE_DBC, connection, SQL_ERROR );
                     }
 
                     ret = SQLGETCONNECTOPTIONW( connection,
@@ -554,7 +605,7 @@ SQLRETURN SQLGetConnectAttrW( SQLHDBC connection_handle,
                             ERROR_IM001, NULL,
                             connection -> environment -> requested_version );
 
-                    return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+                    return function_return_nodrv( SQL_HANDLE_DBC, connection, SQL_ERROR );
                 }
             }
             else
@@ -592,7 +643,7 @@ SQLRETURN SQLGetConnectAttrW( SQLHDBC connection_handle,
                                 ERROR_HY092, NULL,
                                 connection -> environment -> requested_version );
 
-                        return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+                        return function_return_nodrv( SQL_HANDLE_DBC, connection, SQL_ERROR );
                     }
 
                     switch( attribute )
@@ -644,7 +695,7 @@ SQLRETURN SQLGetConnectAttrW( SQLHDBC connection_handle,
                             ERROR_IM001, NULL,
                             connection -> environment -> requested_version );
 
-                    return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+                    return function_return_nodrv( SQL_HANDLE_DBC, connection, SQL_ERROR );
                 }
             }
             else

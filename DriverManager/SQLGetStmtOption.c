@@ -168,6 +168,26 @@ SQLRETURN SQLGetStmtOption( SQLHSTMT statement_handle,
      * check states
      */
 
+    if ( option == SQL_ROW_NUMBER || option == SQL_GET_BOOKMARK )
+    {
+        if ( statement -> state >= STATE_S1 && statement -> state <= STATE_S5 ||
+                ( statement -> state == STATE_S6 ||
+                  statement -> state == STATE_S7 )  && statement -> eod )
+        {
+            dm_log_write( __FILE__, 
+                    __LINE__, 
+                    LOG_INFO, 
+                    LOG_INFO, 
+                    "Error: 24000" );
+
+            __post_internal_error( &statement -> error,
+                    ERROR_24000, NULL,
+                    statement -> connection -> environment -> requested_version );
+
+            return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
+        }
+    }
+    
     if ( statement -> state == STATE_S8 ||
             statement -> state == STATE_S9 ||
             statement -> state == STATE_S10 ||
@@ -187,7 +207,7 @@ SQLRETURN SQLGetStmtOption( SQLHSTMT statement_handle,
                 ERROR_HY010, NULL,
                 statement -> connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
 
     /*
@@ -296,7 +316,7 @@ SQLRETURN SQLGetStmtOption( SQLHSTMT statement_handle,
                 ERROR_IM001, NULL,
                 statement -> connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
 
     if ( log_info.log_flag )

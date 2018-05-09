@@ -1,0 +1,91 @@
+Description: Replace the auto-generated libltdl library search path with a 
+ multiarch-friendly search path. Also amend the shared library name.
+Author: Steve Langasek <vorlon@debian.org>
+Last-Update: 2018-04-09
+Forwarded: no
+
+--- unixodbc-2.3.6.orig/DriverManager/SQLConnect.c
++++ unixodbc-2.3.6/DriverManager/SQLConnect.c
+@@ -1116,6 +1116,7 @@ int __connect_part_one( DMHDBC connectio
+     mutex_lib_entry();      /* warning, this doesn't protect from other libs in the application */
+                             /* in their own threads calling dlinit(); */
+     lt_dlinit();
++    lt_dlsetsearchpath(MODULEDIR);
+     mutex_lib_exit();
+ 
+     /*
+--- unixodbc-2.3.6.orig/configure.ac
++++ unixodbc-2.3.6/configure.ac
+@@ -164,6 +164,10 @@ eval "SHLIBEXT=$shrext_cmds"
+ AC_MSG_RESULT($SHLIBEXT)
+ AC_SUBST(SHLIBEXT,$SHLIBEXT)
+ 
+++dnl export the libdir, so we can have a multiarch-friendly search path
+++dnl for ODBC drivers.
+++AC_DEFINE_UNQUOTED([MODULEDIR], ["`eval echo $libdir/odbc`"], [ODBC driver search path])
++
+ AC_DEFINE_UNQUOTED([SHLIBEXT], "$shrext_cmds", [Shared lib extension])
+ AC_DEFINE_DIR([DEFLIB_PATH], [libdir], [Lib directory])
+ AC_DEFINE_DIR([LIB_PREFIX], [libdir], [Lib directory])
+--- unixodbc-2.3.6.orig/odbcinst/ODBCINSTConstructProperties.c
++++ unixodbc-2.3.6/odbcinst/ODBCINSTConstructProperties.c
+@@ -165,6 +165,7 @@ int ODBCINSTConstructProperties( char *p
+      */
+ 
+     lt_dlinit();
++    lt_dlsetsearchpath(MODULEDIR);
+ 
+ 	/* TRY GET FUNC FROM DRIVER SETUP */
+ 	if ( !(hDLL = lt_dlopen( szDriverSetup ))  )
+--- unixodbc-2.3.6.orig/odbcinst/SQLConfigDataSource.c
++++ unixodbc-2.3.6/odbcinst/SQLConfigDataSource.c
+@@ -80,6 +80,7 @@ static BOOL SQLConfigDataSourceWide(	HWN
+      */
+ 
+     lt_dlinit();
++    lt_dlsetsearchpath(MODULEDIR);
+ 
+ #ifdef PLATFORM64
+ 	if ( iniPropertySeek( hIni, (char *)pszDriver, "Setup64", "" ) == INI_SUCCESS || 
+--- unixodbc-2.3.6.orig/odbcinst/SQLConfigDriver.c
++++ unixodbc-2.3.6/odbcinst/SQLConfigDriver.c
+@@ -86,6 +86,7 @@ static BOOL SQLConfigDriverWide( HWND	hW
+      */
+ 
+     lt_dlinit();
++    lt_dlsetsearchpath(MODULEDIR);
+ 
+ 	/* process request */
+ 	switch ( nRequest )
+--- unixodbc-2.3.6.orig/odbcinst/SQLCreateDataSource.c
++++ unixodbc-2.3.6/odbcinst/SQLCreateDataSource.c
+@@ -216,6 +216,7 @@ BOOL SQLCreateDataSource( HWND hWnd, LPC
+         inst_logPushMsg( __FILE__, __FILE__, __LINE__, LOG_CRITICAL, ODBC_ERROR_GENERAL_ERR, "lt_dlinit() failed" );
+         return FALSE;
+     }
++    lt_dlsetsearchpath(MODULEDIR);
+ 
+     /* get plugin name */
+     _appendUIPluginExtension( szNameAndExtension, _getUIPluginName( szName, hODBCInstWnd->szUI ) );
+--- unixodbc-2.3.6.orig/odbcinst/SQLManageDataSources.c
++++ unixodbc-2.3.6/odbcinst/SQLManageDataSources.c
+@@ -76,9 +76,9 @@ char *_getUIPluginName( char *pszName, c
+ char *_appendUIPluginExtension( char *pszNameAndExtension, char *pszName )
+ {
+     if ( strlen( SHLIBEXT ) > 0 )
+-        sprintf( pszNameAndExtension, "%s%s", pszName, SHLIBEXT );
++        sprintf( pszNameAndExtension, "%s%s.1", pszName, SHLIBEXT );
+     else
+-        sprintf( pszNameAndExtension, "%s.so", pszName );
++        sprintf( pszNameAndExtension, "%s.so.1", pszName );
+ 
+     return pszName;
+ }
+@@ -143,6 +143,7 @@ BOOL SQLManageDataSources( HWND hWnd )
+         inst_logPushMsg( __FILE__, __FILE__, __LINE__, LOG_CRITICAL, ODBC_ERROR_GENERAL_ERR, "lt_dlinit() failed" );
+ 		return FALSE;
+     }
++    lt_dlsetsearchpath(MODULEDIR);
+ 
+     /* get plugin name */
+     _appendUIPluginExtension( szNameAndExtension, _getUIPluginName( szName, hODBCInstWnd->szUI ) );

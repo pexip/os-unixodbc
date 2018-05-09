@@ -152,7 +152,7 @@ int got_driver = 0;    /* if we have a DRIVER or FILEDSN then ignore any DSN */
         local_str = malloc( len + 1 );
     }
 
-    unicode_to_ansi_copy( local_str, len, str, len, NULL, NULL );
+    unicode_to_ansi_copy( local_str, len+1, str, len, NULL, NULL );
 
     if ( !local_str || strlen( local_str ) == 0 ||
         ( strlen( local_str ) == 1 && *local_str == ';' ))
@@ -409,7 +409,7 @@ SQLRETURN SQLDriverConnectW(
 			!__get_attribute_value( &con_struct, "FILEDSN" ))
 		{
 			int ret;
-			SQLCHAR returned_dsn[ 128 ], *prefix, *target;
+			SQLCHAR returned_dsn[ 1025 ], *prefix, *target;
 
 			/*
 			 * try and call GUI to obtain a DSN
@@ -643,7 +643,7 @@ SQLRETURN SQLDriverConnectW(
 
                     if ( SQL_SUCCEEDED( ret ))
                     {
-                        __post_internal_error_ex_w( &connection -> error,
+                        __post_internal_error_ex_w_noprefix( &connection -> error,
                                 sqlstate,
                                 native_error,
                                 message_text,
@@ -671,7 +671,7 @@ SQLRETURN SQLDriverConnectW(
 
                     if ( SQL_SUCCEEDED( ret ))
                     {
-                        __post_internal_error_ex_w( &connection -> error,
+                        __post_internal_error_ex_w_noprefix( &connection -> error,
                                 sqlstate,
                                 native_error,
                                 message_text,
@@ -792,7 +792,7 @@ SQLRETURN SQLDriverConnectW(
 
                     if ( SQL_SUCCEEDED( ret ))
                     {
-                        __post_internal_error_ex( &connection -> error,
+                        __post_internal_error_ex_noprefix( &connection -> error,
                                 sqlstate,
                                 native_error,
                                 message_text,
@@ -819,7 +819,7 @@ SQLRETURN SQLDriverConnectW(
 
                     if ( SQL_SUCCEEDED( ret ))
                     {
-                        __post_internal_error_ex( &connection -> error,
+                        __post_internal_error_ex_noprefix( &connection -> error,
                                 sqlstate,
                                 native_error,
                                 message_text,
@@ -920,5 +920,5 @@ SQLRETURN SQLDriverConnectW(
         ret_from_connect = SQL_SUCCESS_WITH_INFO;
     }
 
-    return function_return( SQL_HANDLE_DBC, connection, ret_from_connect );
+    return function_return_nodrv( SQL_HANDLE_DBC, connection, ret_from_connect );
 }

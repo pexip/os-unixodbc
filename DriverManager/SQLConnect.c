@@ -1116,7 +1116,6 @@ int __connect_part_one( DMHDBC connection, char *driver_lib, char *driver_name, 
     mutex_lib_entry();      /* warning, this doesn't protect from other libs in the application */
                             /* in their own threads calling dlinit(); */
     lt_dlinit();
-    lt_dlsetsearchpath(MODULEDIR);
     mutex_lib_exit();
 
     /*
@@ -2436,7 +2435,7 @@ static void release_env( DMHDBC connection )
 
         mutex_lib_entry();
 
-        if ( connection -> env_list_ent )
+        if ( connection -> env_list_ent && connection -> environment )
         {
             env_lib_list = connection -> environment -> env_lib_list;
             while( env_lib_list )
@@ -2674,12 +2673,6 @@ void __disconnect_part_four( DMHDBC connection )
     }
 
     /*
-     * shutdown unicode
-     */
-
-    unicode_shutdown( connection );
-
-    /*
      * free some memory
      */
 
@@ -2908,12 +2901,6 @@ static void close_pooled_connection( CPOOL *ptr )
             ptr -> connection.dl_handle = NULL;
         }
 
-    	/*
-     	 * shutdown unicode
-     	 */
-
-    	unicode_shutdown( &ptr -> connection );
-
         /*
          * free some memory
          */
@@ -2965,12 +2952,6 @@ static void close_pooled_connection( CPOOL *ptr )
             ptr -> connection.dl_handle = NULL;
         }
 
-    	/*
-     	 * shutdown unicode
-     	 */
-
-    	unicode_shutdown( &ptr -> connection );
-
         /*
          * free some memory
          */
@@ -2989,6 +2970,38 @@ static void close_pooled_connection( CPOOL *ptr )
     __clean_stmt_from_dbc( &ptr -> connection );
     __clean_desc_from_dbc( &ptr -> connection );
 }
+
+/*
+ * if a environment gets released from the application, we need to remove any referenvce to that environment 
+ * in pooled connections that belong to that environment
+ */
+
+void __strip_from_pool( DMHENV env )
+{
+    time_t current_time;
+    SQLINTEGER dead;
+    CPOOL *ptr, *prev;
+    int has_checked = 0;
+
+    mutex_pool_entry();
+
+    current_time = time( NULL );
+
+    /*
+     * look in the list of connections for one that matches
+     */
+
+    for( ptr = pool_head, prev = NULL; ptr; prev = ptr, ptr = ptr -> next )
+    {
+        if ( ptr -> connection.environment == env ) {
+
+            ptr -> connection.environment = NULL;
+        }
+    }
+
+    mutex_pool_exit();
+}
+
 
 int search_for_pool( DMHDBC connection,
            SQLCHAR *server_name,
@@ -3381,6 +3394,7 @@ restart:;
         connection -> state = ptr -> connection.state;
         connection -> dl_handle = ptr -> connection.dl_handle;
         connection -> functions = ptr -> connection.functions;
+        connection -> unicode_driver = ptr -> connection.unicode_driver;
         connection -> driver_env = ptr -> connection.driver_env;
         connection -> driver_dbc = ptr -> connection.driver_dbc;
         connection -> driver_version = ptr -> connection.driver_version;
@@ -3417,7 +3431,12 @@ restart:;
         connection -> ex_fetch_mapping = ptr -> connection.ex_fetch_mapping;
         connection -> dont_dlclose = ptr -> connection.dont_dlclose;
         connection -> bookmarks_on = ptr -> connection.bookmarks_on;
-        connection -> environment = ptr -> connection.environment;
+
+        /*
+         * copy current environment into the pooled connection
+         */
+
+        ptr -> connection.environment = connection -> environment;
 
         strcpy( connection -> dsn, ptr -> connection.dsn );
 
@@ -3752,7 +3771,7 @@ SQLRETURN SQLConnect( SQLHDBC connection_handle,
                 ERROR_HY090, NULL,
                 connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_DBC, connection, SQL_ERROR );
     }
 
     /*
@@ -3770,7 +3789,7 @@ SQLRETURN SQLConnect( SQLHDBC connection_handle,
                 ERROR_08002, NULL,
                 connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_DBC, connection, SQL_ERROR );
     }
 
     if ( name_length1 && server_name )
@@ -3791,7 +3810,7 @@ SQLRETURN SQLConnect( SQLHDBC connection_handle,
                         ERROR_HY090, NULL,
                         connection -> environment -> requested_version );
 
-                return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+                return function_return_nodrv( SQL_HANDLE_DBC, connection, SQL_ERROR );
             }
         }
         else
@@ -3810,7 +3829,7 @@ SQLRETURN SQLConnect( SQLHDBC connection_handle,
                         ERROR_HY090, NULL,
                         connection -> environment -> requested_version );
 
-                return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+                return function_return_nodrv( SQL_HANDLE_DBC, connection, SQL_ERROR );
             }
         }
 
@@ -3829,7 +3848,7 @@ SQLRETURN SQLConnect( SQLHDBC connection_handle,
                 ERROR_IM010, NULL,
                 connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_DBC, connection, SQL_ERROR );
     }
     else
     {
@@ -3865,7 +3884,7 @@ SQLRETURN SQLConnect( SQLHDBC connection_handle,
 
         connection -> state = STATE_C4;
 
-        return function_return( SQL_HANDLE_DBC, connection, ret_from_connect );
+        return function_return_nodrv( SQL_HANDLE_DBC, connection, ret_from_connect );
     }
 
     /*
@@ -3928,7 +3947,7 @@ SQLRETURN SQLConnect( SQLHDBC connection_handle,
         connection -> password_length = name_length3;
     }
 
-    if ( !__find_lib_name( dsn, lib_name, driver_name ))
+    if ( !*dsn || !__find_lib_name( dsn, lib_name, driver_name ))
     {
         /*
          * if not found look for a default
@@ -3946,7 +3965,7 @@ SQLRETURN SQLConnect( SQLHDBC connection_handle,
                     ERROR_IM002, NULL,
                     connection -> environment -> requested_version );
 
-            return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+            return function_return_nodrv( SQL_HANDLE_DBC, connection, SQL_ERROR );
         }
     }
 
@@ -3967,7 +3986,7 @@ SQLRETURN SQLConnect( SQLHDBC connection_handle,
     {
         __disconnect_part_four( connection );       /* release unicode handles */
 
-        return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_DBC, connection, SQL_ERROR );
     }
 
     if ( !CHECK_SQLCONNECT( connection ) &&
@@ -3985,7 +4004,7 @@ SQLRETURN SQLConnect( SQLHDBC connection_handle,
                 ERROR_IM001, NULL,
                 connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_DBC, connection, SQL_ERROR );
     }
 
     if ( CHECK_SQLCONNECT( connection ))
@@ -4318,7 +4337,7 @@ SQLRETURN SQLConnect( SQLHDBC connection_handle,
         ret_from_connect = SQL_SUCCESS_WITH_INFO;
     }
 
-    return function_return( SQL_HANDLE_DBC, connection, ret_from_connect );
+    return function_return_nodrv( SQL_HANDLE_DBC, connection, ret_from_connect );
 }
 
 /*

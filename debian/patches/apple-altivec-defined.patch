@@ -1,0 +1,19 @@
+Description: Check whether the Apple Altivec instruction set is defined, if
+ `bool' is also defined.
+Author: Steve Langasek <vorlon@debian.org>
+Last-Update: 2018-04-09
+Forwarded: yes
+Origin: commit:5d3999900bc2a80e2807c9f2111cec6b57970a56
+
+--- unixodbc-2.3.6.orig/Drivers/Postgre7.1/md5.h
++++ unixodbc-2.3.6/Drivers/Postgre7.1/md5.h
+@@ -21,7 +21,7 @@
+ 
+ #ifndef __cplusplus
+ 
+-#ifndef bool
++#if !defined(bool) || defined(__APPLE_ALTIVEC__)
+ typedef char bool;
+ #endif
+ 
+

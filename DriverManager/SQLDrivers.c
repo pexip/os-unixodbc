@@ -244,7 +244,7 @@ SQLRETURN SQLDrivers(
      * check that a version has been requested
      */
 
-    if ( environment -> requested_version == 0 )
+    if ( ! environment -> version_set )
     {
         dm_log_write( __FILE__, 
                 __LINE__, 
@@ -256,7 +256,7 @@ SQLRETURN SQLDrivers(
                 ERROR_HY010, NULL,
                 SQL_OV_ODBC3 );
 
-        return function_return( SQL_HANDLE_ENV, environment, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_ENV, environment, SQL_ERROR );
     }
 
     if ( cb_driver_desc_max < 0 )
@@ -271,7 +271,7 @@ SQLRETURN SQLDrivers(
                 ERROR_HY090, NULL,
                 environment -> requested_version );
 
-        return function_return( SQL_HANDLE_ENV, environment, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_ENV, environment, SQL_ERROR );
     }
 
     if ( cb_drvr_attr_max < 0
@@ -287,7 +287,7 @@ SQLRETURN SQLDrivers(
                 ERROR_HY090, NULL,
                 environment -> requested_version );
 
-        return function_return( SQL_HANDLE_ENV, environment, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_ENV, environment, SQL_ERROR );
     }
 
     if ( fdirection != SQL_FETCH_FIRST &&
@@ -303,7 +303,7 @@ SQLRETURN SQLDrivers(
                 ERROR_HY103, NULL,
                 environment -> requested_version );
 
-        return function_return( SQL_HANDLE_ENV, environment, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_ENV, environment, SQL_ERROR );
     }
 
     if ( fdirection == SQL_FETCH_FIRST )
@@ -373,9 +373,10 @@ try_again:
             char buffer[ 1024 ];
             int total_len = 0;
 			char b1[ 256 ], b2[ 256 ];
+            int found = 0;
 
             /*
-             * enumerate the driver attributes
+             * enumerate the driver attributes, first in system odbcinst.ini and if not found in user odbcinst.ini
              */
 
             sprintf( szIniName, "%s/%s", odbcinst_system_file_path( b1 ), odbcinst_system_file_name( b2 ));
@@ -397,6 +398,8 @@ try_again:
                     iniValue( hIni, szValue );
                     sprintf( buffer, "%s=%s", szPropertyName, 
                             szValue );
+
+                    found = 1;
 
                     if ( sz_driver_attributes ) {
 
@@ -427,6 +430,60 @@ try_again:
 
                 iniClose( hIni );
             }
+
+            if ( !found ) 
+            {
+
+                sprintf( szIniName, "%s/%s", odbcinst_user_file_path( b1 ), odbcinst_user_file_name( b2 ));
+
+                memset( buffer, '\0', sizeof( buffer ));
+    #ifdef __OS2__
+                if ( iniOpen( &hIni, szIniName, "#;", '[', ']', '=', FALSE, 1L ) == 
+                        INI_SUCCESS )
+    #else
+                if ( iniOpen( &hIni, szIniName, "#;", '[', ']', '=', FALSE ) == 
+                        INI_SUCCESS )
+    #endif
+                {
+                    iniObjectSeek( hIni, (char *)object );
+                    iniPropertyFirst( hIni );
+                    while ( iniPropertyEOL( hIni ) != TRUE )
+                    {
+                        iniProperty( hIni, szPropertyName );
+                        iniValue( hIni, szValue );
+                        sprintf( buffer, "%s=%s", szPropertyName, 
+                                szValue );
+
+                        if ( sz_driver_attributes ) {
+
+                            if ( total_len + strlen( buffer ) + 1 > cb_drvr_attr_max )
+                            {
+                                ret = SQL_SUCCESS_WITH_INFO;
+                            }
+                            else
+                            {
+                                strcpy((char*) sz_driver_attributes, buffer );
+                                sz_driver_attributes += strlen( buffer ) + 1;
+                            }
+                        }
+                        total_len += strlen( buffer ) + 1;
+
+                        iniPropertyNext( hIni );
+                    }
+                    /*
+                     * add extra null 
+                     */
+                    if ( sz_driver_attributes )
+                        *sz_driver_attributes = '\0';
+
+                    if ( pcb_drvr_attr )
+                    {
+                        *pcb_drvr_attr = total_len;
+                    }
+
+                    iniClose( hIni );
+                }
+            }
 		}
 	}
 
@@ -456,5 +513,5 @@ try_again:
                 environment -> msg );
     }
 
-    return function_return( SQL_HANDLE_ENV, environment, ret );
+    return function_return_nodrv( SQL_HANDLE_ENV, environment, ret );
 }

@@ -21,7 +21,7 @@
 
 #ifndef __cplusplus
 
-#if !defined(bool) || defined(__APPLE_ALTIVEC__)
+#ifndef bool
 typedef char bool;
 #endif
 

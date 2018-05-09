@@ -1,0 +1,17 @@
+Description: Prevent some functions from being exported.
+Author: Hugh McMaster <hugh.mcmaster@outlook.com>
+Last-Update: 2018-05-09
+Forwarded: yes
+Origin: commit:5d3999900bc2a80e2807c9f2111cec6b57970a56
+
+--- a/DriverManager/DriverManager.exp
++++ b/DriverManager/DriverManager.exp
+@@ -153,8 +153,6 @@ SQLTablesW
+ SQLTablesA
+ SQLTransact
+ ODBCSharedTraceFlag
+-dm_log_write
+-__post_internal_error
+ uodbc_open_stats
+ uodbc_close_stats
+ uodbc_get_stats
