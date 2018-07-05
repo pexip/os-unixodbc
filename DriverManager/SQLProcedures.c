@@ -238,7 +238,10 @@ SQLRETURN SQLProcedures(
     }
     else if ( statement -> state == STATE_S8 ||
             statement -> state == STATE_S9 ||
-            statement -> state == STATE_S10 )
+            statement -> state == STATE_S10 ||
+            statement -> state == STATE_S13 ||
+            statement -> state == STATE_S14 ||
+            statement -> state == STATE_S15 )
     {
         dm_log_write( __FILE__, 
                 __LINE__, 
@@ -279,6 +282,7 @@ SQLRETURN SQLProcedures(
     if ( statement -> connection -> unicode_driver )
     {
         SQLWCHAR *s1, *s2, *s3;
+        int wlen;
 
         if ( !CHECK_SQLPROCEDURESW( statement -> connection ))
         {
@@ -295,9 +299,12 @@ SQLRETURN SQLProcedures(
             return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
         }
 
-        s1 = ansi_to_unicode_alloc( sz_catalog_name, cb_catalog_name, statement -> connection );
-        s2 = ansi_to_unicode_alloc( sz_schema_name, cb_schema_name, statement -> connection );
-        s3 = ansi_to_unicode_alloc( sz_proc_name, cb_proc_name, statement -> connection );
+        s1 = ansi_to_unicode_alloc( sz_catalog_name, cb_catalog_name, statement -> connection, &wlen );
+        cb_catalog_name = wlen;
+        s2 = ansi_to_unicode_alloc( sz_schema_name, cb_schema_name, statement -> connection, &wlen );
+        cb_schema_name = wlen;
+        s3 = ansi_to_unicode_alloc( sz_proc_name, cb_proc_name, statement -> connection, &wlen );
+        cb_proc_name = wlen;
 
         ret = SQLPROCEDURESW( statement -> connection ,
                 statement -> driver_stmt,

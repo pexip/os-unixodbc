@@ -250,7 +250,8 @@ SQLRETURN SQLSetEnvAttr( SQLHENV environment_handle,
             SQLUINTEGER ptr = (SQLUINTEGER) value;
 
             if ( ptr != SQL_OV_ODBC2 &&
-                    ptr != SQL_OV_ODBC3 )
+                    ptr != SQL_OV_ODBC3 &&
+                    ptr != SQL_OV_ODBC3_80 )
             {
                 dm_log_write( __FILE__, 
                         __LINE__, 
@@ -293,7 +294,7 @@ SQLRETURN SQLSetEnvAttr( SQLHENV environment_handle,
             /*
              * this must be one of the most brain dead atribute,
              * it can be set, but only to TRUE, any other value
-             * (ie FALSE) returns a error. Its almost as if its not
+             * (ie FALSE) returns a error. It's almost as if it's not
              * settable :-)
              */
 

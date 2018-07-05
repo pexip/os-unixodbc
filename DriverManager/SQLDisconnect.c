@@ -247,10 +247,25 @@ SQLRETURN SQLDisconnect( SQLHDBC connection_handle )
     }
 
     /*
-     * any statemnts that are in in SQL_NEED_DATA
+     * any statements that are in SQL_NEED_DATA
      */
 
     if( __check_stmt_from_dbc( connection, STATE_S8 )) {
+
+        dm_log_write( __FILE__, 
+                __LINE__, 
+                LOG_INFO, 
+                LOG_INFO, 
+                "Error: HY010" );
+
+        __post_internal_error( &connection -> error,
+                ERROR_HY010, NULL,
+                connection -> environment -> requested_version );
+
+        return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+    }
+
+    if( __check_stmt_from_dbc( connection, STATE_S13 )) {
 
         dm_log_write( __FILE__, 
                 __LINE__, 

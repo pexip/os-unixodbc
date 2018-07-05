@@ -233,7 +233,7 @@ static char const rcsid[]= "$RCSfile: __handles.c,v $ $Revision: 1.13 $";
  * valid without the danger of a seg-vio.
  */
 
-static DMHENV enviroment_root;
+static DMHENV environment_root;
 static DMHDBC connection_root;
 static DMHSTMT statement_root;
 static DMHDESC descriptor_root;
@@ -247,25 +247,25 @@ static DMHDESC descriptor_root;
  * We also have a mutex to protect the connection pooling code
  *
  * If compiled with thread support the DM allows four different
- * thread strategies
+ * thread strategies:
  *
- * Level 0 - Only the DM internal structures are protected
- * the driver is assumed to take care of it's self
+ * Level 0 - Only the DM internal structures are protected.
+ * The driver is assumed to take care of itself
  *
- * Level 1 - The driver is protected down to the statement level
- * each statement will be protected, and the same for the connect 
- * level for connect functions, note that descriptors are considered
+ * Level 1 - The driver is protected down to the statement level.
+ * Each statement will be protected, and the same for the connect 
+ * level for connect functions. Note that descriptors are considered
  * equal to statements when it comes to thread protection.
  *
- * Level 2 - The driver is protected at the connection level. only
- * one thread can be in a particular driver at one time
+ * Level 2 - The driver is protected at the connection level. Only
+ * one thread can be in a particular driver at one time.
  *
  * Level 3 - The driver is protected at the env level, only one thing
  * at a time.
  *
- * By default the driver open connections with a lock level of 0, 
- * drivers should be expecetd to be thread safe now.
- * this can be changed by adding the line
+ * By default the driver opens connections with lock level 0; drivers
+ * are expected to be thread safe now. This can be changed by adding
+ * the line
  *
  * Threading = N
  *
@@ -416,8 +416,8 @@ DMHENV __alloc_env( void )
          * add to list of env handles
          */
 
-        environment -> next_class_list = enviroment_root;
-        enviroment_root = environment;
+        environment -> next_class_list = environment_root;
+        environment_root = environment;
         environment -> type = HENV_MAGIC;
 
         SQLGetPrivateProfileString( "ODBC", "Trace", "No",
@@ -461,10 +461,10 @@ DMHENV __alloc_env( void )
                     LOG_INFO,
                     LOG_INFO, environment -> msg );
         }
-    }
+        setup_error_head( &environment -> error, environment,
+                SQL_HANDLE_ENV );
 
-    setup_error_head( &environment -> error, environment,
-            SQL_HANDLE_ENV );
+    }
 
     mutex_exit( &mutex_lists );
 
@@ -479,10 +479,11 @@ int __validate_env( DMHENV env )
 {
 #ifdef FAST_HANDLE_VALIDATE
 
-    if ( *(( int * ) env ) == HENV_MAGIC )
+    if ( env && *(( int * ) env ) == HENV_MAGIC )
         return 1;
     else
         return 0;
+
 #else
 
     DMHENV ptr;
@@ -490,7 +491,7 @@ int __validate_env( DMHENV env )
 
     mutex_entry( &mutex_lists );
 
-    ptr = enviroment_root;
+    ptr = environment_root;
 
     while( ptr )
     {
@@ -521,7 +522,7 @@ void __release_env( DMHENV environment )
 
     mutex_entry( &mutex_lists );
 
-    ptr = enviroment_root;
+    ptr = environment_root;
 
     while( ptr )
     {
@@ -541,7 +542,7 @@ void __release_env( DMHENV environment )
         }
         else
         {
-            enviroment_root = ptr -> next_class_list;
+            environment_root = ptr -> next_class_list;
         }
     }
 
@@ -599,27 +600,28 @@ DMHDBC __alloc_dbc( void )
         connection -> next_class_list = connection_root;
         connection_root = connection;
         connection -> type = HDBC_MAGIC;
-    }
 
-    setup_error_head( &connection -> error, connection,
-            SQL_HANDLE_DBC );
+        setup_error_head( &connection -> error, connection,
+                SQL_HANDLE_DBC );
 
 #ifdef HAVE_LIBPTH
-    pth_mutex_init( &connection -> mutex );
-    /*
-     * for the moment protect on a environment level
-     */
-    connection -> protection_level = TS_LEVEL3;
+        pth_mutex_init( &connection -> mutex );
+        /*
+         * for the moment protect at the environment level
+         */
+        connection -> protection_level = TS_LEVEL3;
 #elif HAVE_LIBPTHREAD
-    pthread_mutex_init( &connection -> mutex, NULL );
-    /*
-     * for the moment protect on a environment level
-     */
-    connection -> protection_level = TS_LEVEL3;
+        pthread_mutex_init( &connection -> mutex, NULL );
+        /*
+         * for the moment protect at the environment level
+         */
+        connection -> protection_level = TS_LEVEL3;
 #elif HAVE_LIBTHREAD
-    mutex_init( &connection -> mutex, USYNC_THREAD, NULL );
-    connection -> protection_level = TS_LEVEL3;
+        mutex_init( &connection -> mutex, USYNC_THREAD, NULL );
+        connection -> protection_level = TS_LEVEL3;
 #endif
+
+    }
 
     mutex_exit( &mutex_lists );
 
@@ -672,7 +674,8 @@ void dbc_change_thread_support( DMHDBC connection, int level )
 int __validate_dbc( DMHDBC connection )
 {
 #ifdef FAST_HANDLE_VALIDATE
-    if ( *(( int * ) connection ) == HDBC_MAGIC )
+
+    if ( connection && *(( int * ) connection ) == HDBC_MAGIC )
         return 1;
     else
         return 0;
@@ -785,18 +788,19 @@ DMHSTMT __alloc_stmt( void )
 #endif    
         statement_root = statement;
         statement -> type = HSTMT_MAGIC;
-    }
 
-    setup_error_head( &statement -> error, statement,
-            SQL_HANDLE_STMT );
+        setup_error_head( &statement -> error, statement,
+                SQL_HANDLE_STMT );
 
 #ifdef HAVE_LIBPTH
-    pth_mutex_init( &statement -> mutex );
+        pth_mutex_init( &statement -> mutex );
 #elif HAVE_LIBPTHREAD
-    pthread_mutex_init( &statement -> mutex, NULL );
+        pthread_mutex_init( &statement -> mutex, NULL );
 #elif HAVE_LIBTHREAD
-    mutex_init( &statement -> mutex, USYNC_THREAD, NULL );
+        mutex_init( &statement -> mutex, USYNC_THREAD, NULL );
 #endif
+
+    }
 
     mutex_exit( &mutex_lists );
 
@@ -1007,6 +1011,56 @@ int __clean_stmt_from_dbc( DMHDBC connection )
     mutex_exit( &mutex_lists );
 
     return ret;
+}
+
+int __check_stmt_from_dbc_v( DMHDBC connection, int statecount, ... )
+{
+    va_list ap;
+    int states[ MAX_STATE_ARGS ];
+    DMHSTMT ptr;
+    int found = 0;
+    int i;
+
+    va_start (ap, statecount);
+    for ( i = 0; i < statecount; i ++ ) {
+        states[ i ] = va_arg (ap, int );
+    }
+    va_end (ap);
+
+    mutex_entry( &mutex_lists );
+#ifdef FAST_HANDLE_VALIDATE
+    ptr = connection -> statements;
+    while( !found && ptr )
+    {
+        for ( i = 0; i < statecount; i ++ ) {
+            if ( ptr -> state == states[ i ] ) {
+                found = 1;
+                break;
+            }
+       }
+    
+        ptr = ptr -> next_conn_list;
+    }
+#else
+    ptr = statement_root;
+    while( !found && ptr )
+    {
+        if ( ptr -> connection == connection )
+        {
+            for ( i = 0; i < statecount; i ++ ) {
+                if ( ptr -> state == states[ i ] ) {
+                    found = 1;
+                    break;
+                }
+            }
+        }
+
+        ptr = ptr -> next_class_list;
+    }
+#endif
+    mutex_exit( &mutex_lists );
+
+    return found;
 }
 
 /*
@@ -1304,7 +1358,7 @@ void __release_stmt( DMHSTMT statement )
 
 DMHDESC __alloc_desc( void )
 {
-    DMHDESC descriptor = NULL;
+    DMHDESC descriptor;
 
     mutex_entry( &mutex_lists );
 
@@ -1325,18 +1379,17 @@ DMHDESC __alloc_desc( void )
 #endif    
         descriptor_root = descriptor;
         descriptor -> type = HDESC_MAGIC;
-    }
 
-    setup_error_head( &descriptor -> error, descriptor,
-            SQL_HANDLE_DESC );
+        setup_error_head( &descriptor -> error, descriptor, SQL_HANDLE_DESC );
 
 #ifdef HAVE_LIBPTH
-    pth_mutex_init( &descriptor -> mutex );
+        pth_mutex_init( &descriptor -> mutex );
 #elif HAVE_LIBPTHREAD
-    pthread_mutex_init( &descriptor -> mutex, NULL );
+        pthread_mutex_init( &descriptor -> mutex, NULL );
 #elif HAVE_LIBTHREAD
-    mutex_init( &descriptor -> mutex, USYNC_THREAD, NULL );
+        mutex_init( &descriptor -> mutex, USYNC_THREAD, NULL );
 #endif
+    }
 
     mutex_exit( &mutex_lists );
 
@@ -1351,7 +1404,7 @@ int __validate_desc( DMHDESC descriptor )
 {
 #ifdef FAST_HANDLE_VALIDATE
 
-    if ( *(( int * ) descriptor ) == HDESC_MAGIC )
+    if ( descriptor && *(( int * ) descriptor ) == HDESC_MAGIC )
         return 1;
     else
         return 0;

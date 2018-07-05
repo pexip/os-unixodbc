@@ -189,7 +189,7 @@ SQLRETURN SQLGetCursorName( SQLHSTMT statement_handle,
 
     thread_protect( SQL_HANDLE_STMT, statement );
 
-    if ( !buffer_length < 0 )
+    if ( buffer_length < 0 )
     {
         dm_log_write( __FILE__, 
                 __LINE__, 
@@ -212,7 +212,10 @@ SQLRETURN SQLGetCursorName( SQLHSTMT statement_handle,
             statement -> state == STATE_S9 ||
             statement -> state == STATE_S10 ||
             statement -> state == STATE_S11 ||
-            statement -> state == STATE_S12 )
+            statement -> state == STATE_S12 ||
+            statement -> state == STATE_S13 ||
+            statement -> state == STATE_S14 ||
+            statement -> state == STATE_S15 )
     {
         dm_log_write( __FILE__, 
                 __LINE__, 
@@ -259,7 +262,7 @@ SQLRETURN SQLGetCursorName( SQLHSTMT statement_handle,
 
         if ( SQL_SUCCEEDED( ret ) && cursor_name && s1 )
         {
-            unicode_to_ansi_copy((char*) cursor_name, buffer_length, s1, SQL_NTS, statement -> connection );
+            unicode_to_ansi_copy((char*) cursor_name, buffer_length, s1, SQL_NTS, statement -> connection, NULL );
         }
 
         if ( s1 )

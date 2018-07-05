@@ -233,7 +233,10 @@ SQLRETURN SQLTablesW( SQLHSTMT statement_handle,
     }
     else if ( statement -> state == STATE_S8 ||
             statement -> state == STATE_S9 ||
-            statement -> state == STATE_S10 )
+            statement -> state == STATE_S10 ||
+            statement -> state == STATE_S13 ||
+            statement -> state == STATE_S14 ||
+            statement -> state == STATE_S15 )
     {
         dm_log_write( __FILE__,
                 __LINE__,
@@ -303,6 +306,7 @@ SQLRETURN SQLTablesW( SQLHSTMT statement_handle,
     else
     {
         SQLCHAR *as1, *as2, *as3, *as4;
+        int clen;
 
         if ( !CHECK_SQLTABLES( statement -> connection ))
         {
@@ -319,10 +323,14 @@ SQLRETURN SQLTablesW( SQLHSTMT statement_handle,
             return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
         }
 
-        as1 = (SQLCHAR*) unicode_to_ansi_alloc( catalog_name, name_length1, statement -> connection );
-        as2 = (SQLCHAR*) unicode_to_ansi_alloc( schema_name, name_length2, statement -> connection );
-        as3 = (SQLCHAR*) unicode_to_ansi_alloc( table_name, name_length3, statement -> connection );
-        as4 = (SQLCHAR*) unicode_to_ansi_alloc( table_type, name_length4, statement -> connection );
+        as1 = (SQLCHAR*) unicode_to_ansi_alloc( catalog_name, name_length1, statement -> connection, &clen );
+        name_length1 = clen;
+        as2 = (SQLCHAR*) unicode_to_ansi_alloc( schema_name, name_length2, statement -> connection, &clen );
+        name_length2 = clen;
+        as3 = (SQLCHAR*) unicode_to_ansi_alloc( table_name, name_length3, statement -> connection, &clen );
+        name_length3 = clen;
+        as4 = (SQLCHAR*) unicode_to_ansi_alloc( table_type, name_length4, statement -> connection, &clen );
+        name_length4 = clen;
 
         ret = SQLTABLES( statement -> connection ,
                 statement -> driver_stmt,

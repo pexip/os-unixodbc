@@ -1,13 +1,13 @@
 lib_LTLIBRARIES = libodbcpsql.la
 
-INCLUDES = -I@top_srcdir@/include $(LTDLINCL)
+AM_CPPFLAGS = -I@top_srcdir@/include $(LTDLINCL)
 
 libodbcpsql_la_LDFLAGS = \
 	-version-info 2:0:0 \
 	-no-undefined \
 	$(LIBSOCKET) $(LIBNSL) \
 	-export-dynamic \
-	-export-symbols @srcdir@/driver.exp
+	-export-symbols @srcdir@/driver.exp \
 	-module
 
 EXTRA_DIST = \

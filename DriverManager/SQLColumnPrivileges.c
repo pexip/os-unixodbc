@@ -250,7 +250,10 @@ SQLRETURN SQLColumnPrivileges(
     }
     else if ( statement -> state == STATE_S8 ||
             statement -> state == STATE_S9 ||
-            statement -> state == STATE_S10 )
+            statement -> state == STATE_S10 ||
+            statement -> state == STATE_S13 ||
+            statement -> state == STATE_S14 ||
+            statement -> state == STATE_S15 )
     {
         dm_log_write( __FILE__, 
                 __LINE__, 
@@ -306,6 +309,7 @@ SQLRETURN SQLColumnPrivileges(
     if ( statement -> connection -> unicode_driver )
     {
         SQLWCHAR *s1, *s2, *s3, *s4;
+        int wlen;
 
         if ( !CHECK_SQLCOLUMNPRIVILEGESW( statement -> connection ))
         {
@@ -322,10 +326,14 @@ SQLRETURN SQLColumnPrivileges(
             return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
         }
 
-        s1 = ansi_to_unicode_alloc( catalog_name, name_length1, statement -> connection );
-        s2 = ansi_to_unicode_alloc( schema_name, name_length2, statement -> connection );
-        s3 = ansi_to_unicode_alloc( table_name, name_length3, statement -> connection );
-        s4 = ansi_to_unicode_alloc( column_name, name_length4, statement -> connection );
+        s1 = ansi_to_unicode_alloc( catalog_name, name_length1, statement -> connection, &wlen );
+        name_length1 = wlen;
+        s2 = ansi_to_unicode_alloc( schema_name, name_length2, statement -> connection, &wlen );
+        name_length2 = wlen;
+        s3 = ansi_to_unicode_alloc( table_name, name_length3, statement -> connection, &wlen );
+        name_length3 = wlen;
+        s4 = ansi_to_unicode_alloc( column_name, name_length4, statement -> connection, &wlen );
+        name_length4 = wlen;
 
         ret = SQLCOLUMNPRIVILEGESW( statement -> connection ,
                 statement -> driver_stmt,

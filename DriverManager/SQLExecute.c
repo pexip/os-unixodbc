@@ -235,7 +235,10 @@ SQLRETURN SQLExecute( SQLHSTMT statement_handle )
     else if ( statement -> state == STATE_S1 ||
             statement -> state == STATE_S8 ||
             statement -> state == STATE_S9 ||
-            statement -> state == STATE_S10 )
+            statement -> state == STATE_S10 ||
+            statement -> state == STATE_S13 ||
+            statement -> state == STATE_S14 ||
+            statement -> state == STATE_S15 )
     {
         dm_log_write( __FILE__, 
                 __LINE__, 
@@ -332,6 +335,12 @@ SQLRETURN SQLExecute( SQLHSTMT statement_handle )
         statement -> interupted_func = SQL_API_SQLEXECUTE;
         statement -> interupted_state = statement -> state;
         statement -> state = STATE_S8;
+    }
+    else if ( ret == SQL_PARAM_DATA_AVAILABLE )
+    {
+        statement -> interupted_func = SQL_API_SQLEXECUTE;
+        statement -> interupted_state = statement -> state;
+        statement -> state = STATE_S13;
     }
     else
     {

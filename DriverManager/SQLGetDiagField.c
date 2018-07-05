@@ -206,6 +206,26 @@ IM004,IM005,IM006,IM007,IM008,IM010,IM011,IM012"
 
 extern int __is_env( EHEAD * head );
 
+/*
+ * is it a diag identifier that we have to convert from unicode to ansi
+ */
+
+static int is_char_diag( int diag_identifier )
+{
+    switch( diag_identifier ) {
+        case SQL_DIAG_CLASS_ORIGIN:
+        case SQL_DIAG_CONNECTION_NAME:
+        case SQL_DIAG_MESSAGE_TEXT:
+        case SQL_DIAG_SERVER_NAME:
+        case SQL_DIAG_SQLSTATE:
+        case SQL_DIAG_SUBCLASS_ORIGIN:
+            return 1;
+
+        default:
+            return 0;
+    }
+}
+
 static SQLRETURN extract_sql_error_field( EHEAD *head,
                 SQLSMALLINT rec_number,
                 SQLSMALLINT diag_identifier,
@@ -313,7 +333,7 @@ static SQLRETURN extract_sql_error_field( EHEAD *head,
             {
                 if ( SQL_SUCCEEDED( head -> diag_dynamic_function_ret ) && diag_info_ptr )
                 {
-                    unicode_to_ansi_copy( diag_info_ptr, buffer_length, head -> diag_dynamic_function, buffer_length, __get_connection( head ));
+                    unicode_to_ansi_copy( diag_info_ptr, buffer_length, head -> diag_dynamic_function, buffer_length, __get_connection( head ), NULL );
                     if ( string_length_ptr )
                     {
                         *string_length_ptr = wide_strlen( head -> diag_dynamic_function );
@@ -342,7 +362,7 @@ static SQLRETURN extract_sql_error_field( EHEAD *head,
 
                 if ( SQL_SUCCEEDED( ret ) && diag_info_ptr && s1 )
                 {
-                    unicode_to_ansi_copy( diag_info_ptr, buffer_length, s1, buffer_length, __get_connection( head ));
+                    unicode_to_ansi_copy( diag_info_ptr, buffer_length, s1, buffer_length, __get_connection( head ), NULL );
                 }
 
                 if ( s1 )
@@ -492,7 +512,7 @@ static SQLRETURN extract_sql_error_field( EHEAD *head,
             SQLWCHAR *s1 = NULL;
 			int char_buffer_len = sizeof( SQLWCHAR ) * buffer_length;
 
-            if ( buffer_length > 0 )
+            if ( is_char_diag( diag_identifier ) && diag_info_ptr && buffer_length > 0 )
             {
                 s1 = malloc( char_buffer_len + sizeof( SQLWCHAR ));
             }
@@ -503,12 +523,12 @@ static SQLRETURN extract_sql_error_field( EHEAD *head,
                     rec_number,
                     diag_identifier,
                     s1 ? s1 : diag_info_ptr,
-                    char_buffer_len,
+                    s1 ? char_buffer_len + sizeof( SQLWCHAR ) : buffer_length,
                     string_length_ptr );
 
             if ( SQL_SUCCEEDED( ret ) && s1 && diag_info_ptr )
             {
-                unicode_to_ansi_copy( diag_info_ptr, buffer_length, s1, SQL_NTS, __get_connection( head ));
+                unicode_to_ansi_copy( diag_info_ptr, buffer_length, s1, SQL_NTS, __get_connection( head ), NULL );
             }
 
             if ( s1 )
@@ -593,7 +613,7 @@ static SQLRETURN extract_sql_error_field( EHEAD *head,
         {
             if ( SQL_SUCCEEDED( ptr -> diag_class_origin_ret ))
             {
-                unicode_to_ansi_copy( diag_info_ptr, buffer_length, ptr -> diag_class_origin, buffer_length, __get_connection( head ));
+                unicode_to_ansi_copy( diag_info_ptr, buffer_length, ptr -> diag_class_origin, buffer_length, __get_connection( head ), NULL );
                 if ( string_length_ptr )
                 {
                     *string_length_ptr = wide_strlen( ptr -> diag_class_origin );
@@ -621,7 +641,7 @@ static SQLRETURN extract_sql_error_field( EHEAD *head,
         {
             if ( SQL_SUCCEEDED( ptr -> diag_connection_name_ret ))
             {
-                unicode_to_ansi_copy( diag_info_ptr, buffer_length, ptr -> diag_connection_name, buffer_length, __get_connection( head ));
+                unicode_to_ansi_copy( diag_info_ptr, buffer_length, ptr -> diag_connection_name, buffer_length, __get_connection( head ), NULL );
                 if ( string_length_ptr )
                 {
                     *string_length_ptr = wide_strlen( ptr -> diag_connection_name );
@@ -640,7 +660,7 @@ static SQLRETURN extract_sql_error_field( EHEAD *head,
             char *str;
             int ret = SQL_SUCCESS;
 
-            str = unicode_to_ansi_alloc( ptr -> msg, SQL_NTS, __get_connection( head ));
+            str = unicode_to_ansi_alloc( ptr -> msg, SQL_NTS, __get_connection( head ), NULL );
 
             if ( diag_info_ptr )
             {
@@ -693,7 +713,7 @@ static SQLRETURN extract_sql_error_field( EHEAD *head,
         {
             if ( SQL_SUCCEEDED( ptr -> diag_server_name_ret ))
             {
-                unicode_to_ansi_copy( diag_info_ptr, buffer_length, ptr -> diag_server_name, buffer_length, __get_connection( head ));
+                unicode_to_ansi_copy( diag_info_ptr, buffer_length, ptr -> diag_server_name, buffer_length, __get_connection( head ), NULL );
                 if ( string_length_ptr )
                 {
                     *string_length_ptr = wide_strlen( ptr -> diag_server_name );
@@ -712,7 +732,7 @@ static SQLRETURN extract_sql_error_field( EHEAD *head,
             char *str;
             int ret = SQL_SUCCESS;
 
-            str = unicode_to_ansi_alloc( ptr -> sqlstate, SQL_NTS, __get_connection( head ));
+            str = unicode_to_ansi_alloc( ptr -> sqlstate, SQL_NTS, __get_connection( head ), NULL );
 
             if ( diag_info_ptr )
             {
@@ -752,7 +772,7 @@ static SQLRETURN extract_sql_error_field( EHEAD *head,
         {
             if ( SQL_SUCCEEDED( ptr -> diag_subclass_origin_ret ))
             {
-                unicode_to_ansi_copy( diag_info_ptr, buffer_length, ptr -> diag_subclass_origin, buffer_length, __get_connection( head ));
+                unicode_to_ansi_copy( diag_info_ptr, buffer_length, ptr -> diag_subclass_origin, buffer_length, __get_connection( head ), NULL );
                 if ( string_length_ptr )
                 {
                     *string_length_ptr = wide_strlen( ptr -> diag_subclass_origin );

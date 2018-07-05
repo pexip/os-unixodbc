@@ -138,6 +138,7 @@ SQLRETURN SQLCancel( SQLHSTMT statement_handle )
                 statement -> msg );
     }
 
+#if defined( HAVE_LIBPTH ) || defined( HAVE_LIBPTHREAD ) || defined( HAVE_LIBTHREAD )
     /*
      * Allow this past the thread checks if the driver is at all thread safe, as SQLCancel can 
      * be called across threads
@@ -146,6 +147,7 @@ SQLRETURN SQLCancel( SQLHSTMT statement_handle )
     {
         thread_protect( SQL_HANDLE_STMT, statement ); 
     }
+#endif
 
     /*
      * check states
@@ -163,6 +165,7 @@ SQLRETURN SQLCancel( SQLHSTMT statement_handle )
                 ERROR_IM001, NULL,
                 statement -> connection -> environment -> requested_version );
 
+#if defined( HAVE_LIBPTH ) || defined( HAVE_LIBPTHREAD ) || defined( HAVE_LIBTHREAD )
         if ( statement -> connection -> protection_level == 3 ) 
         {
             return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
@@ -171,6 +174,9 @@ SQLRETURN SQLCancel( SQLHSTMT statement_handle )
         {
             return function_return( IGNORE_THREAD, statement, SQL_ERROR );
         }
+#else 
+        return function_return( IGNORE_THREAD, statement, SQL_ERROR );
+#endif
     }
 
     ret = SQLCANCEL( statement -> connection,
@@ -180,7 +186,10 @@ SQLRETURN SQLCancel( SQLHSTMT statement_handle )
     {
         if ( statement -> state == STATE_S8 ||
             statement -> state == STATE_S9 ||
-            statement -> state == STATE_S10 )
+            statement -> state == STATE_S10 ||
+            statement -> state == STATE_S13 ||
+            statement -> state == STATE_S14 ||
+            statement -> state == STATE_S15 )
         {
             if ( statement -> interupted_func == SQL_API_SQLEXECDIRECT )
             {
@@ -233,6 +242,23 @@ SQLRETURN SQLCancel( SQLHSTMT statement_handle )
         {
             statement -> state = STATE_S12;
         }
+        else {  /* Same action as SQLFreeStmt( SQL_CLOSE ) */
+            if ( statement -> state == STATE_S4 )
+            {
+                if ( statement -> prepared )
+                    statement -> state = STATE_S2;
+                else
+                    statement -> state = STATE_S1;
+            }
+            else
+            {
+                if ( statement -> prepared )
+                    statement -> state = STATE_S3;
+                else
+                    statement -> state = STATE_S1;
+            }
+            statement -> hascols = 0;
+        }
     }
 
     if ( log_info.log_flag )
@@ -248,6 +274,7 @@ SQLRETURN SQLCancel( SQLHSTMT statement_handle )
                 statement -> msg );
     }
 
+#if defined( HAVE_LIBPTH ) || defined( HAVE_LIBPTHREAD ) || defined( HAVE_LIBTHREAD )
     if ( statement -> connection -> protection_level == 3 ) 
     {
         return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
@@ -256,4 +283,7 @@ SQLRETURN SQLCancel( SQLHSTMT statement_handle )
     {
         return function_return( IGNORE_THREAD, statement, ret );
     }
+#else
+    return function_return( IGNORE_THREAD, statement, ret );
+#endif
 }

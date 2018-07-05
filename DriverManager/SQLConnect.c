@@ -587,6 +587,11 @@
  **********************************************************************/
 
 #include <config.h>
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#elif defined(HAVE_TIME_H)
+#include <time.h>
+#endif
 #include "drivermanager.h"
 
 static char const rcsid[]= "$RCSfile: SQLConnect.c,v $ $Revision: 1.66 $";
@@ -763,6 +768,21 @@ static void do_attr( DMHDBC connection, int value,
                         attr2,
                         value );
         }
+        else if (CHECK_SQLSETCONNECTATTRW( connection ))     /* they are int values, so this should be safe */
+        {
+            SQLSETCONNECTATTRW(connection,
+                        connection -> driver_dbc,
+                        attr3,
+                        value,
+                        sizeof( value ));
+        }
+        else if (CHECK_SQLSETCONNECTOPTIONW(connection) && attr2 )
+        {
+            SQLSETCONNECTOPTIONW(connection,
+                        connection -> driver_dbc,
+                        attr2,
+                        value );
+        }
     }
 }
 
@@ -788,7 +808,7 @@ static struct lib_count *lib_list = NULL;
 static struct lib_count single_lib_count;
 static char single_lib_name[ INI_MAX_PROPERTY_VALUE + 1 ];
 
-static void *odbc_dlopen( char *libname )
+static void *odbc_dlopen( char *libname, char **err )
 {
     void *hand;
     struct lib_count *list;
@@ -821,29 +841,34 @@ static void *odbc_dlopen( char *libname )
 
         if ( hand )
         {
-	    /*
-	     * If only one, then use the static space
-	     */
-
-	    if ( lib_list == NULL )
-	    {
-		    list = &single_lib_count;
-		    list -> next = lib_list;
-		    lib_list = list;
-		    list -> count = 1;
-		    list -> lib_name = single_lib_name;
-		    strcpy( single_lib_name, libname );
-		    list -> handle = hand;
-	    }
-	    else
-	    {
-		    list = malloc( sizeof( struct lib_count ));
-		    list -> next = lib_list;
-		    lib_list = list;
-		    list -> count = 1;
-		    list -> lib_name = strdup( libname );
-		    list -> handle = hand;
-	    }
+	        /*
+	        * If only one, then use the static space
+	        */
+    
+	        if ( lib_list == NULL )
+	        {
+		        list = &single_lib_count;
+		        list -> next = lib_list;
+		        lib_list = list;
+		        list -> count = 1;
+		        list -> lib_name = single_lib_name;
+		        strcpy( single_lib_name, libname );
+		        list -> handle = hand;
+	        }
+	        else
+	        {
+		        list = malloc( sizeof( struct lib_count ));
+		        list -> next = lib_list;
+		        lib_list = list;
+		        list -> count = 1;
+		        list -> lib_name = strdup( libname );
+		        list -> handle = hand;
+	        }
+        }
+        else {
+            if ( err ) {
+                *err = (char*) lt_dlerror();
+            }
         }
     }
 
@@ -936,6 +961,7 @@ int __connect_part_one( DMHDBC connection, char *driver_lib, char *driver_name, 
     char disable_gf[ 50 ];
     char fake_string[ 50 ];
     int fake_unicode;
+    char *err;
     struct env_lib_struct *env_lib_list, *env_lib_prev;
 
     /*
@@ -943,11 +969,9 @@ int __connect_part_one( DMHDBC connection, char *driver_lib, char *driver_name, 
      * before opening the lib
      */
 
-    *warnings = FALSE;
-
     /*
      * if the driver comes from odbc.ini not via odbcinst.ini the driver name will be empty
-     * so only look for the entry if its set
+     * so only look for the entry if it's set
      */
 
     if ( driver_name[ 0 ] != '\0' ) 
@@ -1089,7 +1113,10 @@ int __connect_part_one( DMHDBC connection, char *driver_lib, char *driver_name, 
      * initialize libtool
      */
 
+    mutex_lib_entry();      /* warning, this doesn't protect from other libs in the application */
+                            /* in their own threads calling dlinit(); */
     lt_dlinit();
+    mutex_lib_exit();
 
     /*
      * open the lib
@@ -1100,12 +1127,12 @@ int __connect_part_one( DMHDBC connection, char *driver_lib, char *driver_name, 
     connection -> functions = NULL;
     connection -> dl_handle = NULL;
 
-    if ( !(connection -> dl_handle = odbc_dlopen( driver_lib )))
+    if ( !(connection -> dl_handle = odbc_dlopen( driver_lib, &err )))
     {
         char txt[ 2048 ];
 
         sprintf( txt, "Can't open lib '%s' : %s", 
-                driver_lib, lt_dlerror());
+                driver_lib, err ? err : "NULL ERROR RETURN" );
 
         dm_log_write( __FILE__,
                 __LINE__,
@@ -1121,7 +1148,7 @@ int __connect_part_one( DMHDBC connection, char *driver_lib, char *driver_name, 
     }
 
     /*
-     * try and extract the ini and fini functions, and call ini if its 
+     * try and extract the ini and fini functions, and call ini if it's 
      * found
      */
 
@@ -1429,7 +1456,7 @@ int __connect_part_one( DMHDBC connection, char *driver_lib, char *driver_name, 
          * if it looks like a 3.x driver, try setting the interface type
          * to 3.x
          */
-		if ( connection -> driver_act_ver == SQL_OV_ODBC3 && CHECK_SQLSETENVATTR( connection ))
+		if ( connection -> driver_act_ver >= SQL_OV_ODBC3 && CHECK_SQLSETENVATTR( connection ))
 		{
             ret = SQLSETENVATTR( connection,
                     connection -> driver_env,
@@ -1492,7 +1519,7 @@ int __connect_part_one( DMHDBC connection, char *driver_lib, char *driver_name, 
      * allocate a connection handle
      */
 
-    if ( connection -> driver_version == SQL_OV_ODBC3 )
+    if ( connection -> driver_version >= SQL_OV_ODBC3 )
     {
         ret = SQL_SUCCESS;
 
@@ -1866,7 +1893,7 @@ int __connect_part_two( DMHDBC connection )
          * some drivers (SAPDB) fail to return the correct values in this situation
          */
 
-        if ( connection -> driver_act_ver == SQL_OV_ODBC3 )
+        if ( connection -> driver_act_ver >= SQL_OV_ODBC3 )
         {
             ret = SQLGETFUNCTIONS( connection,
                 connection -> driver_dbc,
@@ -1892,7 +1919,7 @@ int __connect_part_two( DMHDBC connection )
                     SQLRETURN ret;
                     SQLUSMALLINT supported;
 
-					if ( connection -> driver_act_ver == SQL_OV_ODBC3 )
+					if ( connection -> driver_act_ver >= SQL_OV_ODBC3 )
 					{
                         supported = SQL_FUNC_EXISTS( supported_funcs, connection -> functions[ i ].ordinal );
 
@@ -2156,7 +2183,7 @@ int __connect_part_two( DMHDBC connection )
         char txt[ 20 ];
         SQLRETURN ret;
 
-        if ( connection -> driver_act_ver == SQL_OV_ODBC3 )
+        if ( connection -> driver_act_ver >= SQL_OV_ODBC3 )
         {
             ret = __SQLGetInfo( connection,
                     SQL_XOPEN_CLI_YEAR,
@@ -2206,7 +2233,7 @@ int __connect_part_two( DMHDBC connection )
              * check if static cursors support scrolling
              */
 
-            if ( connection -> driver_act_ver ==
+            if ( connection -> driver_act_ver >=
                     SQL_OV_ODBC3 )
             {
                 ret = __SQLGetInfo( connection,
@@ -2276,8 +2303,9 @@ int __connect_part_two( DMHDBC connection )
     if ( use_cursor )
     {
 		char ext[ 32 ]; 
-		char name[ 128 ];
+		char name[ ODBC_FILENAME_MAX * 2 + 1 ];
         int (*cl_connect)(void*, struct driver_helper_funcs*);
+        char *err;
         struct driver_helper_funcs dh;
 
 		/*
@@ -2290,6 +2318,10 @@ int __connect_part_two( DMHDBC connection )
 		}
 		else
 		{
+            if ( strlen( SHLIBEXT ) + 1 > sizeof( ext )) {
+                fprintf( stderr, "internal error, unexpected SHLIBEXT value ('%s') may indicate a problem with configure\n", SHLIBEXT );
+                abort();
+            }
 			strcpy( ext, SHLIBEXT );
 		}
 
@@ -2299,9 +2331,9 @@ int __connect_part_two( DMHDBC connection )
             sprintf( name, "%s%s", CURSOR_LIB, ext );
 #endif
 
-        if ( !(connection -> cl_handle = odbc_dlopen( name )))
+        if ( !(connection -> cl_handle = odbc_dlopen( name, &err )))
         {
-            char b1[ 1024 ];
+            char b1[ ODBC_FILENAME_MAX + 1 ];
             /*
              * try again
              */
@@ -2329,12 +2361,12 @@ int __connect_part_two( DMHDBC connection )
 #endif
 #endif
 #endif
-            if ( !(connection -> cl_handle = odbc_dlopen( name )))
+            if ( !(connection -> cl_handle = odbc_dlopen( name, &err )))
             {
                 char txt[ 256 ];
 
                 sprintf( txt, "Can't open cursor lib '%s' : %s", 
-                    name, lt_dlerror());
+                    name, err ? err : "NULL ERROR RETURN" );
 
                 dm_log_write( __FILE__,
                         __LINE__,
@@ -2401,6 +2433,8 @@ static void release_env( DMHDBC connection )
     {
         env_lib_prev = env_lib_list = NULL;
 
+        mutex_lib_entry();
+
         if ( connection -> env_list_ent )
         {
             env_lib_list = connection -> environment -> env_lib_list;
@@ -2417,13 +2451,11 @@ static void release_env( DMHDBC connection )
 
         if ( env_lib_list && env_lib_list -> count > 1 )
         {
-            mutex_lib_entry();
             env_lib_list -> count --;
-            mutex_lib_exit();
         }
         else
         {
-            if ( connection -> driver_version == SQL_OV_ODBC3 )
+            if ( connection -> driver_version >= SQL_OV_ODBC3 )
             {
 				ret = SQL_ERROR;
                 if ( CHECK_SQLFREEHANDLE( connection ))
@@ -2463,8 +2495,6 @@ static void release_env( DMHDBC connection )
              * remove the entry
              */
 
-            mutex_lib_entry();
-
             if ( env_lib_prev )
             {
                 env_lib_prev -> next = env_lib_list -> next;
@@ -2482,9 +2512,9 @@ static void release_env( DMHDBC connection )
             	free( env_lib_list -> lib_name );
             	free( env_lib_list );
 			}
-
-            mutex_lib_exit();
         }
+
+        mutex_lib_exit();
     }
 }
 
@@ -2501,7 +2531,7 @@ void __disconnect_part_one( DMHDBC connection )
      */
     if ( connection -> driver_dbc )
     {
-        if ( connection -> driver_version == SQL_OV_ODBC3 )
+        if ( connection -> driver_version >= SQL_OV_ODBC3 )
         {
             if ( CHECK_SQLFREEHANDLE( connection ))
             {
@@ -2543,7 +2573,7 @@ void __disconnect_part_one( DMHDBC connection )
     }
 
     /*
-     * now disconnect the environment, if its the last usage on the connection
+     * now disconnect the environment, if it's the last usage on the connection
      */
 
     if ( connection -> driver_env )
@@ -2607,7 +2637,7 @@ void __disconnect_part_two( DMHDBC connection )
 void __disconnect_part_four( DMHDBC connection )
 {
     /*
-     * now disconnect the environment, if its the last usage on the connection
+     * now disconnect the environment, if it's the last usage on the connection
      */
 
     release_env( connection );
@@ -2673,7 +2703,7 @@ void __disconnect_part_four( DMHDBC connection )
 
 void __disconnect_part_three( DMHDBC connection )
 {
-    if ( connection -> driver_version == SQL_OV_ODBC3 )
+    if ( connection -> driver_version >= SQL_OV_ODBC3 )
     {
         if ( CHECK_SQLFREEHANDLE( connection ))
         {
@@ -2806,7 +2836,7 @@ static void close_pooled_connection( CPOOL *ptr )
          * complete disconnection from driver
          */
 
-        if ( ptr -> connection.driver_version == SQL_OV_ODBC3 )
+        if ( ptr -> connection.driver_version >= SQL_OV_ODBC3 )
         {
             if ( CHECK_SQLFREEHANDLE(( &ptr -> connection )))
             {
@@ -2838,7 +2868,7 @@ static void close_pooled_connection( CPOOL *ptr )
         ptr -> connection.driver_dbc = (DRV_SQLHANDLE)NULL;
 
         /*
-         * Only call freeenv if its the last connection to the driver
+         * Only call freeenv if it's the last connection to the driver
          */
 
         release_env( &ptr -> connection );
@@ -3114,8 +3144,8 @@ restart:;
                 0 );
 
             /*
-             * if it failed assume that its because it doesn't support
-             * it, but its ok
+             * if it failed assume that it's because it doesn't support
+             * it, but it's ok
              */
 
             if ( SQL_SUCCEEDED( ret ))
@@ -3155,8 +3185,8 @@ restart:;
                         &dead );
             
             /*
-             * if it failed assume that its because it doesn't support
-             * it, but its ok
+             * if it failed assume that it's because it doesn't support
+             * it, but it's ok
              */
 
             if ( SQL_SUCCEEDED( ret ))
@@ -3473,6 +3503,7 @@ void return_to_pool( DMHDBC connection )
         ptr -> connection.quite_mode_set = connection -> quite_mode_set;
         ptr -> connection.txn_isolation = connection -> txn_isolation;
         ptr -> connection.txn_isolation_set = connection -> txn_isolation_set;
+        ptr -> connection.unicode_driver = connection ->unicode_driver;
 
         ptr -> connection.cursors = connection -> cursors;
         ptr -> connection.cl_handle = connection -> cl_handle;
@@ -3554,7 +3585,7 @@ void return_to_pool( DMHDBC connection )
     }
 
     /*
-     * allow the driver to reset itself if its a 3.8 driver
+     * allow the driver to reset itself if it's a 3.8 driver
      */
 
     if ( connection -> driver_version == SQL_OV_ODBC3_80 ) 
@@ -3929,8 +3960,12 @@ SQLRETURN SQLConnect( SQLHDBC connection_handle,
      * if necessary change the threading level
      */
 
+    warnings = 0;
+
     if ( !__connect_part_one( connection, lib_name, driver_name, &warnings ))
     {
+        __disconnect_part_four( connection );       /* release unicode handles */
+
         return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
     }
 
@@ -3944,6 +3979,7 @@ SQLRETURN SQLConnect( SQLHDBC connection_handle,
                 "Error: IM001" );
 
         __disconnect_part_one( connection );
+        __disconnect_part_four( connection );       /* release unicode handles */
         __post_internal_error( &connection -> error,
                 ERROR_IM001, NULL,
                 connection -> environment -> requested_version );
@@ -4078,9 +4114,9 @@ SQLRETURN SQLConnect( SQLHDBC connection_handle,
     {
         SQLWCHAR * uc_dsn, *uc_user, *uc_auth;
 
-        uc_dsn = ansi_to_unicode_alloc((SQLCHAR*) dsn, SQL_NTS, connection );
-        uc_user = ansi_to_unicode_alloc( user_name, name_length2, connection );
-        uc_auth = ansi_to_unicode_alloc( authentication, name_length3, connection );
+        uc_dsn = ansi_to_unicode_alloc((SQLCHAR*) dsn, SQL_NTS, connection, NULL );
+        uc_user = ansi_to_unicode_alloc( user_name, name_length2, connection, NULL );
+        uc_auth = ansi_to_unicode_alloc( authentication, name_length3, connection, NULL );
 
         if ( CHECK_SQLSETCONNECTATTR( connection ))
         {
@@ -4144,8 +4180,8 @@ SQLRETURN SQLConnect( SQLHDBC connection_handle,
                                 message_text,
                                 SUBCLASS_ODBC, SUBCLASS_ODBC );
 
-                        as1 = (SQLCHAR *) unicode_to_ansi_alloc( sqlstate, SQL_NTS, connection );
-                        as2 = (SQLCHAR *) unicode_to_ansi_alloc( message_text, SQL_NTS, connection );
+                        as1 = (SQLCHAR *) unicode_to_ansi_alloc( sqlstate, SQL_NTS, connection, NULL );
+                        as2 = (SQLCHAR *) unicode_to_ansi_alloc( message_text, SQL_NTS, connection, NULL );
 
                         sprintf( connection -> msg, "\t\tDIAG [%s] %s",
                                 as1, as2 );
@@ -4185,8 +4221,8 @@ SQLRETURN SQLConnect( SQLHDBC connection_handle,
                                 message_text,
                                 SUBCLASS_ODBC, SUBCLASS_ODBC );
 
-                        as1 = (SQLCHAR *) unicode_to_ansi_alloc( sqlstate, SQL_NTS, connection );
-                        as2 = (SQLCHAR *) unicode_to_ansi_alloc( message_text, SQL_NTS, connection );
+                        as1 = (SQLCHAR *) unicode_to_ansi_alloc( sqlstate, SQL_NTS, connection, NULL );
+                        as2 = (SQLCHAR *) unicode_to_ansi_alloc( message_text, SQL_NTS, connection, NULL );
 
                         sprintf( connection -> msg, "\t\tDIAG [%s] %s",
                                 as1, as2 );

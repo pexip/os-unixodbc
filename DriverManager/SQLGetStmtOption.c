@@ -172,7 +172,10 @@ SQLRETURN SQLGetStmtOption( SQLHSTMT statement_handle,
             statement -> state == STATE_S9 ||
             statement -> state == STATE_S10 ||
             statement -> state == STATE_S11 ||
-            statement -> state == STATE_S12 )
+            statement -> state == STATE_S12 ||
+            statement -> state == STATE_S13 ||
+            statement -> state == STATE_S14 ||
+            statement -> state == STATE_S15 )
     {
         dm_log_write( __FILE__, 
                 __LINE__, 
@@ -232,6 +235,47 @@ SQLRETURN SQLGetStmtOption( SQLHSTMT statement_handle,
 
           default:
             ret = SQLGETSTMTATTR( statement -> connection,
+                    statement -> driver_stmt,
+                    option,
+                    value,
+                    SQL_MAX_OPTION_STRING_LENGTH,
+                    NULL );
+            break;
+        }
+    }
+    else if ( CHECK_SQLGETSTMTATTRW( statement -> connection )) {
+        switch ( option )
+        {
+          case SQL_ATTR_APP_PARAM_DESC:
+            if ( value )
+                memcpy( value, &statement -> apd, sizeof( statement -> apd ));
+
+            ret = SQL_SUCCESS;
+            break;
+
+          case SQL_ATTR_APP_ROW_DESC:
+            if ( value )
+                memcpy( value, &statement -> ard, sizeof( statement -> ard ));
+
+            ret = SQL_SUCCESS;
+            break;
+
+          case SQL_ATTR_IMP_PARAM_DESC:
+            if ( value )
+                memcpy( value, &statement -> ipd, sizeof( statement -> ipd ));
+
+            ret = SQL_SUCCESS;
+            break;
+
+          case SQL_ATTR_IMP_ROW_DESC:
+            if ( value )
+                memcpy( value, &statement -> ird, sizeof( statement -> ird ));
+
+            ret = SQL_SUCCESS;
+            break;
+
+          default:
+            ret = SQLGETSTMTATTRW( statement -> connection,
                     statement -> driver_stmt,
                     option,
                     value,

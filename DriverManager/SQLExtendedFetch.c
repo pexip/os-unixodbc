@@ -245,7 +245,10 @@ SQLRETURN SQLExtendedFetch(
 
     if ( statement -> state == STATE_S8 ||
             statement -> state == STATE_S9 ||
-            statement -> state == STATE_S10 )
+            statement -> state == STATE_S10 ||
+            statement -> state == STATE_S13 ||
+            statement -> state == STATE_S14 ||
+            statement -> state == STATE_S15 )
     {
         dm_log_write( __FILE__, 
                 __LINE__, 
@@ -309,6 +312,10 @@ SQLRETURN SQLExtendedFetch(
             statement -> state = STATE_S11;
     }
     else if ( SQL_SUCCEEDED( ret ))
+    {
+        statement -> state = STATE_S7;
+    }
+    else if ( ret == SQL_NO_DATA )
     {
         statement -> state = STATE_S7;
     }
