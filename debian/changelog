@@ -1,3 +1,9 @@
+unixodbc (2.3.4-1pexip1) pexip; urgency=medium
+
+  * Migrate to Stretch
+
+ -- John-Mark Bell <jmb@pexip.com>  Tue, 10 Jul 2018 11:53:27 +0000
+
 unixodbc (2.3.4-1) unstable; urgency=medium
 
   * New upstream release.  Closes: #843847.
