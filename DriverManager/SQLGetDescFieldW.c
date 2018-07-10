@@ -205,7 +205,10 @@ SQLRETURN SQLGetDescFieldW( SQLHDESC descriptor_handle,
         __check_stmt_from_desc( descriptor, STATE_S9 ) ||
         __check_stmt_from_desc( descriptor, STATE_S10 ) ||
         __check_stmt_from_desc( descriptor, STATE_S11 ) ||
-        __check_stmt_from_desc( descriptor, STATE_S12 )) {
+        __check_stmt_from_desc( descriptor, STATE_S12 ) ||
+        __check_stmt_from_desc( descriptor, STATE_S13 ) ||
+        __check_stmt_from_desc( descriptor, STATE_S14 ) ||
+        __check_stmt_from_desc( descriptor, STATE_S15 )) {
 
         dm_log_write( __FILE__, 
                 __LINE__, 
@@ -326,7 +329,7 @@ SQLRETURN SQLGetDescFieldW( SQLHDESC descriptor_handle,
               case SQL_DESC_TYPE_NAME:
                 if ( as1 && buffer_length > 0 && value )
                 {
-                    ansi_to_unicode_copy( value, (char*) as1, SQL_NTS, descriptor -> connection );
+                    ansi_to_unicode_copy( value, (char*) as1, SQL_NTS, descriptor -> connection, NULL );
                 }
 				if ( string_length )
 				{

@@ -224,7 +224,10 @@ SQLRETURN SQLGetDescRecW( SQLHDESC descriptor_handle,
         __check_stmt_from_desc( descriptor, STATE_S9 ) ||
         __check_stmt_from_desc( descriptor, STATE_S10 ) ||
         __check_stmt_from_desc( descriptor, STATE_S11 ) ||
-        __check_stmt_from_desc( descriptor, STATE_S12 )) {
+        __check_stmt_from_desc( descriptor, STATE_S12 ) ||
+        __check_stmt_from_desc( descriptor, STATE_S13 ) ||
+        __check_stmt_from_desc( descriptor, STATE_S14 ) ||
+        __check_stmt_from_desc( descriptor, STATE_S15 )) {
 
         dm_log_write( __FILE__, 
                 __LINE__, 
@@ -325,7 +328,7 @@ SQLRETURN SQLGetDescRecW( SQLHDESC descriptor_handle,
 
         if ( SQL_SUCCEEDED( ret ) && name && as1 )
         {
-            ansi_to_unicode_copy( name, (char*) as1, SQL_NTS, descriptor -> connection );
+            ansi_to_unicode_copy( name, (char*) as1, SQL_NTS, descriptor -> connection, NULL );
         }
         if ( as1 )
         {
@@ -349,7 +352,7 @@ SQLRETURN SQLGetDescRecW( SQLHDESC descriptor_handle,
 \n\t\t\tScale = %s\
 \n\t\t\tNullable = %s",
                     __get_return_status( ret, s8 ),
-                    __sdata_as_string( s1, SQL_CHAR, 
+                    __sdata_as_string( s1, SQL_WCHAR, 
                         string_length, name ),
                     __sptr_as_string( s2, type ),
                     __sptr_as_string( s3, sub_type ),

@@ -315,7 +315,7 @@ SQLRETURN SQLConnectW( SQLHDBC connection_handle,
 
     connection -> pooled_connection = NULL;
 
-    unicode_to_ansi_copy((char*) ansi_dsn, sizeof( ansi_dsn ), dsn, sizeof( ansi_dsn ),  NULL );
+    unicode_to_ansi_copy((char*) ansi_dsn, sizeof( ansi_dsn ), dsn, sizeof( ansi_dsn ), NULL, NULL );
 
     if ( !__find_lib_name((char*) ansi_dsn, lib_name, driver_name ))
     {
@@ -349,8 +349,12 @@ SQLRETURN SQLConnectW( SQLHDBC connection_handle,
      * if necessary change the threading level
      */
 
+    warnings = 0;
+
     if ( !__connect_part_one( connection, lib_name, driver_name, &warnings ))
     {
+        __disconnect_part_four( connection );       /* release unicode handles */
+
         return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
     }
 
@@ -364,6 +368,7 @@ SQLRETURN SQLConnectW( SQLHDBC connection_handle,
                 "Error: IM001" );
 
         __disconnect_part_one( connection );
+        __disconnect_part_four( connection );       /* release unicode handles */
         __post_internal_error( &connection -> error,
                 ERROR_IM001, NULL,
                 connection -> environment -> requested_version );
@@ -397,17 +402,17 @@ SQLRETURN SQLConnectW( SQLHDBC connection_handle,
         if ( user_name )
         {
             if ( name_length2 == SQL_NTS )
-                unicode_to_ansi_copy((char*) ansi_user, sizeof( ansi_user ),user_name, sizeof( ansi_user ), connection);
+                unicode_to_ansi_copy((char*) ansi_user, sizeof( ansi_user ),user_name, sizeof( ansi_user ), connection, NULL);
             else
-                unicode_to_ansi_copy((char*) ansi_user, sizeof( ansi_user ),user_name, name_length2, connection );
+                unicode_to_ansi_copy((char*) ansi_user, sizeof( ansi_user ),user_name, name_length2, connection, NULL );
         }
 
         if ( authentication )
         {
             if ( name_length3 == SQL_NTS )
-                unicode_to_ansi_copy((char*) ansi_pwd, sizeof( ansi_pwd ), authentication, sizeof( ansi_pwd ), connection);
+                unicode_to_ansi_copy((char*) ansi_pwd, sizeof( ansi_pwd ), authentication, sizeof( ansi_pwd ), connection, NULL);
             else
-                unicode_to_ansi_copy((char*) ansi_pwd, sizeof( ansi_pwd ), authentication, name_length3, connection );
+                unicode_to_ansi_copy((char*) ansi_pwd, sizeof( ansi_pwd ), authentication, name_length3, connection, NULL );
         }
 
         /*
@@ -614,6 +619,7 @@ SQLRETURN SQLConnectW( SQLHDBC connection_handle,
         if ( !SQL_SUCCEEDED( ret_from_connect ))
         {
             __disconnect_part_one( connection );
+            __disconnect_part_four( connection );       /* release unicode handles */
 
             return function_return( SQL_HANDLE_DBC, connection, ret_from_connect );
         }
@@ -648,6 +654,7 @@ SQLRETURN SQLConnectW( SQLHDBC connection_handle,
 
         __disconnect_part_two( connection );
         __disconnect_part_one( connection );
+        __disconnect_part_four( connection );       /* release unicode handles */
 
         connection -> state = STATE_C3;
 

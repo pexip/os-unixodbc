@@ -599,7 +599,7 @@ SQLRETURN __SQLAllocHandle( SQLSMALLINT handle_type,
              * pass the call on
              */
 
-            if ( requested_version == SQL_OV_ODBC3 )
+            if ( requested_version >= SQL_OV_ODBC3 )
             {
                 if ( CHECK_SQLALLOCHANDLE( connection ))
                 {
@@ -871,6 +871,8 @@ SQLRETURN __SQLAllocHandle( SQLSMALLINT handle_type,
                                     ERROR_HY013, NULL,
                                     connection -> environment -> requested_version );
 
+                            __release_stmt( statement );
+
                             *output_handle = SQL_NULL_HSTMT;
 
                             return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
@@ -1047,6 +1049,8 @@ SQLRETURN __SQLAllocHandle( SQLSMALLINT handle_type,
                             __post_internal_error( &connection -> error,
                                     ERROR_HY013, NULL,
                                     connection -> environment -> requested_version );
+
+                            __release_stmt( statement );
 
                             *output_handle = SQL_NULL_HSTMT;
 

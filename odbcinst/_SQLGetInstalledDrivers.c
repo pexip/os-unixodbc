@@ -32,9 +32,9 @@ int _SQLGetInstalledDrivers(    LPCSTR  pszSection,
     char    szObjectName[INI_MAX_OBJECT_NAME+1];
     char    szPropertyName[INI_MAX_PROPERTY_NAME+1];
     char    szValue[INI_MAX_PROPERTY_VALUE+1];
-    char    szIniName[ INI_MAX_OBJECT_NAME + 1 ];
+    char    szIniName[ ODBC_FILENAME_MAX * 2 + 3 ];
     char    *ptr;
-    char    b1[ 256 ], b2[ 256 ];
+    char    b1[ ODBC_FILENAME_MAX + 1 ], b2[ ODBC_FILENAME_MAX + 1 ];
 
     /* SANITY CHECKS */
     if ( pRetBuffer == NULL || nRetBuffer < 2 )
@@ -55,9 +55,9 @@ int _SQLGetInstalledDrivers(    LPCSTR  pszSection,
 
     /* PROCESS ODBC INI FILE */
 #ifdef __OS2__
-    if ( iniOpen( &hIni, szIniName, "#;", '[', ']', '=', 1, 1L ) != INI_SUCCESS )
+    if ( iniOpen( &hIni, szIniName, "#;", '[', ']', '=', FALSE, 1L ) != INI_SUCCESS )
 #else
-    if ( iniOpen( &hIni, szIniName, "#;", '[', ']', '=', 1 ) != INI_SUCCESS )
+    if ( iniOpen( &hIni, szIniName, "#;", '[', ']', '=', FALSE ) != INI_SUCCESS )
 #endif
     {
         inst_logPushMsg( __FILE__, __FILE__, __LINE__, LOG_CRITICAL, ODBC_ERROR_COMPONENT_NOT_FOUND, "" );

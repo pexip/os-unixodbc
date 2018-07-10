@@ -238,7 +238,10 @@ SQLRETURN SQLFetchScroll( SQLHSTMT statement_handle,
 
     if ( statement -> state == STATE_S8 ||
             statement -> state == STATE_S9 ||
-            statement -> state == STATE_S10 )
+            statement -> state == STATE_S10 ||
+            statement -> state == STATE_S13 ||
+            statement -> state == STATE_S14 ||
+            statement -> state == STATE_S15 )
     {
         dm_log_write( __FILE__, 
                 __LINE__, 
@@ -337,6 +340,7 @@ SQLRETURN SQLFetchScroll( SQLHSTMT statement_handle,
     }
     else if ( ret == SQL_NO_DATA ) {
         statement -> eod = 1;
+        statement -> state = STATE_S6;
     }
 
     if ( log_info.log_flag )

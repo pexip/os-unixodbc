@@ -119,6 +119,10 @@
 #define STATE_S11       11
 #define STATE_S12       12
 
+#define STATE_S13       13          /* SQLExecute/SQLExecDirect/SQLMoreResult  returned SQL_PARAM_DATA_AVAILABLE */
+#define STATE_S14       14          /* SQL_PARAM_DATA_AVAILABLE version of S9, Must Get */
+#define STATE_S15       15          /* SQL_PARAM_DATA_AVAILABLE version of S10, Can Get */
+
 #define STATE_D0        0
 #define STATE_D1i       1
 #define STATE_D1e       2
@@ -158,7 +162,7 @@ typedef struct error
     SQLRETURN   diag_connection_name_ret;
     SQLRETURN   diag_server_name_ret;
     SQLINTEGER  diag_column_number;
-    SQLINTEGER  diag_row_number;
+    SQLLEN      diag_row_number;
     SQLWCHAR    diag_class_origin[ 128 ];
     SQLWCHAR    diag_subclass_origin[ 128 ];
     SQLWCHAR    diag_connection_name[ 128 ];
@@ -639,7 +643,8 @@ typedef enum error_id
     ERROR_SL009,
     ERROR_SL010,
     ERROR_SL008,
-    ERROR_HY000
+    ERROR_HY000,
+    ERROR_IM011
 } error_id;
 
 #define IGNORE_THREAD       (-1)
@@ -669,10 +674,10 @@ int function_return_ex( int level, void * handle, int ret_code, int save_to_diag
 void function_entry( void *handle );
 void setup_error_head( EHEAD *error_header, void *handle, int handle_type );
 void clear_error_head( EHEAD *error_header );
-SQLWCHAR *ansi_to_unicode_copy( SQLWCHAR * dest, char *src, SQLINTEGER buffer_len, DMHDBC connection );
-SQLWCHAR *ansi_to_unicode_alloc( SQLCHAR *str, SQLINTEGER len, DMHDBC connection );
-char *unicode_to_ansi_copy( char* dest, int dest_len, SQLWCHAR *src, SQLINTEGER len, DMHDBC connection );
-char *unicode_to_ansi_alloc( SQLWCHAR *str, SQLINTEGER len, DMHDBC connection );
+SQLWCHAR *ansi_to_unicode_copy( SQLWCHAR * dest, char *src, SQLINTEGER buffer_len, DMHDBC connection, int *wlen );
+SQLWCHAR *ansi_to_unicode_alloc( SQLCHAR *str, SQLINTEGER len, DMHDBC connection, int *wlen );
+char *unicode_to_ansi_copy( char* dest, int dest_len, SQLWCHAR *src, SQLINTEGER len, DMHDBC connection, int *clen );
+char *unicode_to_ansi_alloc( SQLWCHAR *str, SQLINTEGER len, DMHDBC connection, int *clen );
 int unicode_setup( DMHDBC connection );
 void unicode_shutdown( DMHDBC connection );
 char * __get_return_status( SQLRETURN ret, SQLCHAR *buffer );
@@ -716,6 +721,8 @@ int __get_version( EHEAD * head );
 int dm_check_connection_attrs( DMHDBC connection, SQLINTEGER attribute, SQLPOINTER value );
 int dm_check_statement_attrs( DMHSTMT statement, SQLINTEGER attribute, SQLPOINTER value );
 int __check_stmt_from_dbc( DMHDBC connection, int state );
+#define MAX_STATE_ARGS  8
+int __check_stmt_from_dbc_v( DMHDBC connection, int statecount, ... );
 int __check_stmt_from_desc( DMHDESC desc, int state );
 int __check_stmt_from_desc_ird( DMHDESC desc, int state );
 

@@ -143,16 +143,16 @@ int got_driver = 0;    /* if we have a DRIVER or FILEDSN then ignore any DSN */
 
     if ( str_len == SQL_NTS )
     {
-        len =  wide_strlen( str ) + 1;
-        local_str = malloc( len );
+        len = wide_strlen( str );
+        local_str = malloc( len + 1 );
     }
     else
     {
-        len = str_len + 1;
-        local_str = malloc( len );
+        len = str_len;
+        local_str = malloc( len + 1 );
     }
 
-    unicode_to_ansi_copy( local_str, len - 1, str, len - 1, NULL );
+    unicode_to_ansi_copy( local_str, len, str, len, NULL, NULL );
 
     if ( !local_str || strlen( local_str ) == 0 ||
         ( strlen( local_str ) == 1 && *local_str == ';' ))
@@ -212,7 +212,7 @@ SQLRETURN SQLDriverConnectW(
 	SQLCHAR local_conn_str_in[ 1024 ];
     SQLRETURN ret_from_connect;
     SQLCHAR s1[ 2048 ];
-    int warnings;
+    int warnings = 0;
 
     /*
      * check connection
@@ -376,7 +376,7 @@ SQLRETURN SQLDriverConnectW(
         	ansi_conn_str_in = "DSN=DEFAULT;";
         	len_conn_str_in = strlen( ansi_conn_str_in );
 
-			ansi_to_unicode_copy( local_conn_string, ansi_conn_str_in, len_conn_str_in, connection );
+			ansi_to_unicode_copy( local_conn_string, ansi_conn_str_in, len_conn_str_in, connection, NULL );
 			conn_str_in = local_conn_string;
 
 			__parse_connection_string( &con_struct,
@@ -423,24 +423,24 @@ SQLRETURN SQLDriverConnectW(
 			else 
 			{
 				prefix = returned_dsn;
-				target = strchr( returned_dsn, '=' );
+				target = (SQLCHAR*)strchr( (char*)returned_dsn, '=' );
 				if ( target ) 
 				{
 					*target = '\0';
 					target ++;
-        			__append_pair( &con_struct, prefix, target );
+        			__append_pair( &con_struct, (char*)prefix, (char*)target );
 				}
 				else {
-        			__append_pair( &con_struct, "DSN", returned_dsn );
+        			__append_pair( &con_struct, "DSN", (char*)returned_dsn );
 				}
 			}
 
 			/*
 			 * regenerate to pass to driver
 			 */
-			__generate_connection_string( &con_struct, local_conn_str_in, sizeof( local_conn_str_in ));
+			__generate_connection_string( &con_struct, (char*)local_conn_str_in, sizeof( local_conn_str_in ));
         	len_conn_str_in = strlen((char*) local_conn_str_in );
-			ansi_to_unicode_copy( local_conn_string, local_conn_str_in, len_conn_str_in, connection );
+			ansi_to_unicode_copy( local_conn_string, (char*)local_conn_str_in, len_conn_str_in, connection, NULL );
 			conn_str_in = local_conn_string;
 		}
 	}
@@ -462,29 +462,26 @@ SQLRETURN SQLDriverConnectW(
 
         strcpy( driver_name, driver );
 
-        SQLGetPrivateProfileString( driver, "Driver", "",
+#ifdef PLATFORM64
+        SQLGetPrivateProfileString( driver, "Driver64", "",
                 lib_name, sizeof( lib_name ), "ODBCINST.INI" );
 
-        if ( lib_name[ 0 ] == '\0' )
-        {
-            /*
-             * at this point a box could pop up to allow the selection of a driver
-             *
-             * do this later
-             */
+		if ( lib_name[ 0 ] == '\0' )
+		{
+        	SQLGetPrivateProfileString( driver, "Driver", "",
+                	lib_name, sizeof( lib_name ), "ODBCINST.INI" );
+		}
+#else
+        SQLGetPrivateProfileString( driver, "Driver", "",
+                lib_name, sizeof( lib_name ), "ODBCINST.INI" );
+#endif
 
-            dm_log_write( __FILE__, 
-                    __LINE__, 
-                    LOG_INFO, 
-                    LOG_INFO, 
-                    "Error: IM002" );
+        /*
+         * Assume if it's not in a odbcinst.ini then it's a direct reference
+         */
 
-            __post_internal_error( &connection -> error,
-                    ERROR_IM002, NULL,
-                    connection -> environment -> requested_version );
-            __release_conn( &con_struct );
-
-            return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+        if ( lib_name[ 0 ] == '\0' ) {
+            strcpy( lib_name, driver );
         }
 
         strcpy( connection -> dsn, "" );
@@ -571,6 +568,7 @@ SQLRETURN SQLDriverConnectW(
      */
     if ( !__connect_part_one( connection, lib_name, driver_name, &warnings ))
     {
+        __disconnect_part_four( connection );       /* release unicode handles */
         return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
     }
 
@@ -584,6 +582,7 @@ SQLRETURN SQLDriverConnectW(
                 "Error: IM001" );
 
         __disconnect_part_one( connection );
+        __disconnect_part_four( connection );       /* release unicode handles */
         __post_internal_error( &connection -> error,
                 ERROR_IM001, NULL,
                 connection -> environment -> requested_version );
@@ -690,6 +689,7 @@ SQLRETURN SQLDriverConnectW(
             if ( !SQL_SUCCEEDED( ret_from_connect ))
             {
                 __disconnect_part_one( connection );
+                __disconnect_part_four( connection );       /* release unicode handles */
 
                 sprintf( connection -> msg,
                         "\n\t\tExit:[%s]",
@@ -722,7 +722,7 @@ SQLRETURN SQLDriverConnectW(
                 len = len_conn_str_in + sizeof( SQLWCHAR );
             }
             in_str = malloc( len );
-            unicode_to_ansi_copy( in_str, len, conn_str_in, len, connection );
+            unicode_to_ansi_copy( in_str, len, conn_str_in, len, connection, NULL );
         }
         else
         {
@@ -757,7 +757,7 @@ SQLRETURN SQLDriverConnectW(
         {
             if ( SQL_SUCCEEDED( ret_from_connect ))
             {
-                ansi_to_unicode_copy( conn_str_out, out_str, SQL_NTS, connection );
+                ansi_to_unicode_copy( conn_str_out, out_str, SQL_NTS, connection, NULL );
             }
 
             free( out_str );
@@ -836,6 +836,7 @@ SQLRETURN SQLDriverConnectW(
             if ( !SQL_SUCCEEDED( ret_from_connect ))
             {
                 __disconnect_part_one( connection );
+                __disconnect_part_four( connection );       /* release unicode handles */
 
                 sprintf( connection -> msg,
                         "\n\t\tExit:[%s]",
@@ -879,6 +880,7 @@ SQLRETURN SQLDriverConnectW(
     {
         __disconnect_part_two( connection );
         __disconnect_part_one( connection );
+        __disconnect_part_four( connection );       /* release unicode handles */
 
         return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
     }

@@ -315,7 +315,8 @@ SQLRETURN SQLGetData( SQLHSTMT statement_handle,
     }
     else if ( statement -> state == STATE_S8 ||
             statement -> state == STATE_S9 ||
-            statement -> state == STATE_S10 )
+            statement -> state == STATE_S10 ||
+            statement -> state == STATE_S13 )
     {
         dm_log_write( __FILE__, 
                 __LINE__, 
@@ -347,6 +348,34 @@ SQLRETURN SQLGetData( SQLHSTMT statement_handle,
 
             return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
         }
+    }
+
+    if ( target_value == NULL ) {
+        dm_log_write( __FILE__, 
+                __LINE__, 
+                LOG_INFO, 
+                LOG_INFO, 
+                "Error: HY009" );
+
+        __post_internal_error( &statement -> error,
+                ERROR_HY009, NULL,
+                statement -> connection -> environment -> requested_version );
+
+        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+    }
+
+    if ( buffer_length < 0 ) {
+        dm_log_write( __FILE__, 
+                __LINE__, 
+                LOG_INFO, 
+                LOG_INFO, 
+                "Error: HY090" );
+
+        __post_internal_error( &statement -> error,
+                ERROR_HY090, NULL,
+                statement -> connection -> environment -> requested_version );
+
+        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
 
     /*
@@ -462,11 +491,11 @@ SQLRETURN SQLGetData( SQLHSTMT statement_handle,
         {
             if ( ind_value > buffer_length )
             {
-                ansi_to_unicode_copy( target_value, (char*) as1, buffer_length, statement -> connection );
+                ansi_to_unicode_copy( target_value, (char*) as1, buffer_length, statement -> connection, NULL );
             }
             else
             {
-                ansi_to_unicode_copy( target_value, (char*) as1, ind_value + 1, statement -> connection );
+                ansi_to_unicode_copy( target_value, (char*) as1, ind_value + 1, statement -> connection, NULL );
             }
         }
 
@@ -484,6 +513,10 @@ SQLRETURN SQLGetData( SQLHSTMT statement_handle,
         {
             *strlen_or_ind = ind_value;
         }
+    }
+
+    if ( statement -> state == STATE_S14 ) {
+        statement -> state = STATE_S15;
     }
 
     if ( log_info.log_flag )

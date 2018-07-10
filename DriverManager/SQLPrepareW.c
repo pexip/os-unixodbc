@@ -226,7 +226,10 @@ SQLRETURN SQLPrepareW( SQLHSTMT statement_handle,
     }
     else if ( statement -> state == STATE_S8 ||
             statement -> state == STATE_S9 ||
-            statement -> state == STATE_S10 )
+            statement -> state == STATE_S10 ||
+            statement -> state == STATE_S13 ||
+            statement -> state == STATE_S14 ||
+            statement -> state == STATE_S15 )
     {
         dm_log_write( __FILE__, 
                 __LINE__, 
@@ -286,6 +289,7 @@ SQLRETURN SQLPrepareW( SQLHSTMT statement_handle,
     else
     {
         SQLCHAR *as1;
+        int clen;
 
         if ( !CHECK_SQLPREPARE( statement -> connection ))
         {
@@ -302,7 +306,9 @@ SQLRETURN SQLPrepareW( SQLHSTMT statement_handle,
             return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
         }
 
-        as1 = (SQLCHAR*) unicode_to_ansi_alloc( statement_text, text_length, statement -> connection );
+        as1 = (SQLCHAR*) unicode_to_ansi_alloc( statement_text, text_length, statement -> connection, &clen );
+
+        text_length = clen;
 
         ret = SQLPREPARE( statement -> connection ,
                 statement -> driver_stmt,

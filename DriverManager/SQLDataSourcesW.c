@@ -80,7 +80,7 @@
 
 static char const rcsid[]= "$RCSfile: SQLDataSourcesW.c,v $";
 
-#define BUFFERSIZE      1024
+#define BUFFERSIZE      1024 * 4
 
 SQLRETURN SQLDataSourcesW( SQLHENV environment_handle,
            SQLUSMALLINT direction,
@@ -98,13 +98,6 @@ SQLRETURN SQLDataSourcesW( SQLHENV environment_handle,
     char property[ INI_MAX_PROPERTY_VALUE + 1 ];
     char driver[ INI_MAX_PROPERTY_VALUE + 1 ];
     SQLCHAR s1[ 100 + LOG_MESSAGE_LEN ];
-
-    /*
-     * restrict for unicode
-     */
-
-    buffer_length1 = buffer_length1 / 2;
-    buffer_length2 = buffer_length2 / 2;
 
     if ( !__validate_env( environment ))
     {
@@ -266,7 +259,7 @@ SQLRETURN SQLDataSourcesW( SQLHENV environment_handle,
         {
             SQLWCHAR *s1;
 
-            s1 = ansi_to_unicode_alloc((SQLCHAR*) object, SQL_NTS, NULL );
+            s1 = ansi_to_unicode_alloc((SQLCHAR*) object, SQL_NTS, NULL, NULL );
 
             if ( s1 )
             {
@@ -288,7 +281,7 @@ SQLRETURN SQLDataSourcesW( SQLHENV environment_handle,
         {
             SQLWCHAR *s1;
 
-            s1 = ansi_to_unicode_alloc((SQLCHAR*) property, SQL_NTS, NULL );
+            s1 = ansi_to_unicode_alloc((SQLCHAR*) property, SQL_NTS, NULL, NULL );
 
             if ( s1 )
             {

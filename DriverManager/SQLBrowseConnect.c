@@ -211,7 +211,7 @@ SQLRETURN SQLBrowseConnect(
     SQLRETURN ret;
     SQLCHAR s1[ 100 + LOG_MESSAGE_LEN ], s2[ 100 + LOG_MESSAGE_LEN];
 	SQLWCHAR *uc_in_str;
-    int warnings;
+    int warnings = 0;
 
     /*
      * check connection
@@ -393,6 +393,8 @@ SQLRETURN SQLBrowseConnect(
 
         if ( !__connect_part_one( connection, lib_name, driver_name, &warnings ))
         {
+            __disconnect_part_four( connection );       /* release unicode handles */
+
             dm_log_write( __FILE__,
                     __LINE__,
                     LOG_INFO,
@@ -411,6 +413,7 @@ SQLRETURN SQLBrowseConnect(
                         "Error: IM001" );
 
             __disconnect_part_one( connection );
+            __disconnect_part_four( connection );       /* release unicode handles */
             __post_internal_error( &connection -> error,
                     ERROR_IM001, NULL,
                     connection -> environment -> requested_version );
@@ -445,12 +448,14 @@ SQLRETURN SQLBrowseConnect(
     }
     else if (CHECK_SQLBROWSECONNECTW( connection ))
     {
-        uc_in_str = ansi_to_unicode_alloc((SQLCHAR*)in_str,SQL_NTS,connection);
+        int wlen;
+
+        uc_in_str = ansi_to_unicode_alloc((SQLCHAR*)in_str,SQL_NTS,connection, &wlen);
         
         ret = SQLBROWSECONNECTW( connection,
             connection -> driver_dbc,
             uc_in_str,
-            strlen( in_str ),
+            wlen,
             conn_str_out,
             conn_str_out_max,
             ptr_conn_str_out );
@@ -470,6 +475,7 @@ SQLRETURN SQLBrowseConnect(
                       "Error: IM001" );
 
         __disconnect_part_one( connection );
+        __disconnect_part_four( connection );       /* release unicode handles */
         __post_internal_error( &connection -> error,
                                ERROR_IM001, NULL,
                                connection -> environment -> requested_version );
@@ -555,6 +561,7 @@ SQLRETURN SQLBrowseConnect(
     	if ( ret != SQL_NEED_DATA ) 
 		{
         	__disconnect_part_one( connection );
+            __disconnect_part_four( connection );       /* release unicode handles */
         	connection -> state = STATE_C2;
 		}
 		else 
@@ -579,6 +586,7 @@ SQLRETURN SQLBrowseConnect(
         {
             __disconnect_part_two( connection );
             __disconnect_part_one( connection );
+            __disconnect_part_four( connection );       /* release unicode handles */
             if ( log_info.log_flag )
             {
                 sprintf( connection -> msg, 

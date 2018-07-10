@@ -657,6 +657,7 @@ static attr_options env_options[] =
 		{
 			{ "SQL_OV_ODBC2", SQL_OV_ODBC2 }, 
 			{ "SQL_OV_ODBC3", SQL_OV_ODBC3 }, 
+			{ "SQL_OV_ODBC3_80", SQL_OV_ODBC3_80 }, 
 			{ NULL }
 		}, "3.0", SQL_INTEGER
 	},
@@ -732,6 +733,21 @@ int found = 0;
             }
         }
         opt ++;
+    }
+
+    /*
+     * Handle non standard attributes by [numeric_value]={char value} or [numeric_value]=\int_value
+     */
+    if ( !found ) 
+    {
+        if ( kw[ 0 ] == '[' ) {
+            as -> attribute = atoi( kw + 1 );
+            if ( as -> value[ 0 ] == '\\' ) {
+                as -> is_int_type = 1;
+                as -> int_value = atoi( as -> value + 1 );
+            }
+            found = 1;
+        }
     }
 
     return found;
@@ -988,7 +1004,7 @@ static void __set_attribute( void *handle, int type, struct attr_set *as )
             return;
         }
 
-        if ( connection -> driver_version == SQL_OV_ODBC3 )
+        if ( connection -> driver_version >= SQL_OV_ODBC3 )
         {
             if ( CHECK_SQLSETENVATTR( connection ))
             {
@@ -1022,7 +1038,7 @@ static void __set_attribute( void *handle, int type, struct attr_set *as )
     {
         DMHDBC connection = (DMHDBC) handle;
 
-        if ( connection -> driver_version == SQL_OV_ODBC3 )
+        if ( connection -> driver_version >= SQL_OV_ODBC3 )
         {
             if ( CHECK_SQLSETCONNECTATTR( connection ))
             {
@@ -1094,7 +1110,7 @@ static void __set_attribute( void *handle, int type, struct attr_set *as )
         DMHSTMT statement = (DMHSTMT) handle;
         DMHDBC connection = statement -> connection;
 
-        if ( connection -> driver_version == SQL_OV_ODBC3 )
+        if ( connection -> driver_version >= SQL_OV_ODBC3 )
         {
             if ( CHECK_SQLSETSTMTATTR( connection ))
             {
@@ -1150,6 +1166,33 @@ static void __set_attribute( void *handle, int type, struct attr_set *as )
                             statement -> driver_stmt,
                             as -> attribute,
                             as -> value );
+                }
+            }
+
+            /*
+             * Fall back, the attribute may be ODBC 3 only
+             */
+
+            if ( ret == SQL_ERROR ) {
+
+                if ( CHECK_SQLSETSTMTATTR( connection ))
+                {
+                    if ( as -> is_int_type )
+                    {
+                        ret = SQLSETSTMTATTR( connection,
+                                statement -> driver_stmt,
+                                as -> attribute,
+                                as -> int_value,
+                                0 );
+                    }
+                    else
+                    {
+                        ret = SQLSETSTMTATTR( connection,
+                                statement -> driver_stmt,
+                                as -> attribute,
+                                as -> value,
+                                strlen( as -> value ));
+                    }
                 }
             }
         }
@@ -1332,11 +1375,11 @@ void *__attr_override_wide( void *handle, int type, int attribute, void *value, 
 			switch( type ) 
 			{
       			case SQL_HANDLE_DBC:
-					ansi_to_unicode_copy( buffer, as->value, SQL_NTS, (DMHDBC) handle );
+					ansi_to_unicode_copy( buffer, as->value, SQL_NTS, (DMHDBC) handle, NULL );
 					break;
 
       			case SQL_HANDLE_STMT:
-					ansi_to_unicode_copy( buffer, as->value, SQL_NTS, ((DMHSTMT) handle ) -> connection );
+					ansi_to_unicode_copy( buffer, as->value, SQL_NTS, ((DMHSTMT) handle ) -> connection, NULL );
 					break;
 			}
             return buffer;

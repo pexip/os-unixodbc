@@ -101,6 +101,26 @@ static char const rcsid[]= "$RCSfile: SQLGetDiagFieldW.c,v $";
 HY099,HY100,HY101,HY105,HY107,HY109,HY110,HY111,HYT00,HYT01,IM001,IM002,IM003,\
 IM004,IM005,IM006,IM007,IM008,IM010,IM011,IM012"
 
+/*
+ * is it a diag identifier that we have to convert from unicode to ansi
+ */
+
+static int is_char_diag( int diag_identifier )
+{
+    switch( diag_identifier ) {
+        case SQL_DIAG_CLASS_ORIGIN:
+        case SQL_DIAG_CONNECTION_NAME:
+        case SQL_DIAG_MESSAGE_TEXT:
+        case SQL_DIAG_SERVER_NAME:
+        case SQL_DIAG_SQLSTATE:
+        case SQL_DIAG_SUBCLASS_ORIGIN:
+            return 1;
+
+        default:
+            return 0;
+    }
+}
+
 static SQLRETURN extract_sql_error_field_w( EHEAD *head,
                 SQLSMALLINT rec_number,
                 SQLSMALLINT diag_identifier,
@@ -211,7 +231,7 @@ static SQLRETURN extract_sql_error_field_w( EHEAD *head,
                     wide_strncpy( diag_info_ptr, head -> diag_dynamic_function, buffer_length );
                     if ( string_length_ptr )
                     {
-                        *string_length_ptr = wide_strlen( head -> diag_dynamic_function );
+                        *string_length_ptr = wide_strlen( head -> diag_dynamic_function ) * sizeof( SQLWCHAR );
                     }
                 }
                 return head -> diag_dynamic_function_ret;
@@ -233,14 +253,35 @@ static SQLRETURN extract_sql_error_field_w( EHEAD *head,
             else if ( !__get_connection( head ) -> unicode_driver &&
                 CHECK_SQLGETDIAGFIELD( __get_connection( head )))
             {
-                ret = SQLGETDIAGFIELDW( __get_connection( head ),
+                SQLCHAR *as1 = NULL;
+
+                if ( buffer_length > 0 && diag_info_ptr )
+                {
+                    as1 = malloc( buffer_length + 1 );
+                }
+
+                ret = SQLGETDIAGFIELD( __get_connection( head ),
                         SQL_HANDLE_STMT,
                         __get_driver_handle( head ),
                         0,
                         diag_identifier,
-                        diag_info_ptr,
-                        buffer_length,
+                        as1 ? as1 : diag_info_ptr,
+                        buffer_length / 2,
                         string_length_ptr );
+
+                if ( SQL_SUCCEEDED( ret ) && as1 && diag_info_ptr )
+                {
+                    ansi_to_unicode_copy( diag_info_ptr, (char*) as1, SQL_NTS, __get_connection( head ), NULL);
+                }
+                if ( SQL_SUCCEEDED( ret ) && string_length_ptr )
+                {
+                    *string_length_ptr *= sizeof( SQLWCHAR );
+                }
+
+                if ( as1 )
+                {
+                    free( as1 );
+                }
 
                 return ret;
             }
@@ -285,31 +326,14 @@ static SQLRETURN extract_sql_error_field_w( EHEAD *head,
             else if ( !__get_connection( head ) -> unicode_driver &&
                 CHECK_SQLGETDIAGFIELD( __get_connection( head )))
             {
-                SQLCHAR *as1 = NULL;
-
-                if ( buffer_length > 0 && diag_info_ptr )
-                {
-                    as1 = malloc( buffer_length + 1 );
-                }
-
                 ret = SQLGETDIAGFIELD( __get_connection( head ),
                         SQL_HANDLE_STMT,
                         __get_driver_handle( head ),
                         0,
                         diag_identifier,
-                        as1 ? as1 : diag_info_ptr,
-                        buffer_length / 2,
+                        diag_info_ptr,
+                        buffer_length,
                         string_length_ptr );
-
-                if ( SQL_SUCCEEDED( ret ) && as1 && diag_info_ptr )
-                {
-                    ansi_to_unicode_copy( diag_info_ptr, (char*) as1, SQL_NTS, __get_connection( head ));
-                }
-
-                if ( as1 )
-                {
-                    free( as1 );
-                }
 
                 return ret;
             }
@@ -413,7 +437,7 @@ static SQLRETURN extract_sql_error_field_w( EHEAD *head,
             SQLRETURN ret;
             SQLCHAR *as1 = NULL;
 
-            if ( diag_identifier == SQL_DIAG_SQLSTATE && diag_info_ptr && buffer_length > 0 )
+            if ( is_char_diag( diag_identifier ) && diag_info_ptr && buffer_length > 0 )
             {
                 as1 = malloc( buffer_length + 1 );
             }
@@ -436,7 +460,7 @@ static SQLRETURN extract_sql_error_field_w( EHEAD *head,
                 if ( diag_info_ptr && as1 )
                 {
                     __map_error_state( (char*) as1, __get_version( head ));
-                    ansi_to_unicode_copy( diag_info_ptr, (char*) as1, SQL_NTS, __get_connection( head ));
+                    ansi_to_unicode_copy( diag_info_ptr, (char*) as1, SQL_NTS, __get_connection( head ), NULL );
                 }
             }
 
@@ -481,7 +505,7 @@ static SQLRETURN extract_sql_error_field_w( EHEAD *head,
                 wide_strncpy( diag_info_ptr, ptr -> diag_class_origin, buffer_length );
                 if ( string_length_ptr )
                 {
-                    *string_length_ptr = wide_strlen( ptr -> diag_class_origin );
+                    *string_length_ptr = wide_strlen( ptr -> diag_class_origin ) * sizeof( SQLWCHAR );
                 }
                 return ptr -> diag_class_origin_ret;
             }
@@ -509,7 +533,7 @@ static SQLRETURN extract_sql_error_field_w( EHEAD *head,
                 wide_strcpy( diag_info_ptr, ptr -> diag_connection_name );
                 if ( string_length_ptr )
                 {
-                    *string_length_ptr = wide_strlen( ptr -> diag_connection_name );
+                    *string_length_ptr = wide_strlen( ptr -> diag_connection_name ) * sizeof( SQLWCHAR );
                 }
                 return ptr -> diag_connection_name_ret;
             }
@@ -542,10 +566,9 @@ static SQLRETURN extract_sql_error_field_w( EHEAD *head,
             }
             if ( string_length_ptr )
             {
-                *string_length_ptr = wide_strlen( str );
+                *string_length_ptr = wide_strlen( str ) * sizeof( SQLWCHAR );
             }
 
-            free( str );
             return ret;
         }
         break;
@@ -577,7 +600,7 @@ static SQLRETURN extract_sql_error_field_w( EHEAD *head,
                 wide_strcpy( diag_info_ptr, ptr -> diag_server_name );
                 if ( string_length_ptr )
                 {
-                    *string_length_ptr = wide_strlen( ptr -> diag_server_name );
+                    *string_length_ptr = wide_strlen( ptr -> diag_server_name ) * sizeof( SQLWCHAR );
                 }
                 return ptr -> diag_server_name_ret;
             }
@@ -617,7 +640,7 @@ static SQLRETURN extract_sql_error_field_w( EHEAD *head,
             }
             if ( string_length_ptr )
             {
-                *string_length_ptr = wide_strlen( str );
+                *string_length_ptr = wide_strlen( str ) * sizeof( SQLWCHAR );
             }
             return ret;
         }
@@ -630,7 +653,7 @@ static SQLRETURN extract_sql_error_field_w( EHEAD *head,
                 wide_strcpy( diag_info_ptr, ptr -> diag_subclass_origin );
                 if ( string_length_ptr )
                 {
-                    *string_length_ptr = wide_strlen( ptr -> diag_subclass_origin );
+                    *string_length_ptr = wide_strlen( ptr -> diag_subclass_origin ) * sizeof( SQLWCHAR );
                 }
                 return ptr -> diag_subclass_origin_ret;
             }

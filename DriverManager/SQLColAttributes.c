@@ -342,6 +342,7 @@ SQLRETURN SQLColAttributes( SQLHSTMT statement_handle,
 
         return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
+    /*
     else if ( statement -> state == STATE_S2 &&
             field_identifier != SQL_DESC_COUNT )
     {
@@ -357,6 +358,7 @@ SQLRETURN SQLColAttributes( SQLHSTMT statement_handle,
 
         return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
+    */
     else if ( statement -> state == STATE_S4 )
     {
         dm_log_write( __FILE__, 
@@ -373,7 +375,10 @@ SQLRETURN SQLColAttributes( SQLHSTMT statement_handle,
     }
     else if ( statement -> state == STATE_S8 ||
             statement -> state == STATE_S9 ||
-            statement -> state == STATE_S10 )
+            statement -> state == STATE_S10 ||
+            statement -> state == STATE_S13 ||
+            statement -> state == STATE_S14 ||
+            statement -> state == STATE_S15 )
     {
         dm_log_write( __FILE__, 
                 __LINE__, 
@@ -437,7 +442,7 @@ SQLRETURN SQLColAttributes( SQLHSTMT statement_handle,
 
                 if ( SQL_SUCCEEDED( ret ) && character_attribute && s1 )
                 {
-                    unicode_to_ansi_copy( character_attribute, buffer_length, s1, SQL_NTS, statement -> connection );
+                    unicode_to_ansi_copy( character_attribute, buffer_length, s1, SQL_NTS, statement -> connection, NULL );
                 }
 				if ( SQL_SUCCEEDED( ret ) && string_length && character_attribute ) 
 				{
@@ -484,7 +489,7 @@ SQLRETURN SQLColAttributes( SQLHSTMT statement_handle,
 
             if ( SQL_SUCCEEDED( ret ) && character_attribute )
             {
-                unicode_to_ansi_copy( character_attribute, buffer_length, s1, SQL_NTS, statement -> connection );
+                unicode_to_ansi_copy( character_attribute, buffer_length, s1, SQL_NTS, statement -> connection, NULL );
 			}
 			if ( SQL_SUCCEEDED( ret ) && string_length && character_attribute ) 
 			{

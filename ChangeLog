@@ -1,3 +1,85 @@
+32st-Aug-2015
+2.3.4
+
+    * Fix typo in the loading of the cursor lib, reports
+
+	internal error, unexpected SHLIBEXT
+
+2nd-Aug-2015
+2.3.3
+
+    * Reporting of logging state was broken in SQLGetConnectAttr
+    * Fix incorrect text against HY007
+    * Add -L option to isql to increase max column data display
+    * Update automake toolset in svn
+    * Add SQLFreeStmt( SQL_CLOSE ) function to SQLCancel
+    * Allow SQL_NTS as a buffer length to SQLBindParameter
+    * More manual pages for the tools
+    * Fix buffer overrun returning long diagnostic from driver
+    * Cross call between wide and ascii error reporting in the driver when needed
+    * Fix some possible unchecked memory references after malloc
+    * Prevent free( NULL ) in SQLGetDiagRecW
+    * Add missing A->W conversion in SQLGetStmtOption
+    * Allow iconv to convert strings into the driver with differing A and W lengthts (UTF)
+    * SQLDataSourcesW takes buffer_lenghts as characters not bytes
+    * Fix memory leak in SQLGetDiagRec
+    * Allow setting custom non standard attributes via DMStmtAttr, format is:
+
+        DMStmtAttr=[xxxx]=\yyy
+        DMStmtAttr=[xxxx]={ssss}
+
+        where xxxx = integer attribute to set, yyy is decimal numeric value and
+        ssss is a string value
+
+    * Add check in SQLGetData for null target value or negative buffer length
+    * Fix memory leak when using the cursor lib
+    * Catch incorrectly expanded SHLIBEXT
+    * There was a bug in the ini caching, now fixed
+    * More ODBC 3.80 additions (streaming parameters)
+    * Check for NULL handle in __validate_xxx()
+    * Avoid potential memory leak in SQLAllocStatement
+    * Avoid buffer overflow via environment variamles
+    * Fix some typos
+
+8th-October-2013
+2.3.2
+
+    * The logging of WStrings was using the incorrect length in some cases
+    * Pass SQLDescribeCol call to driver when in state 2 (not a cursor spec).
+    * Pass SQLMoreResults call to driver when in state 2 (not a cursor spec).
+      Both the last two changes are not as per the original book state table
+      but allign with the current MS driver manager
+    * The -e option to isql got lost somewhere. Back in now
+    * Update install-sh
+    * SQLCancel assumed that the DM was being built with thread support
+    * Try and speed up SQLTransact and SQLEndTran operation
+    * Add missing \ in Postgres7.1 Makefile
+    * Correct some potential buffer overflows
+    * Handle SQL_NEED_DATA from a SQLMoreResults 
+    * Get the local charset via nl_langinfo(CODESET) when asking the DM to do ASCII-UNICODE conversions
+    * Handle (and remove) leading spaces from ini entries
+    * Fixed unicode conversion problems in SQLGetDiagField(W)
+    * missing terminating null in iusql
+    * add to the list of errno states that does not cause a create of the ini file
+    * SQLSetConnactAttr() -> SQLSetConnectAttrW() was passing incorrect string length
+    * Fix double free in SQLGetDiagFieldW
+    * Fix Unicode/Ansi conversion problem in SQLGetDiagFieldW.c
+    * Add support for Driver64 in SQLDriverConnectW
+    * Add missing unicode setting when returning a connection to the pool
+    * Tidy up leaking iconv handles if connect_part_one fails
+    * Fix (and avoid) some out of memory problems
+    * Wrap lt_dlinit and dlerror in the lib mutex
+    * Add slencheck executable to try and find the sizeof(SQLLEN) from a installed driver
+    * SQL_NO_DATA after SQL_STILL_EXECUTING in SQLExtendedFetch was not setting the state correctly
+    * A little more 3.80 stuff being added
+    * Added fixes found by coverity
+    * Added man pages
+    * Patches to update VMS build
+    * Change mutex protection around release_env
+    * Altered strlen to be count of bytes in SQLGetDiagFieldW
+    * Add check for W function support in do_attr
+    * Allow SQLDrivers to return attribute length with no supplied buffer
+
 26th-November-2011
 2.3.1
     
@@ -12,14 +94,14 @@
     * Avoid sprintf NULL pointer problem in SQLGetDiagRec
     * Fix typo affecting the pooling of connections, (thanks Chris)
     * Fix SunCC _mcount problem
-    * Attempt to stamp version info on thie libs generated. There are aps in use linked against other 
+    * Attempt to stamp version info on the libs generated. There are aps in use linked against other 
       driver managers that expect VERS_3.52
     * Fix potential buffer overrun when using SAFEFILE
     * Fix mutex problem in the exit from __SQLGetInfo (thanks Richard)
     * Allow getting SQL_DM_VER via SQLGetInfo before connecting to a driver
     * Generate unixodbc_conf.h using macros to allow cross compiling
     * Fix some libltdl problems 
-    * Fix some naiming problems with the cursor lib
+    * Fix some naming problems with the cursor lib
     * Fix odbcinst problems on systems without pwd.h
     * Change lib version to 2 to reflect SQLLEN changes in v2.3
     * Fix threading problem (thanks Petr Vandrovec)
@@ -59,8 +141,8 @@
 	* Add missing .y in nn driver, now I need to get it to work
     * Assoured bux fixes and format problems, thanks Tom
 	* SQLBindCol on metadata calls was incorrectly going via the cursor lib if it 
-	* fix isql problem with nested definitions.
 	  was enabled
+	* fix isql problem with nested definitions.
 	* Add configure option to enable building of driver config libs
 	* Shift build to using config.h, the compile lines were so big it was hard to 
 	  see warnings
