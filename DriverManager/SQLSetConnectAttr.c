@@ -253,7 +253,7 @@ SQLRETURN SQLSetConnectAttr( SQLHDBC connection_handle,
                     ERROR_HY024, NULL,
                     connection -> environment -> requested_version );
         
-                return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+                return function_return_nodrv( SQL_HANDLE_DBC, connection, SQL_ERROR );
             }
             else 
             {
@@ -322,7 +322,7 @@ SQLRETURN SQLSetConnectAttr( SQLHDBC connection_handle,
                         ERROR_HY024, NULL,
                         connection -> environment -> requested_version );
             
-                    return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+                    return function_return_nodrv( SQL_HANDLE_DBC, connection, SQL_ERROR );
                 }
                 else 
                 {
@@ -347,13 +347,13 @@ SQLRETURN SQLSetConnectAttr( SQLHDBC connection_handle,
                         __LINE__, 
                         LOG_INFO, 
                         LOG_INFO, 
-                        "Error: HY009" );
+                        "Error: HY024" );
         
                 __post_internal_error( &connection -> error,
-                    ERROR_HY009, NULL,
+                    ERROR_HY024, NULL,
                     connection -> environment -> requested_version );
         
-                return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+                return function_return_nodrv( SQL_HANDLE_DBC, connection, SQL_ERROR );
             }
             else 
             {
@@ -416,7 +416,7 @@ SQLRETURN SQLSetConnectAttr( SQLHDBC connection_handle,
                 ERROR_08003, NULL,
                 connection -> environment -> requested_version );
 
-            return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+            return function_return_nodrv( SQL_HANDLE_DBC, connection, SQL_ERROR );
         }
     }
     else if ( connection -> state == STATE_C3 )
@@ -431,7 +431,7 @@ SQLRETURN SQLSetConnectAttr( SQLHDBC connection_handle,
             ERROR_HY010, NULL,
             connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_DBC, connection, SQL_ERROR );
     }
     else if ( connection -> state == STATE_C4 ||
             connection -> state == STATE_C5 ||
@@ -449,7 +449,7 @@ SQLRETURN SQLSetConnectAttr( SQLHDBC connection_handle,
                 ERROR_08002, NULL,
                 connection -> environment -> requested_version );
 
-            return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+            return function_return_nodrv( SQL_HANDLE_DBC, connection, SQL_ERROR );
         }
         else if ( attribute == SQL_ATTR_PACKET_SIZE )
         {
@@ -463,7 +463,7 @@ SQLRETURN SQLSetConnectAttr( SQLHDBC connection_handle,
                 ERROR_HY011, NULL,
                 connection -> environment -> requested_version );
 
-            return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+            return function_return_nodrv( SQL_HANDLE_DBC, connection, SQL_ERROR );
         }
     }
 
@@ -484,7 +484,7 @@ SQLRETURN SQLSetConnectAttr( SQLHDBC connection_handle,
                 ERROR_HY024, NULL,
                 connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_DBC, connection, SQL_ERROR );
     }
 
     /*
@@ -493,10 +493,34 @@ SQLRETURN SQLSetConnectAttr( SQLHDBC connection_handle,
 
     switch( attribute ) 
     {
-      	case SQL_ATTR_CONCURRENCY:
-	  	case SQL_BIND_TYPE:
+        /* ODBC 3.x statement attributes are not settable at the connection level */
+        case SQL_ATTR_APP_PARAM_DESC:
+        case SQL_ATTR_APP_ROW_DESC:
       	case SQL_ATTR_CURSOR_SCROLLABLE:
       	case SQL_ATTR_CURSOR_SENSITIVITY:
+        case SQL_ATTR_ENABLE_AUTO_IPD:
+        case SQL_ATTR_FETCH_BOOKMARK_PTR:
+        case SQL_ATTR_IMP_PARAM_DESC:
+        case SQL_ATTR_IMP_ROW_DESC:
+        case SQL_ATTR_PARAM_BIND_OFFSET_PTR:
+        case SQL_ATTR_PARAM_BIND_TYPE:
+        case SQL_ATTR_PARAM_OPERATION_PTR:
+        case SQL_ATTR_PARAM_STATUS_PTR:
+        case SQL_ATTR_PARAMS_PROCESSED_PTR:
+        case SQL_ATTR_PARAMSET_SIZE:
+        case SQL_ATTR_ROW_ARRAY_SIZE:
+        case SQL_ATTR_ROW_BIND_OFFSET_PTR:
+        case SQL_ATTR_ROW_OPERATION_PTR:
+        case SQL_ATTR_ROW_STATUS_PTR:
+        case SQL_ATTR_ROWS_FETCHED_PTR:
+            __post_internal_error( &connection -> error,
+                    ERROR_HY092, NULL,
+                    connection -> environment -> requested_version );
+
+            return function_return_nodrv( SQL_HANDLE_DBC, connection, SQL_ERROR );
+
+      	case SQL_ATTR_CONCURRENCY:
+	  	case SQL_BIND_TYPE:
       	case SQL_ATTR_CURSOR_TYPE:
       	case SQL_ATTR_MAX_LENGTH:
       	case SQL_MAX_ROWS:
@@ -519,28 +543,11 @@ SQLRETURN SQLSetConnectAttr( SQLHDBC connection_handle,
                         ERROR_24000, NULL,
                         connection -> environment -> requested_version );
 
-                return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+                return function_return_nodrv( SQL_HANDLE_DBC, connection, SQL_ERROR );
             }
             break;
 
         default:
-            if ( attribute == SQL_ATTR_CURRENT_CATALOG ) 
-            {
-                if( __check_stmt_from_dbc_v( connection, 3, STATE_S5, STATE_S6, STATE_S7 )) {
-
-                    dm_log_write( __FILE__, 
-                            __LINE__, 
-                            LOG_INFO, 
-                            LOG_INFO, 
-                            "Error: 24000" );
-
-                    __post_internal_error( &connection -> error,
-                            ERROR_24000, NULL,
-                            connection -> environment -> requested_version );
-
-                    return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
-                }
-            }
 
             if( __check_stmt_from_dbc_v( connection, 5, STATE_S8, STATE_S9, STATE_S10, STATE_S11, STATE_S12 )) {
 
@@ -554,7 +561,7 @@ SQLRETURN SQLSetConnectAttr( SQLHDBC connection_handle,
                         ERROR_HY010, NULL,
                         connection -> environment -> requested_version );
 
-                return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+                return function_return_nodrv( SQL_HANDLE_DBC, connection, SQL_ERROR );
             }
             break;
     }
@@ -651,8 +658,18 @@ SQLRETURN SQLSetConnectAttr( SQLHDBC connection_handle,
             }
             else if ( string_length == SQL_NTS )
             {
+                if (!value)
+                {
+                    __post_internal_error( &connection -> error,
+                        ERROR_HY024, "Invalid argument value",
+                        connection -> environment -> requested_version );
+                    return function_return_nodrv( SQL_HANDLE_DBC, connection, SQL_ERROR );
+                }
+                else
+                {
                 sa -> str_attr = strdup( value );
                 sa -> str_len = string_length;
+            }
             }
             else
             {
@@ -673,7 +690,7 @@ SQLRETURN SQLSetConnectAttr( SQLHDBC connection_handle,
                 LOG_INFO, 
                 connection -> msg );
 
-        return function_return( SQL_HANDLE_DBC, connection, SQL_SUCCESS );
+        return function_return_nodrv( SQL_HANDLE_DBC, connection, SQL_SUCCESS );
     }
     else
     {
@@ -700,7 +717,7 @@ SQLRETURN SQLSetConnectAttr( SQLHDBC connection_handle,
                                 ERROR_HY092, NULL,
                                 connection -> environment -> requested_version );
 
-                        return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+                        return function_return_nodrv( SQL_HANDLE_DBC, connection, SQL_ERROR );
                     }
 
                     ret = SQLSETCONNECTOPTION( connection,
@@ -720,7 +737,7 @@ SQLRETURN SQLSetConnectAttr( SQLHDBC connection_handle,
                             ERROR_IM001, NULL,
                             connection -> environment -> requested_version );
 
-                    return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+                    return function_return_nodrv( SQL_HANDLE_DBC, connection, SQL_ERROR );
                 }
             }
             else
@@ -757,7 +774,7 @@ SQLRETURN SQLSetConnectAttr( SQLHDBC connection_handle,
                                 ERROR_HY092, NULL,
                                 connection -> environment -> requested_version );
 
-                        return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+                        return function_return_nodrv( SQL_HANDLE_DBC, connection, SQL_ERROR );
                     }
 
                     switch( attribute )
@@ -797,7 +814,7 @@ SQLRETURN SQLSetConnectAttr( SQLHDBC connection_handle,
                             ERROR_IM001, NULL,
                             connection -> environment -> requested_version );
 
-                    return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+                    return function_return_nodrv( SQL_HANDLE_DBC, connection, SQL_ERROR );
                 }
             }
             else

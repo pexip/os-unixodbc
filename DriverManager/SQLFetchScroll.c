@@ -170,7 +170,9 @@ SQLRETURN SQLFetchScroll( SQLHSTMT statement_handle,
             fetch_orientation != SQL_FETCH_LAST &&
             fetch_orientation != SQL_FETCH_ABSOLUTE &&
             fetch_orientation != SQL_FETCH_RELATIVE &&
-            fetch_orientation != SQL_FETCH_BOOKMARK )
+            fetch_orientation != SQL_FETCH_BOOKMARK ||
+          (fetch_orientation == SQL_FETCH_BOOKMARK
+           && statement -> bookmarks_on == SQL_UB_OFF) )
     {
         dm_log_write( __FILE__, 
                 __LINE__, 
@@ -182,7 +184,7 @@ SQLRETURN SQLFetchScroll( SQLHSTMT statement_handle,
                 ERROR_HY106, NULL,
                 statement -> connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
 
     /*
@@ -203,7 +205,7 @@ SQLRETURN SQLFetchScroll( SQLHSTMT statement_handle,
                 ERROR_HY010, NULL,
                 statement -> connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
 
     if ( statement -> state == STATE_S4 )
@@ -218,7 +220,7 @@ SQLRETURN SQLFetchScroll( SQLHSTMT statement_handle,
                 ERROR_24000, NULL,
                 statement -> connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
 
     if ( statement -> state == STATE_S7 )
@@ -233,7 +235,7 @@ SQLRETURN SQLFetchScroll( SQLHSTMT statement_handle,
                 ERROR_HY010, NULL,
                 statement -> connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
 
     if ( statement -> state == STATE_S8 ||
@@ -253,7 +255,7 @@ SQLRETURN SQLFetchScroll( SQLHSTMT statement_handle,
                 ERROR_HY010, NULL,
                 statement -> connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
 
     if ( statement -> state == STATE_S11 ||
@@ -271,7 +273,7 @@ SQLRETURN SQLFetchScroll( SQLHSTMT statement_handle,
                     ERROR_HY010, NULL,
                     statement -> connection -> environment -> requested_version );
 
-            return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+            return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
         }
     }
 
@@ -324,7 +326,7 @@ SQLRETURN SQLFetchScroll( SQLHSTMT statement_handle,
                 ERROR_IM001, NULL,
                 statement -> connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
 
     if ( ret == SQL_STILL_EXECUTING )
@@ -336,6 +338,7 @@ SQLRETURN SQLFetchScroll( SQLHSTMT statement_handle,
     }
     else if ( SQL_SUCCEEDED( ret ))
     {
+        statement -> eod = 0;
         statement -> state = STATE_S6;
     }
     else if ( ret == SQL_NO_DATA ) {

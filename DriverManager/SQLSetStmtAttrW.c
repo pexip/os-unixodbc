@@ -195,7 +195,7 @@ SQLRETURN SQLSetStmtAttrW( SQLHSTMT statement_handle,
                  ERROR_HY011, NULL,
                  statement -> connection -> environment -> requested_version );
 
-            return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+            return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
         }
         else if ( statement -> state == STATE_S4 ||
                 statement -> state == STATE_S5 ||
@@ -212,7 +212,7 @@ SQLRETURN SQLSetStmtAttrW( SQLHSTMT statement_handle,
                  ERROR_24000, NULL,
                  statement -> connection -> environment -> requested_version );
 
-            return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+            return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
         }
         else if ( statement -> state == STATE_S8 ||
                 statement -> state == STATE_S9 ||
@@ -235,7 +235,7 @@ SQLRETURN SQLSetStmtAttrW( SQLHSTMT statement_handle,
                      ERROR_HY011, NULL,
                      statement -> connection -> environment -> requested_version );
 
-                return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+                return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
             }
             else
             {
@@ -249,7 +249,7 @@ SQLRETURN SQLSetStmtAttrW( SQLHSTMT statement_handle,
                      ERROR_HY010, NULL,
                      statement -> connection -> environment -> requested_version );
 
-                return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+                return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
             }
         }
     }
@@ -271,7 +271,7 @@ SQLRETURN SQLSetStmtAttrW( SQLHSTMT statement_handle,
                  ERROR_HY010, NULL,
                  statement -> connection -> environment -> requested_version );
 
-            return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+            return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
         }
     }
 
@@ -290,7 +290,7 @@ SQLRETURN SQLSetStmtAttrW( SQLHSTMT statement_handle,
                 	ERROR_IM001, NULL,
                 	statement -> connection -> environment -> requested_version );
 	
-        	return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+        	return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
     	}
 	}
 	else
@@ -307,7 +307,7 @@ SQLRETURN SQLSetStmtAttrW( SQLHSTMT statement_handle,
                 	ERROR_IM001, NULL,
                 	statement -> connection -> environment -> requested_version );
 	
-        	return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+        	return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
     	}
 	}
 
@@ -318,6 +318,87 @@ SQLRETURN SQLSetStmtAttrW( SQLHSTMT statement_handle,
     if ( attribute == SQL_ATTR_APP_ROW_DESC )
     {
         DMHDESC desc = ( DMHDESC ) value;
+
+   		/*
+		 * needs to reset to implicit descriptor, this is safe
+		 * without a validate, as the value is either null, or the
+		 * same as a descriptor we know is valid
+		 */
+
+		if ( desc == NULL || desc == statement -> implicit_ard ) 
+		{
+			DRV_SQLHDESC drv_desc = NULL;
+
+			ret = SQL_SUCCESS;
+			
+			if ( desc == statement -> implicit_ard )
+			{
+				drv_desc = statement -> implicit_ard -> driver_desc;
+			}
+
+        	if ( CHECK_SQLSETSTMTATTRW( statement -> connection ))
+        	{
+           	 	ret = SQLSETSTMTATTRW( statement -> connection,
+           	     	statement -> driver_stmt,
+           	     	attribute,
+           	     	statement -> implicit_ard -> driver_desc,
+           	     	0 );
+        	}
+        	else if ( CHECK_SQLSETSTMTATTR( statement -> connection ))
+        	{
+            	ret = SQLSETSTMTATTR( statement -> connection,
+                	statement -> driver_stmt,
+                	attribute,
+                	drv_desc,
+                	0 );
+        	}
+            else
+            {
+                ret = SQLSETSTMTOPTION( statement -> connection,
+                    statement -> driver_stmt,
+                    attribute,
+                    statement -> implicit_ard -> driver_desc );
+            }
+
+			if ( ret != SQL_SUCCESS ) 
+			{
+    			if ( log_info.log_flag )
+    			{
+        			sprintf( statement -> msg, 
+                			"\n\t\tExit:[%s]",
+                    			__get_return_status( ret, s1 ));
+			
+        			dm_log_write( __FILE__, 
+                			__LINE__, 
+                			LOG_INFO, 
+                			LOG_INFO, 
+                			statement -> msg );
+    			}
+			
+    			return function_return( SQL_HANDLE_STMT, statement, ret ); 
+			}
+			
+			/*
+			 * copy DM descriptor
+			 */
+
+			statement -> apd = statement -> implicit_apd;
+
+    		if ( log_info.log_flag )
+    		{
+        		sprintf( statement -> msg, 
+                		"\n\t\tExit:[%s]",
+                    		__get_return_status( ret, s1 ));
+
+        		dm_log_write( __FILE__, 
+                		__LINE__, 
+                		LOG_INFO, 
+                		LOG_INFO, 
+                		statement -> msg );
+    		}
+		
+    		return function_return( SQL_HANDLE_STMT, statement, ret ); 
+		}
 
         if ( !__validate_desc( desc ))
         {
@@ -339,7 +420,7 @@ SQLRETURN SQLSetStmtAttrW( SQLHSTMT statement_handle,
                     ERROR_HY017, NULL,
                     statement -> connection -> environment -> requested_version );
 
-            return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+            return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
         }
 
         if ( desc -> connection !=
@@ -355,7 +436,7 @@ SQLRETURN SQLSetStmtAttrW( SQLHSTMT statement_handle,
                     ERROR_HY024, NULL,
                     statement -> connection -> environment -> requested_version );
 
-            return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+            return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
         }
 
         /*
@@ -369,6 +450,87 @@ SQLRETURN SQLSetStmtAttrW( SQLHSTMT statement_handle,
     if ( attribute == SQL_ATTR_APP_PARAM_DESC )
     {
         DMHDESC desc = ( DMHDESC ) value;
+
+		/*
+		 * needs to reset to implicit descriptor, this is safe
+		 * without a validate, as the value is either null, or the
+		 * same as a descriptor we know is valid
+		 */
+
+		if ( desc == NULL || desc == statement -> implicit_apd ) 
+		{
+			DRV_SQLHDESC drv_desc = NULL;
+
+			ret = SQL_SUCCESS;
+			
+			if ( desc == statement -> implicit_apd )
+			{
+				drv_desc = statement -> implicit_apd -> driver_desc;
+			}
+
+        	if ( CHECK_SQLSETSTMTATTRW( statement -> connection ))
+        	{
+           	 	ret = SQLSETSTMTATTRW( statement -> connection,
+           	     	statement -> driver_stmt,
+           	     	attribute,
+                	statement -> implicit_apd -> driver_desc,
+           	     	0 );
+        	}
+        	else if ( CHECK_SQLSETSTMTATTR( statement -> connection ))
+        	{
+            	ret = SQLSETSTMTATTR( statement -> connection,
+                	statement -> driver_stmt,
+                	attribute,
+                	statement -> implicit_apd -> driver_desc,
+                	0 );
+        	}
+            else
+            {
+                ret = SQLSETSTMTOPTION( statement -> connection,
+                    statement -> driver_stmt,
+                    attribute,
+                    drv_desc );
+            }
+
+			if ( ret != SQL_SUCCESS ) 
+			{
+    			if ( log_info.log_flag )
+    			{
+        			sprintf( statement -> msg, 
+                			"\n\t\tExit:[%s]",
+                    			__get_return_status( ret, s1 ));
+			
+        			dm_log_write( __FILE__, 
+                			__LINE__, 
+                			LOG_INFO, 
+                			LOG_INFO, 
+                			statement -> msg );
+    			}
+			
+    			return function_return( SQL_HANDLE_STMT, statement, ret ); 
+			}
+			
+			/*
+			 * copy DM descriptor
+			 */
+
+			statement -> apd = statement -> implicit_apd;
+
+    		if ( log_info.log_flag )
+    		{
+        		sprintf( statement -> msg, 
+                		"\n\t\tExit:[%s]",
+                    		__get_return_status( ret, s1 ));
+
+        		dm_log_write( __FILE__, 
+                		__LINE__, 
+                		LOG_INFO, 
+                		LOG_INFO, 
+                		statement -> msg );
+    		}
+		
+    		return function_return( SQL_HANDLE_STMT, statement, ret ); 
+		}
 
         if ( !__validate_desc( desc ))
         {
@@ -400,7 +562,7 @@ SQLRETURN SQLSetStmtAttrW( SQLHSTMT statement_handle,
                     ERROR_HY017, NULL,
                     statement -> connection -> environment -> requested_version );
 
-            return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+            return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
         }
 
         if ( desc -> connection !=
@@ -416,7 +578,7 @@ SQLRETURN SQLSetStmtAttrW( SQLHSTMT statement_handle,
                     ERROR_HY024, NULL,
                     statement -> connection -> environment -> requested_version );
 
-            return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+            return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
         }
 
         /*
@@ -433,7 +595,11 @@ SQLRETURN SQLSetStmtAttrW( SQLHSTMT statement_handle,
 
     if ( attribute == SQL_ATTR_METADATA_ID )
     {
+#ifdef HAVE_PTRDIFF_T
+        statement -> metadata_id = (ptrdiff_t) value;
+#else
         statement -> metadata_id = (SQLINTEGER) value;
+#endif
     }
 
     if ( attribute == SQL_ATTR_IMP_ROW_DESC || 
@@ -449,7 +615,7 @@ SQLRETURN SQLSetStmtAttrW( SQLHSTMT statement_handle,
                 ERROR_HY017, NULL,
                 statement -> connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
 
     /*
@@ -469,7 +635,7 @@ SQLRETURN SQLSetStmtAttrW( SQLHSTMT statement_handle,
                 ERROR_HY024, NULL,
                 statement -> connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
 
     /*

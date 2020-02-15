@@ -199,7 +199,7 @@ SQLRETURN SQLColAttributesW( SQLHSTMT statement_handle,
 
     if ( column_number == 0 &&
             statement -> bookmarks_on == SQL_UB_OFF && statement -> connection -> bookmarks_on == SQL_UB_OFF &&
-            field_identifier != SQL_DESC_COUNT )
+            field_identifier != SQL_COLUMN_COUNT )
     {
         dm_log_write( __FILE__, 
                 __LINE__, 
@@ -212,7 +212,7 @@ SQLRETURN SQLColAttributesW( SQLHSTMT statement_handle,
                 statement -> connection -> environment -> requested_version,
                 SQL_API_SQLCOLATTRIBUTES );
 
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
 
 	/*
@@ -252,7 +252,7 @@ SQLRETURN SQLColAttributesW( SQLHSTMT statement_handle,
                 ERROR_HY010, NULL,
                 statement -> connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
     else if ( statement -> state == STATE_S2 &&
             field_identifier != SQL_DESC_COUNT )
@@ -267,7 +267,7 @@ SQLRETURN SQLColAttributesW( SQLHSTMT statement_handle,
                 ERROR_07005, NULL,
                 statement -> connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
     else if ( statement -> state == STATE_S4 )
     {
@@ -281,7 +281,7 @@ SQLRETURN SQLColAttributesW( SQLHSTMT statement_handle,
                 ERROR_24000, NULL,
                 statement -> connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
     else if ( statement -> state == STATE_S8 ||
             statement -> state == STATE_S9 ||
@@ -300,7 +300,7 @@ SQLRETURN SQLColAttributesW( SQLHSTMT statement_handle,
                 ERROR_HY010, NULL,
                 statement -> connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
 
     if ( statement -> state == STATE_S11 ||
@@ -318,8 +318,26 @@ SQLRETURN SQLColAttributesW( SQLHSTMT statement_handle,
                     ERROR_HY010, NULL,
                     statement -> connection -> environment -> requested_version );
 
-            return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+            return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
         }
+    }
+
+    switch ( field_identifier )
+    {
+        case SQL_COLUMN_LABEL:
+        case SQL_COLUMN_NAME:
+        case SQL_COLUMN_OWNER_NAME:
+        case SQL_COLUMN_QUALIFIER_NAME:
+        case SQL_COLUMN_TABLE_NAME:
+        case SQL_COLUMN_TYPE_NAME:
+            if ( buffer_length < 0 && buffer_length != SQL_NTS )
+            {
+                __post_internal_error( &statement -> error,
+                    ERROR_HY090, NULL,
+                    statement -> connection -> environment -> requested_version );
+
+                return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
+            }
     }
 
     if ( statement -> connection -> unicode_driver || 
@@ -357,7 +375,7 @@ SQLRETURN SQLColAttributesW( SQLHSTMT statement_handle,
                         ERROR_IM001, NULL,
                         statement -> connection -> environment -> requested_version );
 
-                return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+                return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
             }
         }
         else
@@ -465,7 +483,7 @@ SQLRETURN SQLColAttributesW( SQLHSTMT statement_handle,
                         ERROR_IM001, NULL,
                         statement -> connection -> environment -> requested_version );
 
-                return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+                return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
             }
         }
         else

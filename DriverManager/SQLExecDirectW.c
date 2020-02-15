@@ -194,7 +194,7 @@ SQLRETURN SQLExecDirectW( SQLHSTMT statement_handle,
                 ERROR_HY009, NULL,
                 statement -> connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
 
     if ( text_length <= 0 && text_length != SQL_NTS )
@@ -209,7 +209,7 @@ SQLRETURN SQLExecDirectW( SQLHSTMT statement_handle,
                 ERROR_HY090, NULL,
                 statement -> connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
 
     /*
@@ -235,7 +235,7 @@ SQLRETURN SQLExecDirectW( SQLHSTMT statement_handle,
                 ERROR_24000, NULL,
                 statement -> connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
     else if ( statement -> state == STATE_S8 ||
             statement -> state == STATE_S9 ||
@@ -251,7 +251,7 @@ SQLRETURN SQLExecDirectW( SQLHSTMT statement_handle,
                 ERROR_HY010, NULL,
                 statement -> connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
 
     if ( statement -> state == STATE_S11 ||
@@ -269,7 +269,7 @@ SQLRETURN SQLExecDirectW( SQLHSTMT statement_handle,
                     ERROR_HY010, NULL,
                     statement -> connection -> environment -> requested_version );
 
-            return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+            return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
         }
     }
 
@@ -290,7 +290,7 @@ SQLRETURN SQLExecDirectW( SQLHSTMT statement_handle,
                     ERROR_IM001, NULL,
                     statement -> connection -> environment -> requested_version );
 
-            return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+            return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
         }
 #else
         if ( !CHECK_SQLEXECDIRECTW( statement -> connection ))
@@ -305,7 +305,7 @@ SQLRETURN SQLExecDirectW( SQLHSTMT statement_handle,
                     ERROR_IM001, NULL,
                     statement -> connection -> environment -> requested_version );
 
-            return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+            return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
         }
 #endif
 
@@ -333,7 +333,7 @@ SQLRETURN SQLExecDirectW( SQLHSTMT statement_handle,
                     ERROR_IM001, NULL,
                     statement -> connection -> environment -> requested_version );
 
-            return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+            return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
         }
 #else
         if ( !CHECK_SQLEXECDIRECT( statement -> connection ))
@@ -348,7 +348,7 @@ SQLRETURN SQLExecDirectW( SQLHSTMT statement_handle,
                     ERROR_IM001, NULL,
                     statement -> connection -> environment -> requested_version );
 
-            return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+            return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
         }
 #endif
 
@@ -407,6 +407,11 @@ SQLRETURN SQLExecDirectW( SQLHSTMT statement_handle,
         statement -> connection -> state = STATE_C6;
          */
     }
+    else if ( ret == SQL_NO_DATA )
+    {
+        statement -> state = STATE_S4;
+        statement -> prepared = 0;
+    }
     else if ( ret == SQL_NEED_DATA )
     {
         statement -> interupted_func = SQL_API_SQLEXECDIRECT;
@@ -430,9 +435,15 @@ SQLRETURN SQLExecDirectW( SQLHSTMT statement_handle,
 
         statement -> prepared = 0;
     }
-    else
+    else if ( statement -> state >= STATE_S2 && statement -> state <= STATE_S4 ||
+              statement -> state >= STATE_S11 && statement -> state <= STATE_S12 &&
+              statement -> interupted_state >= STATE_S2 && statement -> interupted_state <= STATE_S4)
     {
         statement -> state = STATE_S1;
+    }
+    else if ( statement -> state >= STATE_S11 && statement -> state <= STATE_S12 )
+    {
+        statement -> state = statement -> interupted_state;
     }
 
     if ( log_info.log_flag )

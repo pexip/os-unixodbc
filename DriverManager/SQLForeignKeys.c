@@ -231,6 +231,15 @@ SQLRETURN SQLForeignKeys(
 
     thread_protect( SQL_HANDLE_STMT, statement );
 
+    if ( !szpk_table_name && !szfk_table_name )
+    {
+        __post_internal_error( &statement -> error,
+                ERROR_HY009, NULL,
+                statement -> connection -> environment -> requested_version );
+
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
+    }
+    
     if (( cbpk_catalog_name < 0 && cbpk_catalog_name != SQL_NTS ) ||
             ( cbpk_schema_name < 0 && cbpk_schema_name != SQL_NTS ) ||
             ( cbpk_table_name < 0 && cbpk_table_name != SQL_NTS ) ||
@@ -242,7 +251,7 @@ SQLRETURN SQLForeignKeys(
                 ERROR_HY090, NULL,
                 statement -> connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
 
     /*
@@ -268,7 +277,7 @@ SQLRETURN SQLForeignKeys(
                 ERROR_24000, NULL,
                 statement -> connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR ); 
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR ); 
     }
     else if ( statement -> state == STATE_S8 ||
             statement -> state == STATE_S9 ||
@@ -287,7 +296,7 @@ SQLRETURN SQLForeignKeys(
                 ERROR_HY010, NULL,
                 statement -> connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
 
     if ( statement -> state == STATE_S11 ||
@@ -305,7 +314,7 @@ SQLRETURN SQLForeignKeys(
                     ERROR_HY010, NULL,
                     statement -> connection -> environment -> requested_version );
 
-            return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+            return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
         }
     }
 
@@ -330,7 +339,7 @@ SQLRETURN SQLForeignKeys(
                     ERROR_IM001, NULL,
                     statement -> connection -> environment -> requested_version );
 
-            return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+            return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
         }
 
         s1 = ansi_to_unicode_alloc( szpk_catalog_name, cbpk_catalog_name, statement -> connection, &wlen );
@@ -388,7 +397,7 @@ SQLRETURN SQLForeignKeys(
                     ERROR_IM001, NULL,
                     statement -> connection -> environment -> requested_version );
 
-            return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+            return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
         }
 
         ret = SQLFOREIGNKEYS( statement -> connection ,

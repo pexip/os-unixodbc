@@ -169,7 +169,8 @@ SQLRETURN SQLSetCursorName( SQLHSTMT statement_handle,
 
     thread_protect( SQL_HANDLE_STMT, statement );
 
-    if ( !cursor_name )
+    if ( !cursor_name ||
+         (name_length < 0 && name_length != SQL_NTS ) )
     {
         dm_log_write( __FILE__, 
                 __LINE__, 
@@ -181,7 +182,7 @@ SQLRETURN SQLSetCursorName( SQLHSTMT statement_handle,
                 ERROR_HY009, NULL,
                 statement -> connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR ); 
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR ); 
     }
 
     /*
@@ -203,7 +204,7 @@ SQLRETURN SQLSetCursorName( SQLHSTMT statement_handle,
                 ERROR_24000, NULL,
                 statement -> connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
 
     if ( statement -> state == STATE_S8 ||
@@ -225,7 +226,7 @@ SQLRETURN SQLSetCursorName( SQLHSTMT statement_handle,
                 ERROR_HY010, NULL,
                 statement -> connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
 
     if ( statement -> connection -> unicode_driver )
@@ -245,7 +246,7 @@ SQLRETURN SQLSetCursorName( SQLHSTMT statement_handle,
                     ERROR_IM001, NULL,
                     statement -> connection -> environment -> requested_version );
 
-            return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+            return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
         }
 
         s1 = ansi_to_unicode_alloc( cursor_name, name_length, statement -> connection, &wlen );
@@ -274,7 +275,7 @@ SQLRETURN SQLSetCursorName( SQLHSTMT statement_handle,
                     ERROR_IM001, NULL,
                     statement -> connection -> environment -> requested_version );
 
-            return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+            return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
         }
 
         ret = SQLSETCURSORNAME( statement -> connection,

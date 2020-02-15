@@ -284,7 +284,7 @@ static pth_mutex_t mutex_pool = PTH_MUTEX_INIT;
 static pth_mutex_t mutex_iconv = PTH_MUTEX_INIT;
 static int pth_init_called = 0;
 
-static int mutex_entry( pth_mutex_t *mutex )
+static int local_mutex_entry( pth_mutex_t *mutex )
 {
     if ( !pth_init_called )
     {
@@ -294,7 +294,7 @@ static int mutex_entry( pth_mutex_t *mutex )
     return pth_mutex_acquire( mutex, 0, NULL );
 }
 
-static int mutex_exit( pth_mutex_t *mutex )
+static int local_mutex_exit( pth_mutex_t *mutex )
 {
     return pth_mutex_release( mutex );
 }
@@ -308,12 +308,12 @@ static pthread_mutex_t mutex_env = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t mutex_pool = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t mutex_iconv = PTHREAD_MUTEX_INITIALIZER;
 
-static int mutex_entry( pthread_mutex_t *mutex )
+static int local_mutex_entry( pthread_mutex_t *mutex )
 {
     return pthread_mutex_lock( mutex );
 }
 
-static int mutex_exit( pthread_mutex_t *mutex )
+static int local_mutex_exit( pthread_mutex_t *mutex )
 {
     return pthread_mutex_unlock( mutex );
 }
@@ -327,20 +327,20 @@ static mutex_t mutex_env;
 static mutex_t mutex_pool;
 static mutex_t mutex_iconv;
 
-static int mutex_entry( mutex_t *mutex )
+static int local_mutex_entry( mutex_t *mutex )
 {
     return mutex_lock( mutex );
 }
 
-static int mutex_exit( mutex_t *mutex )
+static int local_mutex_exit( mutex_t *mutex )
 {
     return mutex_unlock( mutex );
 }
 
 #else
 
-#define mutex_entry(x)
-#define mutex_exit(x)
+#define local_mutex_entry(x)
+#define local_mutex_exit(x)
 
 #endif
 
@@ -350,12 +350,12 @@ static int mutex_exit( mutex_t *mutex )
 
 void mutex_pool_entry( void )
 {
-    mutex_entry( &mutex_pool );
+    local_mutex_entry( &mutex_pool );
 }
 
 void mutex_pool_exit( void )
 {
-    mutex_exit( &mutex_pool );
+    local_mutex_exit( &mutex_pool );
 }
 
 /*
@@ -364,12 +364,12 @@ void mutex_pool_exit( void )
 
 void mutex_iconv_entry( void )
 {
-    mutex_entry( &mutex_iconv );
+    local_mutex_entry( &mutex_iconv );
 }
 
 void mutex_iconv_exit( void )
 {
-    mutex_exit( &mutex_iconv );
+    local_mutex_exit( &mutex_iconv );
 }
 
 /*
@@ -379,12 +379,12 @@ void mutex_iconv_exit( void )
 
 void mutex_lib_entry( void )
 {
-    mutex_entry( &mutex_lists );
+    local_mutex_entry( &mutex_lists );
 }
 
 void mutex_lib_exit( void )
 {
-    mutex_exit( &mutex_lists );
+    local_mutex_exit( &mutex_lists );
 }
 
 /*
@@ -395,7 +395,7 @@ DMHENV __alloc_env( void )
 {
     DMHENV environment = NULL;
 
-    mutex_entry( &mutex_lists );
+    local_mutex_entry( &mutex_lists );
 
     environment = calloc( sizeof( *environment ), 1 );
 
@@ -466,7 +466,7 @@ DMHENV __alloc_env( void )
 
     }
 
-    mutex_exit( &mutex_lists );
+    local_mutex_exit( &mutex_lists );
 
     return environment;
 }
@@ -489,7 +489,7 @@ int __validate_env( DMHENV env )
     DMHENV ptr;
     int ret = 0;
 
-    mutex_entry( &mutex_lists );
+    local_mutex_entry( &mutex_lists );
 
     ptr = environment_root;
 
@@ -504,7 +504,7 @@ int __validate_env( DMHENV env )
         ptr = ptr -> next_class_list;
     }
 
-    mutex_exit( &mutex_lists );
+    local_mutex_exit( &mutex_lists );
 
     return ret;
 
@@ -520,7 +520,7 @@ void __release_env( DMHENV environment )
     DMHENV last = NULL;
     DMHENV ptr;
 
-    mutex_entry( &mutex_lists );
+    local_mutex_entry( &mutex_lists );
 
     ptr = environment_root;
 
@@ -567,7 +567,7 @@ void __release_env( DMHENV environment )
 
     free( environment );
 
-    mutex_exit( &mutex_lists );
+    local_mutex_exit( &mutex_lists );
 }
 
 /*
@@ -587,7 +587,7 @@ DMHDBC __alloc_dbc( void )
 {
     DMHDBC connection = NULL;
 
-    mutex_entry( &mutex_lists );
+    local_mutex_entry( &mutex_lists );
 
     connection = calloc( sizeof( *connection ), 1 );
 
@@ -621,9 +621,13 @@ DMHDBC __alloc_dbc( void )
         connection -> protection_level = TS_LEVEL3;
 #endif
 
+#ifdef HAVE_ICONV
+        connection -> iconv_cd_uc_to_ascii = (iconv_t)(-1);
+        connection -> iconv_cd_ascii_to_uc = (iconv_t)(-1);
+#endif
     }
 
-    mutex_exit( &mutex_lists );
+    local_mutex_exit( &mutex_lists );
 
     return connection;
 }
@@ -650,8 +654,8 @@ void dbc_change_thread_support( DMHDBC connection, int level )
          * connection lock, and create the env lock
          */
 	if(old_level != TS_LEVEL0)
-            mutex_exit( &connection -> mutex );
-        mutex_entry( &mutex_env );
+            local_mutex_exit( &connection -> mutex );
+        local_mutex_entry( &mutex_env );
     }
     else if ( old_level == TS_LEVEL3 )
     {
@@ -660,8 +664,8 @@ void dbc_change_thread_support( DMHDBC connection, int level )
          * connection lock, and remove the env lock
          */
 	if(level != TS_LEVEL0)
-	    mutex_entry( &connection -> mutex );
-        mutex_exit( &mutex_env );
+	    local_mutex_entry( &connection -> mutex );
+        local_mutex_exit( &mutex_env );
     }
 
 #endif
@@ -685,7 +689,7 @@ int __validate_dbc( DMHDBC connection )
     DMHDBC ptr;
     int ret = 0;
 
-    mutex_entry( &mutex_lists );
+    local_mutex_entry( &mutex_lists );
 
     ptr = connection_root;
 
@@ -700,7 +704,7 @@ int __validate_dbc( DMHDBC connection )
         ptr = ptr -> next_class_list;
     }
 
-    mutex_exit( &mutex_lists );
+    local_mutex_exit( &mutex_lists );
 
     return ret;
 #endif
@@ -715,7 +719,7 @@ void __release_dbc( DMHDBC connection )
     DMHDBC last = NULL;
     DMHDBC ptr;
 
-    mutex_entry( &mutex_lists );
+    local_mutex_entry( &mutex_lists );
 
     ptr = connection_root;
 
@@ -743,6 +747,12 @@ void __release_dbc( DMHDBC connection )
 
     clear_error_head( &connection -> error );
 
+    /*
+     * shutdown unicode
+     */
+
+    unicode_shutdown( connection );
+
 #ifdef HAVE_LIBPTH
 #elif HAVE_LIBPTHREAD
     pthread_mutex_destroy( &connection -> mutex );
@@ -758,7 +768,7 @@ void __release_dbc( DMHDBC connection )
 
     free( connection );
 
-    mutex_exit( &mutex_lists );
+    local_mutex_exit( &mutex_lists );
 }
 
 /*
@@ -769,7 +779,7 @@ DMHSTMT __alloc_stmt( void )
 {
     DMHSTMT statement = NULL;
 
-    mutex_entry( &mutex_lists );
+    local_mutex_entry( &mutex_lists );
 
     statement = calloc( sizeof( *statement ), 1 );
 
@@ -802,7 +812,7 @@ DMHSTMT __alloc_stmt( void )
 
     }
 
-    mutex_exit( &mutex_lists );
+    local_mutex_exit( &mutex_lists );
 
     return statement;
 }
@@ -813,7 +823,7 @@ DMHSTMT __alloc_stmt( void )
 
 void __register_stmt ( DMHDBC connection, DMHSTMT statement )
 {
-    mutex_entry( &mutex_lists );
+    local_mutex_entry( &mutex_lists );
 
     connection -> statement_count ++;
     statement -> connection = connection;
@@ -821,7 +831,7 @@ void __register_stmt ( DMHDBC connection, DMHSTMT statement )
     statement -> next_conn_list = connection -> statements;
     connection -> statements = statement;
 #endif
-    mutex_exit( &mutex_lists );
+    local_mutex_exit( &mutex_lists );
 }
 
 /*
@@ -832,7 +842,7 @@ void __set_stmt_state ( DMHDBC connection, SQLSMALLINT cb_value )
     DMHSTMT         statement;
     SQLINTEGER stmt_remaining;
 
-    mutex_entry( &mutex_lists );
+    local_mutex_entry( &mutex_lists );
 #ifdef FAST_HANDLE_VALIDATE
     statement      = connection -> statements;
     while ( statement )
@@ -922,7 +932,7 @@ void __set_stmt_state ( DMHDBC connection, SQLSMALLINT cb_value )
         statement = statement -> next_class_list;
     }
 #endif
-    mutex_exit( &mutex_lists );
+    local_mutex_exit( &mutex_lists );
 }
 
 /*
@@ -934,7 +944,7 @@ int __clean_stmt_from_dbc( DMHDBC connection )
     DMHSTMT ptr, last;
     int ret = 0;
 
-    mutex_entry( &mutex_lists );
+    local_mutex_entry( &mutex_lists );
 #ifdef FAST_HANDLE_VALIDATE
     while ( connection -> statements )
     {
@@ -1008,7 +1018,7 @@ int __clean_stmt_from_dbc( DMHDBC connection )
         }
     }
 #endif
-    mutex_exit( &mutex_lists );
+    local_mutex_exit( &mutex_lists );
 
     return ret;
 }
@@ -1027,7 +1037,7 @@ int __check_stmt_from_dbc_v( DMHDBC connection, int statecount, ... )
     }
     va_end (ap);
 
-    mutex_entry( &mutex_lists );
+    local_mutex_entry( &mutex_lists );
 #ifdef FAST_HANDLE_VALIDATE
     ptr = connection -> statements;
     while( !found && ptr )
@@ -1058,7 +1068,7 @@ int __check_stmt_from_dbc_v( DMHDBC connection, int statecount, ... )
         ptr = ptr -> next_class_list;
     }
 #endif
-    mutex_exit( &mutex_lists );
+    local_mutex_exit( &mutex_lists );
 
     return found;
 }
@@ -1072,7 +1082,7 @@ int __check_stmt_from_dbc( DMHDBC connection, int state )
     DMHSTMT ptr;
     int found = 0;
 
-    mutex_entry( &mutex_lists );
+    local_mutex_entry( &mutex_lists );
 #ifdef FAST_HANDLE_VALIDATE
     ptr = connection -> statements;
     while( ptr )
@@ -1101,7 +1111,7 @@ int __check_stmt_from_dbc( DMHDBC connection, int state )
         ptr = ptr -> next_class_list;
     }
 #endif
-    mutex_exit( &mutex_lists );
+    local_mutex_exit( &mutex_lists );
 
     return found;
 }
@@ -1112,7 +1122,7 @@ int __check_stmt_from_desc( DMHDESC desc, int state )
     DMHSTMT ptr;
     int found = 0;
 
-    mutex_entry( &mutex_lists );
+    local_mutex_entry( &mutex_lists );
     connection = desc -> connection;
 #ifdef FAST_HANDLE_VALIDATE
     ptr = connection -> statements;
@@ -1148,7 +1158,7 @@ int __check_stmt_from_desc( DMHDESC desc, int state )
         ptr = ptr -> next_class_list;
     }
 #endif
-    mutex_exit( &mutex_lists );
+    local_mutex_exit( &mutex_lists );
 
     return found;
 }
@@ -1159,7 +1169,7 @@ int __check_stmt_from_desc_ird( DMHDESC desc, int state )
     DMHSTMT ptr;
     int found = 0;
 
-    mutex_entry( &mutex_lists );
+    local_mutex_entry( &mutex_lists );
     connection = desc -> connection;
 #ifdef FAST_HANDLE_VALIDATE
     ptr = connection -> statements;
@@ -1195,7 +1205,7 @@ int __check_stmt_from_desc_ird( DMHDESC desc, int state )
         ptr = ptr -> next_class_list;
     }
 #endif
-    mutex_exit( &mutex_lists );
+    local_mutex_exit( &mutex_lists );
 
     return found;
 }
@@ -1222,7 +1232,7 @@ int __validate_stmt( DMHSTMT statement )
     DMHSTMT ptr;
     int ret = 0;
 
-    mutex_entry( &mutex_lists );
+    local_mutex_entry( &mutex_lists );
 
     ptr = statement_root;
 
@@ -1237,7 +1247,7 @@ int __validate_stmt( DMHSTMT statement )
         ptr = ptr -> next_class_list;
     }
 
-    mutex_exit( &mutex_lists );
+    local_mutex_exit( &mutex_lists );
 
     return ret;
 
@@ -1253,7 +1263,7 @@ void __release_stmt( DMHSTMT statement )
     DMHSTMT last = NULL;
     DMHSTMT ptr;
 
-    mutex_entry( &mutex_lists );
+    local_mutex_entry( &mutex_lists );
 #ifdef FAST_HANDLE_VALIDATE
     /*
      * A check never mind
@@ -1349,7 +1359,7 @@ void __release_stmt( DMHSTMT statement )
 
     free( statement );
 
-    mutex_exit( &mutex_lists );
+    local_mutex_exit( &mutex_lists );
 }
 
 /*
@@ -1360,7 +1370,7 @@ DMHDESC __alloc_desc( void )
 {
     DMHDESC descriptor;
 
-    mutex_entry( &mutex_lists );
+    local_mutex_entry( &mutex_lists );
 
     descriptor = calloc( sizeof( *descriptor ), 1 );
 
@@ -1391,7 +1401,7 @@ DMHDESC __alloc_desc( void )
 #endif
     }
 
-    mutex_exit( &mutex_lists );
+    local_mutex_exit( &mutex_lists );
 
     return descriptor;
 }
@@ -1414,7 +1424,7 @@ int __validate_desc( DMHDESC descriptor )
     DMHDESC ptr;
     int ret = 0;
 
-    mutex_entry( &mutex_lists );
+    local_mutex_entry( &mutex_lists );
 
     ptr = descriptor_root;
 
@@ -1429,7 +1439,7 @@ int __validate_desc( DMHDESC descriptor )
         ptr = ptr -> next_class_list;
     }
 
-    mutex_exit( &mutex_lists );
+    local_mutex_exit( &mutex_lists );
 
     return ret;
 
@@ -1445,7 +1455,7 @@ int __clean_desc_from_dbc( DMHDBC connection )
     DMHDESC ptr, last;
     int ret = 0;
 
-    mutex_entry( &mutex_lists );
+    local_mutex_entry( &mutex_lists );
     last = NULL;
     ptr = descriptor_root;
 
@@ -1497,7 +1507,7 @@ int __clean_desc_from_dbc( DMHDBC connection )
         }
     }
 
-    mutex_exit( &mutex_lists );
+    local_mutex_exit( &mutex_lists );
 
     return ret;
 }
@@ -1511,8 +1521,9 @@ void __release_desc( DMHDESC descriptor )
 {
     DMHDESC last = NULL;
     DMHDESC ptr;
+    DMHSTMT assoc_stmt;
 
-    mutex_entry( &mutex_lists );
+    local_mutex_entry( &mutex_lists );
 #ifdef FAST_HANDLE_VALIDATE
     /*
      * A check never mind
@@ -1566,6 +1577,27 @@ void __release_desc( DMHDESC descriptor )
     }
 
     clear_error_head( &descriptor -> error );
+    /* If there are any statements still pointing to this descriptor, revert them to implicit */
+    assoc_stmt = statement_root;
+    while ( assoc_stmt )
+    {
+        DMHDESC *pDesc[] = {
+            &assoc_stmt -> ipd, &assoc_stmt -> apd, &assoc_stmt -> ird, &assoc_stmt -> ard
+        };
+        DMHDESC impDesc[] = {
+            assoc_stmt -> implicit_ipd, assoc_stmt -> implicit_apd,
+            assoc_stmt -> implicit_ird, assoc_stmt -> implicit_ard
+        };
+        int i;
+        for ( i = 0; i < 4; i++ )
+        {
+            if ( *pDesc[i] == descriptor )
+            {
+                *pDesc[i] = impDesc[i];
+            }
+        }
+        assoc_stmt = assoc_stmt -> next_class_list;
+    }
 
 #ifdef HAVE_LIBPTH
 #elif HAVE_LIBPTHREAD
@@ -1582,7 +1614,7 @@ void __release_desc( DMHDESC descriptor )
 
     free( descriptor );
 
-    mutex_exit( &mutex_lists );
+    local_mutex_exit( &mutex_lists );
 }
 
 #if defined ( HAVE_LIBPTHREAD ) || defined ( HAVE_LIBTHREAD ) || defined( HAVE_LIBPTH )
@@ -1596,19 +1628,19 @@ void thread_protect( int type, void *handle )
     switch( type )
     {
       case SQL_HANDLE_ENV:
-        mutex_entry( &mutex_env );
+        local_mutex_entry( &mutex_env );
         break;
 
       case SQL_HANDLE_DBC:
         connection = handle;
         if ( connection -> protection_level == TS_LEVEL3 )
         {
-            mutex_entry( &mutex_env );
+            local_mutex_entry( &mutex_env );
         }
         else if ( connection -> protection_level == TS_LEVEL2 ||
                 connection -> protection_level == TS_LEVEL1 )
         {
-            mutex_entry( &connection -> mutex );
+            local_mutex_entry( &connection -> mutex );
         }
         break;
 
@@ -1616,15 +1648,15 @@ void thread_protect( int type, void *handle )
         statement = handle;
         if ( statement -> connection -> protection_level == TS_LEVEL3 )
         {
-            mutex_entry( &mutex_env );
+            local_mutex_entry( &mutex_env );
         }
         else if ( statement -> connection -> protection_level == TS_LEVEL2 )
         {
-            mutex_entry( &statement -> connection -> mutex );
+            local_mutex_entry( &statement -> connection -> mutex );
         }
         else if ( statement -> connection -> protection_level == TS_LEVEL1 )
         {
-            mutex_entry( &statement -> mutex );
+            local_mutex_entry( &statement -> mutex );
         }
         break;
 
@@ -1632,15 +1664,15 @@ void thread_protect( int type, void *handle )
         descriptor = handle;
         if ( descriptor -> connection -> protection_level == TS_LEVEL3 )
         {
-            mutex_entry( &mutex_env );
+            local_mutex_entry( &mutex_env );
         }
         if ( descriptor -> connection -> protection_level == TS_LEVEL2 )
         {
-            mutex_entry( &descriptor -> connection -> mutex );
+            local_mutex_entry( &descriptor -> connection -> mutex );
         }
         if ( descriptor -> connection -> protection_level == TS_LEVEL1 )
         {
-            mutex_entry( &descriptor -> mutex );
+            local_mutex_entry( &descriptor -> mutex );
         }
         break;
     }
@@ -1655,19 +1687,19 @@ void thread_release( int type, void *handle )
     switch( type )
     {
       case SQL_HANDLE_ENV:
-        mutex_exit( &mutex_env );
+        local_mutex_exit( &mutex_env );
         break;
 
       case SQL_HANDLE_DBC:
         connection = handle;
         if ( connection -> protection_level == TS_LEVEL3 )
         {
-            mutex_exit( &mutex_env );
+            local_mutex_exit( &mutex_env );
         }
         else if ( connection -> protection_level == TS_LEVEL2 ||
                 connection -> protection_level == TS_LEVEL1 )
         {
-            mutex_exit( &connection -> mutex );
+            local_mutex_exit( &connection -> mutex );
         }
         break;
 
@@ -1675,15 +1707,15 @@ void thread_release( int type, void *handle )
         statement = handle;
         if ( statement -> connection -> protection_level == TS_LEVEL3 )
         {
-            mutex_exit( &mutex_env );
+            local_mutex_exit( &mutex_env );
         }
         else if ( statement -> connection -> protection_level == TS_LEVEL2 )
         {
-            mutex_exit( &statement -> connection -> mutex );
+            local_mutex_exit( &statement -> connection -> mutex );
         }
         else if ( statement -> connection -> protection_level == TS_LEVEL1 )
         {
-            mutex_exit( &statement -> mutex );
+            local_mutex_exit( &statement -> mutex );
         }
         break;
 
@@ -1691,15 +1723,15 @@ void thread_release( int type, void *handle )
         descriptor = handle;
         if ( descriptor -> connection -> protection_level == TS_LEVEL3 )
         {
-            mutex_exit( &mutex_env );
+            local_mutex_exit( &mutex_env );
         }
         else if ( descriptor -> connection -> protection_level == TS_LEVEL2 )
         {
-            mutex_exit( &descriptor -> connection -> mutex );
+            local_mutex_exit( &descriptor -> connection -> mutex );
         }
         else if ( descriptor -> connection -> protection_level == TS_LEVEL1 )
         {
-            mutex_exit( &descriptor -> mutex );
+            local_mutex_exit( &descriptor -> mutex );
         }
         break;
     }
@@ -1720,7 +1752,7 @@ void *find_parent_handle( DRV_SQLHANDLE drv_hand, int type )
 {
 	void *found_handle = NULL;
 
-    mutex_entry( &mutex_lists );
+    local_mutex_entry( &mutex_lists );
 
 	switch( type ) {
 		case SQL_HANDLE_DBC:
@@ -1766,7 +1798,7 @@ void *find_parent_handle( DRV_SQLHANDLE drv_hand, int type )
 			break;
 	}
 
-    mutex_exit( &mutex_lists );
+    local_mutex_exit( &mutex_lists );
 
 	return found_handle;
 }

@@ -176,7 +176,7 @@ SQLRETURN SQLColAttributeW ( SQLHSTMT statement_handle,
                 statement -> connection -> environment -> requested_version,
                 SQL_API_SQLCOLATTRIBUTE );
 
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
 
 	/*
@@ -210,7 +210,7 @@ SQLRETURN SQLColAttributeW ( SQLHSTMT statement_handle,
                 ERROR_HY010, NULL,
                 statement -> connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
     /*
     else if ( statement -> state == STATE_S2 &&
@@ -241,7 +241,7 @@ SQLRETURN SQLColAttributeW ( SQLHSTMT statement_handle,
                 ERROR_24000, NULL,
                 statement -> connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
     else if ( statement -> state == STATE_S8 ||
             statement -> state == STATE_S9 ||
@@ -260,7 +260,7 @@ SQLRETURN SQLColAttributeW ( SQLHSTMT statement_handle,
                 ERROR_HY010, NULL,
                 statement -> connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
 
     if ( statement -> state == STATE_S11 ||
@@ -278,8 +278,32 @@ SQLRETURN SQLColAttributeW ( SQLHSTMT statement_handle,
                     ERROR_HY010, NULL,
                     statement -> connection -> environment -> requested_version );
 
-            return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+            return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
         }
+    }
+
+    switch ( field_identifier )
+    {
+        case SQL_COLUMN_QUALIFIER_NAME:
+        case SQL_COLUMN_NAME:
+        case SQL_COLUMN_LABEL:
+        case SQL_COLUMN_OWNER_NAME:
+        case SQL_COLUMN_TABLE_NAME:
+        case SQL_COLUMN_TYPE_NAME:
+        case SQL_DESC_BASE_COLUMN_NAME:
+        case SQL_DESC_BASE_TABLE_NAME:
+        case SQL_DESC_LITERAL_PREFIX:
+        case SQL_DESC_LITERAL_SUFFIX:
+        case SQL_DESC_LOCAL_TYPE_NAME:
+        case SQL_DESC_NAME:
+            if ( buffer_length < 0 && buffer_length != SQL_NTS )
+            {
+                __post_internal_error( &statement -> error,
+                    ERROR_HY090, NULL,
+                    statement -> connection -> environment -> requested_version );
+
+                return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
+            }
     }
 
     if ( statement -> connection -> unicode_driver ||
@@ -317,7 +341,7 @@ SQLRETURN SQLColAttributeW ( SQLHSTMT statement_handle,
                         ERROR_IM001, NULL,
                         statement -> connection -> environment -> requested_version );
 
-                return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+                return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
             }
         }
         else
@@ -418,7 +442,7 @@ SQLRETURN SQLColAttributeW ( SQLHSTMT statement_handle,
                         ERROR_IM001, NULL,
                         statement -> connection -> environment -> requested_version );
 
-                return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+                return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
             }
         }
         else

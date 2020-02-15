@@ -256,7 +256,7 @@ SQLRETURN SQLGetData( SQLHSTMT statement_handle,
                 statement -> connection -> environment -> requested_version,
                 SQL_API_SQLGETDATA );
 
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
 
     /*
@@ -296,10 +296,12 @@ SQLRETURN SQLGetData( SQLHSTMT statement_handle,
                 ERROR_HY010, NULL,
                 statement -> connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
     else if ( statement -> state == STATE_S4 ||
-            statement -> state == STATE_S5 )
+            statement -> state == STATE_S5 ||
+            ( statement -> state == STATE_S6 || statement -> state == STATE_S7 )
+            && statement -> eod )
     {
         dm_log_write( __FILE__, 
                 __LINE__, 
@@ -311,7 +313,7 @@ SQLRETURN SQLGetData( SQLHSTMT statement_handle,
                 ERROR_24000, NULL,
                 statement -> connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
     else if ( statement -> state == STATE_S8 ||
             statement -> state == STATE_S9 ||
@@ -328,7 +330,7 @@ SQLRETURN SQLGetData( SQLHSTMT statement_handle,
                 ERROR_HY010, NULL,
                 statement -> connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
 
     if ( statement -> state == STATE_S11 ||
@@ -346,7 +348,7 @@ SQLRETURN SQLGetData( SQLHSTMT statement_handle,
                     ERROR_HY010, NULL,
                     statement -> connection -> environment -> requested_version );
 
-            return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+            return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
         }
     }
 
@@ -361,7 +363,7 @@ SQLRETURN SQLGetData( SQLHSTMT statement_handle,
                 ERROR_HY009, NULL,
                 statement -> connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
 
     if ( buffer_length < 0 ) {
@@ -375,7 +377,7 @@ SQLRETURN SQLGetData( SQLHSTMT statement_handle,
                 ERROR_HY090, NULL,
                 statement -> connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
 
     /*
@@ -387,7 +389,7 @@ SQLRETURN SQLGetData( SQLHSTMT statement_handle,
 	 * check valid C_TYPE
 	 */
 
-	if ( !check_target_type( target_type ))
+	if ( !check_target_type( target_type, statement -> connection -> environment -> requested_version ))
 	{
         dm_log_write( __FILE__, 
                 __LINE__, 
@@ -399,7 +401,7 @@ SQLRETURN SQLGetData( SQLHSTMT statement_handle,
                 ERROR_HY003, NULL,
                 statement -> connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
 	}
 
     if ( !CHECK_SQLGETDATA( statement -> connection ))
@@ -414,7 +416,7 @@ SQLRETURN SQLGetData( SQLHSTMT statement_handle,
                 ERROR_IM001, NULL,
                 statement -> connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
 
     if (statement -> connection -> driver_act_ver==SQL_OV_ODBC2)
@@ -480,10 +482,13 @@ SQLRETURN SQLGetData( SQLHSTMT statement_handle,
 
     if ( ret == SQL_STILL_EXECUTING )
     {
-        statement -> interupted_func = SQL_API_SQLCOLATTRIBUTE;
+        statement -> interupted_func = SQL_API_SQLGETDATA;
         if ( statement -> state != STATE_S11 &&
                 statement -> state != STATE_S12 )
+        {
+            statement -> interupted_state = statement -> state;
             statement -> state = STATE_S11;
+    }
     }
     else if ( SQL_SUCCEEDED( ret ) && unicode_switch )
     {
@@ -513,6 +518,12 @@ SQLRETURN SQLGetData( SQLHSTMT statement_handle,
         {
             *strlen_or_ind = ind_value;
         }
+    }
+
+    if ( ret != SQL_STILL_EXECUTING
+        && (statement -> state == STATE_S11 || statement -> state == STATE_S12) )
+    {
+        statement -> state = statement -> interupted_state;
     }
 
     if ( statement -> state == STATE_S14 ) {

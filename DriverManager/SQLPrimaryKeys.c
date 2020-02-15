@@ -220,7 +220,7 @@ SQLRETURN SQLPrimaryKeys(
                 ERROR_HY090, NULL,
                 statement -> connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
 
     /*
@@ -246,7 +246,7 @@ SQLRETURN SQLPrimaryKeys(
                 ERROR_24000, NULL,
                 statement -> connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
     else if ( statement -> state == STATE_S8 ||
             statement -> state == STATE_S9 ||
@@ -265,7 +265,7 @@ SQLRETURN SQLPrimaryKeys(
                 ERROR_HY010, NULL,
                 statement -> connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
 
     if ( statement -> state == STATE_S11 ||
@@ -283,7 +283,7 @@ SQLRETURN SQLPrimaryKeys(
                     ERROR_HY010, NULL,
                     statement -> connection -> environment -> requested_version );
 
-            return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+            return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
         }
     }
 
@@ -299,7 +299,7 @@ SQLRETURN SQLPrimaryKeys(
                 ERROR_HY009, NULL,
                 statement -> connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
 
     /*
@@ -323,15 +323,12 @@ SQLRETURN SQLPrimaryKeys(
                     ERROR_IM001, NULL,
                     statement -> connection -> environment -> requested_version );
 
-            return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+            return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
         }
 
         s1 = ansi_to_unicode_alloc( sz_catalog_name, cb_catalog_name, statement -> connection, &wlen );
-        cb_catalog_name = wlen;
         s2 = ansi_to_unicode_alloc( sz_schema_name, cb_schema_name, statement -> connection, &wlen );
-        cb_schema_name = wlen;
         s3 = ansi_to_unicode_alloc( sz_table_name, cb_table_name, statement -> connection, &wlen );
-        cb_table_name = wlen;
 
         ret = SQLPRIMARYKEYSW( statement -> connection ,
                 statement -> driver_stmt,
@@ -363,7 +360,7 @@ SQLRETURN SQLPrimaryKeys(
                     ERROR_IM001, NULL,
                     statement -> connection -> environment -> requested_version );
 
-            return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+            return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
         }
 
         ret = SQLPRIMARYKEYS( statement -> connection ,

@@ -1302,7 +1302,11 @@ void *__attr_override( void *handle, int type, int attribute, void *value, SQLIN
 
         if ( as -> is_int_type )
         {
+#ifdef HAVE_PTRDIFF_T
+            return (void*)(ptrdiff_t) as -> int_value;
+#else
             return (void*)(long) as -> int_value;
+#endif
         }
         else
         {
@@ -1364,7 +1368,11 @@ void *__attr_override_wide( void *handle, int type, int attribute, void *value, 
 
         if ( as -> is_int_type )
         {
+#ifdef HAVE_PTRDIFF_T
+            return (void*)(ptrdiff_t) as -> int_value;
+#else
             return (void*)(long) as -> int_value;
+#endif
         }
         else
         {
@@ -1397,9 +1405,17 @@ void *__attr_override_wide( void *handle, int type, int attribute, void *value, 
 
 int dm_check_connection_attrs( DMHDBC connection, SQLINTEGER attribute, SQLPOINTER value )
 {
+#ifdef HAVE_PTRDIFF_T
+    ptrdiff_t ival;
+#else
     SQLINTEGER ival;
+#endif
 
+#ifdef HAVE_PTRDIFF_T
+    ival = (ptrdiff_t) value;
+#else
     ival = (SQLINTEGER) value;
+#endif
 
     switch( attribute ) 
     {
@@ -1448,6 +1464,14 @@ int dm_check_connection_attrs( DMHDBC connection, SQLINTEGER attribute, SQLPOINT
 
         case SQL_ATTR_TRACE:
             if ( ival != SQL_OPT_TRACE_ON && ival != SQL_OPT_TRACE_OFF ) 
+            {
+                return SQL_ERROR;
+            }
+            break;
+
+        case SQL_ATTR_TXN_ISOLATION:
+            if ( ival != SQL_TXN_READ_UNCOMMITTED && ival != SQL_TXN_READ_COMMITTED
+                && ival != SQL_TXN_REPEATABLE_READ && ival != SQL_TXN_SERIALIZABLE )
             {
                 return SQL_ERROR;
             }
@@ -1534,9 +1558,17 @@ int dm_check_connection_attrs( DMHDBC connection, SQLINTEGER attribute, SQLPOINT
 
 int dm_check_statement_attrs( DMHSTMT statement, SQLINTEGER attribute, SQLPOINTER value )
 {
+#ifdef HAVE_PTRDIFF_T
+    ptrdiff_t ival;
+#else
     SQLUINTEGER ival;
+#endif
 
+#ifdef HAVE_PTRDIFF_T
+    ival = (ptrdiff_t) value;
+#else
     ival = (SQLUINTEGER) value;
+#endif
 
     switch( attribute ) 
     {
@@ -1614,6 +1646,9 @@ int dm_check_statement_attrs( DMHSTMT statement, SQLINTEGER attribute, SQLPOINTE
                 return SQL_ERROR;
             }
             break;
+
+        case SQL_ROWSET_SIZE:
+            return ival > 0 ? SQL_SUCCESS : SQL_ERROR;
 
         default:
             return SQL_SUCCESS;

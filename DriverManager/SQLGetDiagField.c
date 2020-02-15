@@ -215,6 +215,7 @@ static int is_char_diag( int diag_identifier )
     switch( diag_identifier ) {
         case SQL_DIAG_CLASS_ORIGIN:
         case SQL_DIAG_CONNECTION_NAME:
+        case SQL_DIAG_DYNAMIC_FUNCTION:
         case SQL_DIAG_MESSAGE_TEXT:
         case SQL_DIAG_SERVER_NAME:
         case SQL_DIAG_SQLSTATE:
@@ -235,6 +236,11 @@ static SQLRETURN extract_sql_error_field( EHEAD *head,
 {
     ERROR *ptr;
 
+    if ( is_char_diag( diag_identifier ) && buffer_length < 0 )
+    {
+        return SQL_ERROR;
+    }
+    
     /*
      * check the header fields first
      */
@@ -247,7 +253,7 @@ static SQLRETURN extract_sql_error_field( EHEAD *head,
             SQLLEN val;
             SQLRETURN ret;
 
-            if ( head -> handle_type != SQL_HANDLE_STMT )
+            if ( rec_number > 0 || head -> handle_type != SQL_HANDLE_STMT )
             {
                 return SQL_ERROR;
             }
@@ -325,15 +331,27 @@ static SQLRETURN extract_sql_error_field( EHEAD *head,
         {
             SQLRETURN ret;
 
-            if ( head -> handle_type != SQL_HANDLE_STMT )
+            if ( rec_number > 0 )
             {
                 return SQL_ERROR;
+            }
+            else if ( head -> handle_type != SQL_HANDLE_STMT )
+            {
+                if ( diag_info_ptr )
+                {
+                    strcpy( diag_info_ptr, "" );
+                }
+                if ( string_length_ptr )
+                {
+                    *string_length_ptr = 0;
+                }
+                return SQL_SUCCESS;
             }
             else if ( head -> header_set )
             {
                 if ( SQL_SUCCEEDED( head -> diag_dynamic_function_ret ) && diag_info_ptr )
                 {
-                    unicode_to_ansi_copy( diag_info_ptr, buffer_length, head -> diag_dynamic_function, buffer_length, __get_connection( head ), NULL );
+                    unicode_to_ansi_copy( diag_info_ptr, buffer_length, head -> diag_dynamic_function, SQL_NTS, __get_connection( head ), NULL );
                     if ( string_length_ptr )
                     {
                         *string_length_ptr = wide_strlen( head -> diag_dynamic_function );
@@ -357,12 +375,17 @@ static SQLRETURN extract_sql_error_field( EHEAD *head,
                         0,
                         diag_identifier,
                         s1 ? s1 : diag_info_ptr,
-                        buffer_length,
+                        buffer_length * sizeof ( SQLWCHAR ),
                         string_length_ptr );
 
                 if ( SQL_SUCCEEDED( ret ) && diag_info_ptr && s1 )
                 {
                     unicode_to_ansi_copy( diag_info_ptr, buffer_length, s1, buffer_length, __get_connection( head ), NULL );
+                }
+
+                if ( string_length_ptr && *string_length_ptr > 0 )
+                {
+                    *string_length_ptr /= sizeof ( SQLWCHAR );
                 }
 
                 if ( s1 )
@@ -398,9 +421,14 @@ static SQLRETURN extract_sql_error_field( EHEAD *head,
             SQLINTEGER val;
             SQLRETURN ret;
 
-            if ( head -> handle_type != SQL_HANDLE_STMT )
+            if ( rec_number > 0  )
             {
                 return SQL_ERROR;
+            }
+            else if ( head -> handle_type != SQL_HANDLE_STMT )
+            {
+                *((SQLINTEGER*)diag_info_ptr) = 0;
+                return SQL_SUCCESS;
             }
             else if ( head -> header_set )
             {
@@ -454,6 +482,10 @@ static SQLRETURN extract_sql_error_field( EHEAD *head,
         {
             SQLINTEGER val;
             
+            if ( rec_number > 0 )
+            {
+                return SQL_ERROR;
+            }
             val = head -> sql_diag_head.internal_count + 
                 head -> sql_diag_head.error_count;
 
@@ -479,7 +511,9 @@ static SQLRETURN extract_sql_error_field( EHEAD *head,
      * else check the records
      */
 
-    if ( rec_number < 1 )
+    if ( rec_number < 1 ||
+        ( diag_identifier == SQL_DIAG_COLUMN_NUMBER ||
+          diag_identifier == SQL_DIAG_ROW_NUMBER ) && head -> handle_type != SQL_HANDLE_STMT )
     {
         return SQL_ERROR;
     }
@@ -510,11 +544,10 @@ static SQLRETURN extract_sql_error_field( EHEAD *head,
         {
             SQLRETURN ret;
             SQLWCHAR *s1 = NULL;
-			int char_buffer_len = sizeof( SQLWCHAR ) * buffer_length;
 
-            if ( is_char_diag( diag_identifier ) && diag_info_ptr && buffer_length > 0 )
+            if ( diag_info_ptr && buffer_length > 0 )
             {
-                s1 = malloc( char_buffer_len + sizeof( SQLWCHAR ));
+                s1 = malloc( ( buffer_length + 1 ) * sizeof( SQLWCHAR ));
             }
 
             ret = SQLGETDIAGFIELDW( __get_connection( head ),
@@ -523,22 +556,22 @@ static SQLRETURN extract_sql_error_field( EHEAD *head,
                     rec_number,
                     diag_identifier,
                     s1 ? s1 : diag_info_ptr,
-                    s1 ? char_buffer_len + sizeof( SQLWCHAR ) : buffer_length,
+                    s1 ? ( buffer_length + 1 ) * sizeof( SQLWCHAR ) : buffer_length,
                     string_length_ptr );
 
             if ( SQL_SUCCEEDED( ret ) && s1 && diag_info_ptr )
             {
                 unicode_to_ansi_copy( diag_info_ptr, buffer_length, s1, SQL_NTS, __get_connection( head ), NULL );
+
+                if ( string_length_ptr && *string_length_ptr > 0 ) 
+            {
+                    *string_length_ptr /= sizeof( SQLWCHAR );
+                }
             }
 
             if ( s1 )
-            {
-                free( s1 );
-            }
-
-			if ( string_length_ptr && *string_length_ptr > 0 ) 
 			{
-				*string_length_ptr /= sizeof( SQLWCHAR );
+                free( s1 );
 			}
 
             if ( SQL_SUCCEEDED( ret ) && diag_identifier == SQL_DIAG_SQLSTATE )
@@ -613,7 +646,7 @@ static SQLRETURN extract_sql_error_field( EHEAD *head,
         {
             if ( SQL_SUCCEEDED( ptr -> diag_class_origin_ret ))
             {
-                unicode_to_ansi_copy( diag_info_ptr, buffer_length, ptr -> diag_class_origin, buffer_length, __get_connection( head ), NULL );
+                unicode_to_ansi_copy( diag_info_ptr, buffer_length, ptr -> diag_class_origin, SQL_NTS, __get_connection( head ), NULL );
                 if ( string_length_ptr )
                 {
                     *string_length_ptr = wide_strlen( ptr -> diag_class_origin );
@@ -641,7 +674,7 @@ static SQLRETURN extract_sql_error_field( EHEAD *head,
         {
             if ( SQL_SUCCEEDED( ptr -> diag_connection_name_ret ))
             {
-                unicode_to_ansi_copy( diag_info_ptr, buffer_length, ptr -> diag_connection_name, buffer_length, __get_connection( head ), NULL );
+                unicode_to_ansi_copy( diag_info_ptr, buffer_length, ptr -> diag_connection_name, SQL_NTS, __get_connection( head ), NULL );
                 if ( string_length_ptr )
                 {
                     *string_length_ptr = wide_strlen( ptr -> diag_connection_name );
@@ -713,7 +746,7 @@ static SQLRETURN extract_sql_error_field( EHEAD *head,
         {
             if ( SQL_SUCCEEDED( ptr -> diag_server_name_ret ))
             {
-                unicode_to_ansi_copy( diag_info_ptr, buffer_length, ptr -> diag_server_name, buffer_length, __get_connection( head ), NULL );
+                unicode_to_ansi_copy( diag_info_ptr, buffer_length, ptr -> diag_server_name, SQL_NTS, __get_connection( head ), NULL );
                 if ( string_length_ptr )
                 {
                     *string_length_ptr = wide_strlen( ptr -> diag_server_name );
@@ -772,7 +805,7 @@ static SQLRETURN extract_sql_error_field( EHEAD *head,
         {
             if ( SQL_SUCCEEDED( ptr -> diag_subclass_origin_ret ))
             {
-                unicode_to_ansi_copy( diag_info_ptr, buffer_length, ptr -> diag_subclass_origin, buffer_length, __get_connection( head ), NULL );
+                unicode_to_ansi_copy( diag_info_ptr, buffer_length, ptr -> diag_subclass_origin, SQL_NTS, __get_connection( head ), NULL );
                 if ( string_length_ptr )
                 {
                     *string_length_ptr = wide_strlen( ptr -> diag_subclass_origin );

@@ -223,7 +223,7 @@ struct save_attr
     int                 attr_type;
     char                *str_attr;
     int                 str_len;
-    int                 int_attr;
+    SQLLEN              int_attr;
     struct save_attr    *next;
 };
 
@@ -275,6 +275,7 @@ typedef struct environment
     struct environment *next_class_list;/* static list of all env handles */
     char            msg[ LOG_MSG_MAX ];	/* buff to format msgs */
     int             state;              /* state of environment */
+    int             version_set;        /* whether ODBC version has been set */
     SQLINTEGER      requested_version;  /* SQL_OV_ODBC2 or SQL_OV_ODBC3 */
     int             connection_count;   /* number of hdbc of this env */
     int             sql_driver_count;   /* used for SQLDrivers */
@@ -621,6 +622,7 @@ typedef enum error_id
     ERROR_HY024,
     ERROR_HY090,
     ERROR_HY092,
+    ERROR_HY095,
     ERROR_HY097,
     ERROR_HY098,
     ERROR_HY099,
@@ -664,12 +666,25 @@ void __post_internal_error_ex( EHEAD *error_handle,
         SQLCHAR *message_text,
         int class_origin,
         int subclass_origin );
+void __post_internal_error_ex_noprefix( EHEAD *error_handle,
+        SQLCHAR *sqlstate,
+        SQLINTEGER native_error,
+        SQLCHAR *message_text,
+        int class_origin,
+        int subclass_origin );
 void __post_internal_error_ex_w( EHEAD *error_handle,
         SQLWCHAR *sqlstate,
         SQLINTEGER native_error,
         SQLWCHAR *message_text,
         int class_origin,
         int subclass_origin );
+void __post_internal_error_ex_w_noprefix( EHEAD *error_handle,
+        SQLWCHAR *sqlstate,
+        SQLINTEGER native_error,
+        SQLWCHAR *message_text,
+        int class_origin,
+        int subclass_origin );
+int function_return_nodrv( int level, void *handle, int ret_code );
 int function_return_ex( int level, void * handle, int ret_code, int save_to_diag );
 void function_entry( void *handle );
 void setup_error_head( EHEAD *error_header, void *handle, int handle_type );
@@ -810,6 +825,7 @@ void __get_attr( char ** cp, char ** keyword, char ** value );
 struct con_pair * __get_pair( char ** cp );
 int __append_pair( struct con_struct *con_str, char *kword, char *value );
 void __handle_attr_extensions_cs( DMHDBC connection, struct con_struct *con_str );
+void __strip_from_pool( DMHENV env );
 
 /*
  * the following two are part of a effort to get a particular unicode driver working
@@ -822,7 +838,7 @@ SQLINTEGER map_ca_odbc2_to_3( SQLINTEGER field_identifier );
  * check the type passed to SQLBindCol is a valid C_TYPE
  */
 
-int check_target_type( int c_type );
+int check_target_type( int c_type, int connection_mode);
 
 /*
  * entry exit functions in drivers

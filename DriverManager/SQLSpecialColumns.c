@@ -215,40 +215,6 @@ SQLRETURN SQLSpecialColumns( SQLHSTMT statement_handle,
 
     thread_protect( SQL_HANDLE_STMT, statement );
 
-    /*
-     * Check the SQL_ATTR_METADATA_ID settings
-     */
-
-    if ( statement -> metadata_id == SQL_TRUE &&
-            schema_name == NULL )
-    {
-        __post_internal_error( &statement -> error,
-                ERROR_HY009, NULL,
-                statement -> connection -> environment -> requested_version );
-
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
-    }
-
-    if ( table_name == NULL )
-    {
-        __post_internal_error( &statement -> error,
-                ERROR_HY009, NULL,
-                statement -> connection -> environment -> requested_version );
-
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
-    }
-
-    if (( name_length1 < 0 && name_length1 != SQL_NTS ) ||
-            ( name_length2 < 0 && name_length3 != SQL_NTS ) ||
-            ( name_length3 < 0 && name_length3 != SQL_NTS ))
-    {
-        __post_internal_error( &statement -> error,
-                ERROR_HY090, NULL,
-                statement -> connection -> environment -> requested_version );
-
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
-    }
-
     if ( identifier_type != SQL_BEST_ROWID &&
             identifier_type != SQL_ROWVER )
     {
@@ -262,7 +228,49 @@ SQLRETURN SQLSpecialColumns( SQLHSTMT statement_handle,
                 ERROR_HY097, NULL,
                 statement -> connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
+    }
+
+    if ( name_length1 < 0 && name_length1 != SQL_NTS ||
+         name_length2 < 0 && name_length2 != SQL_NTS )
+    {
+        __post_internal_error( &statement -> error,
+                ERROR_HY090, NULL,
+                statement -> connection -> environment -> requested_version );
+
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
+    }
+
+    if ( table_name == NULL )
+    {
+        __post_internal_error( &statement -> error,
+                ERROR_HY009, NULL,
+                statement -> connection -> environment -> requested_version );
+
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
+    }
+
+    if ( name_length3 < 0 && name_length3 != SQL_NTS )
+    {
+        __post_internal_error( &statement -> error,
+                ERROR_HY090, NULL,
+                statement -> connection -> environment -> requested_version );
+
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
+    }
+
+    /*
+     * Check the SQL_ATTR_METADATA_ID settings
+     */
+
+    if ( statement -> metadata_id == SQL_TRUE &&
+            schema_name == NULL )
+    {
+        __post_internal_error( &statement -> error,
+                ERROR_HY009, NULL,
+                statement -> connection -> environment -> requested_version );
+
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
 
     if ( scope != SQL_SCOPE_CURROW &&
@@ -279,7 +287,7 @@ SQLRETURN SQLSpecialColumns( SQLHSTMT statement_handle,
                 ERROR_HY098, NULL,
                 statement -> connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR ); 
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR ); 
     }
 
     if ( nullable != SQL_NO_NULLS &&
@@ -295,7 +303,7 @@ SQLRETURN SQLSpecialColumns( SQLHSTMT statement_handle,
                 ERROR_HY099, NULL,
                 statement -> connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
 
     /*
@@ -321,7 +329,7 @@ SQLRETURN SQLSpecialColumns( SQLHSTMT statement_handle,
                 ERROR_24000, NULL,
                 statement -> connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR ); 
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR ); 
     }
     else if ( statement -> state == STATE_S8 ||
             statement -> state == STATE_S9 ||
@@ -340,7 +348,7 @@ SQLRETURN SQLSpecialColumns( SQLHSTMT statement_handle,
                 ERROR_HY010, NULL,
                 statement -> connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
 
     if ( statement -> state == STATE_S11 ||
@@ -358,7 +366,7 @@ SQLRETURN SQLSpecialColumns( SQLHSTMT statement_handle,
                     ERROR_HY010, NULL,
                     statement -> connection -> environment -> requested_version );
 
-            return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+            return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
         }
     }
 
@@ -379,7 +387,7 @@ SQLRETURN SQLSpecialColumns( SQLHSTMT statement_handle,
                     ERROR_IM001, NULL,
                     statement -> connection -> environment -> requested_version );
 
-            return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+            return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
         }
 
         s1 = ansi_to_unicode_alloc( catalog_name, name_length1, statement -> connection, &wlen );
@@ -422,7 +430,7 @@ SQLRETURN SQLSpecialColumns( SQLHSTMT statement_handle,
                     ERROR_IM001, NULL,
                     statement -> connection -> environment -> requested_version );
 
-            return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+            return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
         }
 
         ret = SQLSPECIALCOLUMNS( statement -> connection ,
