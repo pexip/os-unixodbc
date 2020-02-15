@@ -10,7 +10,7 @@ Standards-Version: 3.9.8
 Homepage: http://www.unixodbc.org/
 Vcs-Bzr: nosmart+http://bzr.debian.org/bzr/users/vorlon/unixodbc/trunk/
 Vcs-Browser: http://anonscm.debian.org/loggerhead/users/vorlon/unixodbc/trunk/
-XS-Pexip-Upstream: http://ftp.debian.org/debian/ stretch
+XS-Pexip-Upstream: http://ftp.debian.org/debian/ buster
 
 Package: unixodbc
 Architecture: any
