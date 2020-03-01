@@ -1,3 +1,9 @@
+unixodbc (2.3.6-0.1pexip1) pexip; urgency=medium
+
+  * Migrate to Buster
+
+ -- Vincent Sanders <vince@pexip.com>  Sun, 01 Mar 2020 21:43:07 +0000
+
 unixodbc (2.3.6-0.1) unstable; urgency=medium
 
   * Non-maintainer upload.
