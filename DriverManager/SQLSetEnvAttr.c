@@ -198,7 +198,11 @@ SQLRETURN SQLSetEnvAttr( SQLHENV environment_handle,
     {
       case SQL_ATTR_CONNECTION_POOLING:
         {
+#ifdef HAVE_PTRDIFF_T
+            SQLUINTEGER ptr = (ptrdiff_t) value;
+#else
             SQLUINTEGER ptr = (SQLUINTEGER) value;
+#endif
 
             if ( ptr != SQL_CP_OFF &&
                 ptr != SQL_CP_ONE_PER_DRIVER &&
@@ -214,7 +218,7 @@ SQLRETURN SQLSetEnvAttr( SQLHENV environment_handle,
                         ERROR_HY024, NULL,
                         environment -> requested_version );
 
-                return function_return( SQL_HANDLE_ENV, environment, SQL_ERROR );
+                return function_return_nodrv( SQL_HANDLE_ENV, environment, SQL_ERROR );
             }
 
             environment -> connection_pooling = ptr;
@@ -223,7 +227,11 @@ SQLRETURN SQLSetEnvAttr( SQLHENV environment_handle,
 
       case SQL_ATTR_CP_MATCH:
         {
+#ifdef HAVE_PTRDIFF_T
+            SQLUINTEGER ptr = (ptrdiff_t) value;
+#else
             SQLUINTEGER ptr = (SQLUINTEGER) value;
+#endif
 
             if ( ptr != SQL_CP_STRICT_MATCH &&
                 ptr != SQL_CP_RELAXED_MATCH )
@@ -238,7 +246,7 @@ SQLRETURN SQLSetEnvAttr( SQLHENV environment_handle,
                         ERROR_HY024, NULL,
                         environment -> requested_version );
 
-                return function_return( SQL_HANDLE_ENV, environment, SQL_ERROR );
+                return function_return_nodrv( SQL_HANDLE_ENV, environment, SQL_ERROR );
             }
 
             environment -> cp_match = ptr;
@@ -247,7 +255,11 @@ SQLRETURN SQLSetEnvAttr( SQLHENV environment_handle,
 
       case SQL_ATTR_ODBC_VERSION:
         {
+#ifdef HAVE_PTRDIFF_T
+            SQLUINTEGER ptr = (ptrdiff_t) value;
+#else
             SQLUINTEGER ptr = (SQLUINTEGER) value;
+#endif
 
             if ( ptr != SQL_OV_ODBC2 &&
                     ptr != SQL_OV_ODBC3 &&
@@ -263,7 +275,7 @@ SQLRETURN SQLSetEnvAttr( SQLHENV environment_handle,
                         ERROR_HY024, NULL,
                         environment -> requested_version );
 
-                return function_return( SQL_HANDLE_ENV, environment, SQL_ERROR );
+                return function_return_nodrv( SQL_HANDLE_ENV, environment, SQL_ERROR );
             }
             else
             {
@@ -279,17 +291,22 @@ SQLRETURN SQLSetEnvAttr( SQLHENV environment_handle,
                             ERROR_S1010, NULL,
                             environment -> requested_version );
 
-                    return function_return( SQL_HANDLE_ENV, environment, SQL_ERROR );
+                    return function_return_nodrv( SQL_HANDLE_ENV, environment, SQL_ERROR );
                 }
 
                 environment -> requested_version = ptr;
+                environment -> version_set = 1;
             }
         }
         break;
 
       case SQL_ATTR_OUTPUT_NTS:
         {
+#ifdef HAVE_PTRDIFF_T
+            SQLUINTEGER ptr = (ptrdiff_t) value;
+#else
             SQLUINTEGER ptr = (SQLUINTEGER) value;
+#endif
 
             /*
              * this must be one of the most brain dead atribute,
@@ -310,7 +327,7 @@ SQLRETURN SQLSetEnvAttr( SQLHENV environment_handle,
                         ERROR_HYC00, NULL,
                         environment -> requested_version );
 
-                return function_return( SQL_HANDLE_ENV, environment, SQL_ERROR );
+                return function_return_nodrv( SQL_HANDLE_ENV, environment, SQL_ERROR );
             }
         }
         break;
@@ -329,7 +346,7 @@ SQLRETURN SQLSetEnvAttr( SQLHENV environment_handle,
              */
             putenv( strdup( str ));
 
-            return function_return( SQL_HANDLE_ENV, environment, SQL_ERROR );
+            return function_return_nodrv( SQL_HANDLE_ENV, environment, SQL_ERROR );
         }
         break;
 
@@ -351,7 +368,7 @@ SQLRETURN SQLSetEnvAttr( SQLHENV environment_handle,
                 ERROR_HY092, NULL,
                 environment -> requested_version );
 
-        return function_return( SQL_HANDLE_ENV, environment, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_ENV, environment, SQL_ERROR );
     }
 
     if ( log_info.log_flag )
@@ -367,5 +384,5 @@ SQLRETURN SQLSetEnvAttr( SQLHENV environment_handle,
                 environment -> msg );
     }
 
-    return function_return( SQL_HANDLE_ENV, environment, SQL_SUCCESS );
+    return function_return_nodrv( SQL_HANDLE_ENV, environment, SQL_SUCCESS );
 }

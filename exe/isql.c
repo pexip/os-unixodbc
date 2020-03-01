@@ -74,6 +74,14 @@ int main( int argc, char *argv[] )
     int     line_buffer_size = 9000;
     int     bufpos,linen;
     char    prompt[24];
+#ifdef HAVE_READLINE
+    char    *rlhistory; /* readline history path */
+
+    rlhistory = strdup(getenv("HOME"));
+    rlhistory = realloc(rlhistory, strlen(rlhistory)+16);
+    strcat(rlhistory, "/.isql_history");
+    read_history(rlhistory);
+#endif
 
     szDSN = NULL;
     szUID = NULL;
@@ -250,14 +258,24 @@ int main( int argc, char *argv[] )
             if ( !line )        /* EOF - ctrl D */
             {
                 malloced = 1;
-                line = strdup( "quit" );
+                if ( bNewStyle )
+                {
+                    line = strdup( "\\quit" );
+                }
+                else
+                {
+                    line = strdup( "quit" );
+                }
             }
             else
             {
                 malloced = 0;
             }
 
-            add_history(line);
+            if ( strcmp(line, "quit") && strcmp(line, "\\quit") ) 
+            {
+                add_history(line);
+            }
 #else
             fputs( prompt, stdout );
 
@@ -265,14 +283,28 @@ int main( int argc, char *argv[] )
             if ( !line )        /* EOF - ctrl D */
             {
                 malloced = 1;
-                line = strdup( "quit" );
+                if ( bNewStyle )
+                {
+                    line = strdup( "\\quit" );
+                }
+                else
+                {
+                    line = strdup( "quit" );
+                }
             }
             else
             {
 				if ( line[ 0 ] == '\n' ) 
 				{
 					malloced = 1;
-					line = strdup( "quit" );
+                    if ( bNewStyle )
+                    {
+                        line = strdup( "\\quit" );
+                    }
+                    else
+                    {
+					    line = strdup( "quit" );
+                    }
 				}
 				else 
 				{
@@ -287,14 +319,28 @@ int main( int argc, char *argv[] )
             if ( !line )        /* EOF - ctrl D */
             {
                 malloced = 1;
-                line = strdup( "quit" );
+                if ( bNewStyle )
+                {
+                    line = strdup( "\\quit" );
+                }
+                else
+                {
+                    line = strdup( "quit" );
+                }
             }
             else
             {
 				if ( line[ 0 ] == '\n' ) 
 				{
 					malloced = 1;
-					line = strdup( "quit" );
+                    if ( bNewStyle )
+                    {
+                        line = strdup( "\\quit" );
+                    }
+                    else
+                    {
+					    line = strdup( "quit" );
+                    }
 				}
 				else 
 				{
@@ -450,6 +496,11 @@ int main( int argc, char *argv[] )
     /****************************
      * DISCONNECT
      ***************************/
+
+#ifdef HAVE_READLINE
+    write_history(rlhistory);
+#endif
+
     CloseDatabase( hEnv, hDbc );
 
     exit( 0 );
@@ -623,6 +674,11 @@ static void display_result_set( SQLHDBC hDbc, SQLHSTMT hStmt )
                 if ( bVerbose ) DumpODBCLog( hEnv, hDbc, hStmt );
                 fprintf( stderr, "[ISQL]INFO: SQLMoreResults returned SQL_SUCCESS_WITH_INFO\n" );
             }
+            else if ( ret == SQL_ERROR )
+            {
+                if ( bVerbose ) DumpODBCLog( hEnv, hDbc, hStmt );
+                fprintf( stderr, "[ISQL]ERROR: SQLMoreResults returned SQL_ERROR\n" );
+            }
         }
         mr = 1;
         strcpy ((char*) szSepLine, "" ) ;
@@ -669,7 +725,7 @@ static void display_result_set( SQLHDBC hDbc, SQLHSTMT hStmt )
         else if ( cDelimiter == 0 )
             WriteFooterNormal( hStmt, szSepLine, nRows );
     }
-    while ( has_moreresults && SQL_SUCCEEDED( ret = SQLMoreResults( hStmt )));
+    while ( has_moreresults && ( ret = SQLMoreResults( hStmt )) != SQL_NO_DATA );
 
     free( szSepLine );
 }
@@ -1017,6 +1073,11 @@ ExecuteSQL( SQLHDBC hDbc, char *szSQL, char cDelimiter, int bColumnNames, int bH
                 if ( bVerbose ) DumpODBCLog( hEnv, hDbc, hStmt );
                 fprintf( stderr, "[ISQL]INFO: SQLMoreResults returned SQL_SUCCESS_WITH_INFO\n" );
             }
+            else if ( ret == SQL_ERROR )
+            {
+                if ( bVerbose ) DumpODBCLog( hEnv, hDbc, hStmt );
+                fprintf( stderr, "[ISQL]ERROR: SQLMoreResults returned SQL_ERROR\n" );
+            }
         }
         mr = 1;
         strcpy ((char*) szSepLine, "" ) ;
@@ -1065,7 +1126,7 @@ ExecuteSQL( SQLHDBC hDbc, char *szSQL, char cDelimiter, int bColumnNames, int bH
         else if ( cDelimiter == 0 )
             WriteFooterNormal( hStmt, szSepLine, nRows );
     }
-    while ( has_moreresults && SQL_SUCCEEDED( ret = SQLMoreResults( hStmt )));
+    while ( has_moreresults && ( ret = SQLMoreResults( hStmt )) != SQL_NO_DATA );
 
     /****************************
      * CLEANUP
@@ -1681,7 +1742,7 @@ static int DumpODBCLog( SQLHENV hEnv, SQLHDBC hDbc, SQLHSTMT hStmt )
     {
         if ( hStmt )
         {
-            while ( SQLError( hEnv, hDbc, hStmt, szSqlState, &nNativeError, szError, 500, &nErrorMsg ) == SQL_SUCCESS )
+            while ( SQL_SUCCEEDED( SQLError( hEnv, hDbc, hStmt, szSqlState, &nNativeError, szError, 500, &nErrorMsg )))
             {
                 printf( "[%s]%s\n", szSqlState, szError );
             }
@@ -1689,7 +1750,7 @@ static int DumpODBCLog( SQLHENV hEnv, SQLHDBC hDbc, SQLHSTMT hStmt )
 
         if ( hDbc )
         {
-            while ( SQLError( hEnv, hDbc, 0, szSqlState, &nNativeError, szError, 500, &nErrorMsg ) == SQL_SUCCESS )
+            while ( SQL_SUCCEEDED( SQLError( hEnv, hDbc, 0, szSqlState, &nNativeError, szError, 500, &nErrorMsg )))
             {
                 printf( "[%s]%s\n", szSqlState, szError );
             }
@@ -1697,7 +1758,7 @@ static int DumpODBCLog( SQLHENV hEnv, SQLHDBC hDbc, SQLHSTMT hStmt )
 
         if ( hEnv )
         {
-            while ( SQLError( hEnv, 0, 0, szSqlState, &nNativeError, szError, 500, &nErrorMsg ) == SQL_SUCCESS )
+            while ( SQL_SUCCEEDED( SQLError( hEnv, 0, 0, szSqlState, &nNativeError, szError, 500, &nErrorMsg )))
             {
                 printf( "[%s]%s\n", szSqlState, szError );
             }

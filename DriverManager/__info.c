@@ -492,6 +492,12 @@ int unicode_setup( DMHDBC connection )
     union { long l; char c[sizeof (long)]; } u;
     int be;
 
+    if ( connection -> iconv_cd_uc_to_ascii != (iconv_t)(-1) &&
+         connection -> iconv_cd_ascii_to_uc != (iconv_t)(-1))
+    {
+        return 1;
+    }
+
     /*
      * is this a bigendian machine ?
      */
@@ -689,13 +695,13 @@ char *unicode_to_ansi_alloc( SQLWCHAR *str, SQLINTEGER len, DMHDBC connection, i
         len = wide_strlen( str ) + 1;
     }
 
-    aptr = malloc( len + 1 );
+    aptr = malloc(( len * 4 ) + 1 );       /* There may be UTF8 */
     if ( !aptr )
     {
         return NULL;
     }
 
-    return unicode_to_ansi_copy( aptr, len, str, len, connection, clen );
+    return unicode_to_ansi_copy( aptr, len * 4, str, len, connection, clen );
 }
 
 /*
@@ -738,7 +744,10 @@ char *unicode_to_ansi_copy( char * dest, int dest_len, SQLWCHAR *src, SQLINTEGER
                 *clen = opt - dest;
             }
 	        /* Null terminate outside of iconv, so that the length returned does not include the null terminator. */
-	        dest[opt - dest] = '\0';
+            if ( obl )
+            {
+	            *opt = '\0';
+            }
             return dest;
         }
     }
@@ -761,7 +770,10 @@ char *unicode_to_ansi_copy( char * dest, int dest_len, SQLWCHAR *src, SQLINTEGER
         *clen = i;
     }
 
-    dest[ i ] = '\0';
+    if (dest_len)
+    {
+        dest[ i < dest_len ? i : i-1 ] = '\0';
+    }
 
     return dest;
 }
@@ -3866,13 +3878,7 @@ void __post_internal_error_ex( EHEAD *error_header,
         int class_origin,
         int subclass_origin )
 {
-    /*
-     * create a error block and add to the lists,
-     * leave space for the error prefix
-     */
-
     SQLCHAR msg[ SQL_MAX_MESSAGE_LENGTH + 32 ];
-    ERROR *e1, *e2;
 
     /*
      * add our prefix
@@ -3880,6 +3886,30 @@ void __post_internal_error_ex( EHEAD *error_header,
 
     strcpy((char*) msg, ERROR_PREFIX );
     strcat((char*) msg, (char*) message_text );
+
+    __post_internal_error_ex_noprefix(
+        error_header,
+        sqlstate,
+        native_error,
+        msg,
+        class_origin,
+        subclass_origin );
+}
+
+void __post_internal_error_ex_noprefix( EHEAD *error_header,
+        SQLCHAR *sqlstate,
+        SQLINTEGER native_error,
+        SQLCHAR *msg,
+        int class_origin,
+        int subclass_origin )
+{
+    /*
+     * create a error block and add to the lists,
+     * leave space for the error prefix
+     */
+
+    ERROR *e1, *e2;
+    DMHDBC conn = __get_connection( error_header );
 
     e1 = malloc( sizeof( ERROR ));
     if (e1 == NULL)
@@ -3897,10 +3927,10 @@ void __post_internal_error_ex( EHEAD *error_header,
     e1 -> native_error = native_error;
     e2 -> native_error = native_error;
     ansi_to_unicode_copy(e1 -> sqlstate,
-                         (char*)sqlstate, SQL_NTS, __get_connection( error_header ), NULL );
+                         (char*)sqlstate, SQL_NTS, conn, NULL );
     wide_strcpy( e2 -> sqlstate, e1 -> sqlstate );
 
-    e1 -> msg = ansi_to_unicode_alloc( msg, SQL_NTS, __get_connection( error_header ), NULL );
+    e1 -> msg = ansi_to_unicode_alloc( msg, SQL_NTS, conn, NULL );
     if ( !e1 -> msg )
     {
         free( e1 );
@@ -3939,26 +3969,26 @@ void __post_internal_error_ex( EHEAD *error_header,
 
     if ( class_origin == SUBCLASS_ODBC )
     	ansi_to_unicode_copy( e1 -> diag_class_origin, (char*) "ODBC 3.0",
-			      SQL_NTS, __get_connection( error_header ), NULL );
+			      SQL_NTS, conn, NULL );
     else
     	ansi_to_unicode_copy( e1 -> diag_class_origin, (char*) "ISO 9075",
-			      SQL_NTS, __get_connection( error_header ), NULL );
+			      SQL_NTS, conn, NULL );
     wide_strcpy( e2 -> diag_class_origin, e1 -> diag_class_origin );
 
     if ( subclass_origin == SUBCLASS_ODBC )
     	ansi_to_unicode_copy( e1 -> diag_subclass_origin, (char*) "ODBC 3.0",
-			      SQL_NTS, __get_connection( error_header ), NULL );
+			      SQL_NTS, conn, NULL );
     else
     	ansi_to_unicode_copy( e1 -> diag_subclass_origin, (char*) "ISO 9075",
-			      SQL_NTS, __get_connection( error_header ), NULL );
+			      SQL_NTS, conn, NULL );
     wide_strcpy( e2 -> diag_subclass_origin, e1 -> diag_subclass_origin );
 
     ansi_to_unicode_copy( e1 -> diag_connection_name, (char*) "", SQL_NTS,
-			  __get_connection( error_header ), NULL );
+			  conn, NULL );
     wide_strcpy( e2 -> diag_connection_name, e1 -> diag_connection_name );
 
-    ansi_to_unicode_copy( e1 -> diag_server_name, (char*) "", SQL_NTS,
-			  __get_connection( error_header ), NULL );
+    ansi_to_unicode_copy( e1 -> diag_server_name, conn ? conn->dsn : (char*) "", SQL_NTS,
+			  conn, NULL );
     wide_strcpy( e2 -> diag_server_name, e1 -> diag_server_name );
 
     /*
@@ -3977,13 +4007,7 @@ void __post_internal_error_ex_w( EHEAD *error_header,
         int class_origin,
         int subclass_origin )
 {
-    /*
-     * create a error block and add to the lists,
-     * leave space for the error prefix
-     */
-
     SQLWCHAR msg[ SQL_MAX_MESSAGE_LENGTH + 32 ];
-    ERROR *e1, *e2;
 
     /*
      * add our prefix
@@ -3992,6 +4016,29 @@ void __post_internal_error_ex_w( EHEAD *error_header,
     ansi_to_unicode_copy(msg, (char*) ERROR_PREFIX, SQL_NTS,
 			 __get_connection( error_header ), NULL);
     wide_strcat( msg, message_text );
+
+    __post_internal_error_ex_w_noprefix(
+        error_header,
+        sqlstate,
+        native_error,
+        msg,
+        class_origin,
+        subclass_origin );
+}
+
+void __post_internal_error_ex_w_noprefix( EHEAD *error_header,
+        SQLWCHAR *sqlstate,
+        SQLINTEGER native_error,
+        SQLWCHAR *msg,
+        int class_origin,
+        int subclass_origin )
+{
+    /*
+     * create a error block and add to the lists,
+     * leave space for the error prefix
+     */
+
+    ERROR *e1, *e2;
 
     e1 = malloc( sizeof( ERROR ));
     if ( !e1 )
@@ -4145,7 +4192,7 @@ static void extract_diag_error( int htype,
 {
     SQLRETURN ret;
     SQLCHAR msg[ SQL_MAX_MESSAGE_LENGTH + 32 ];
-    SQLCHAR msg1[ SQL_MAX_MESSAGE_LENGTH ];
+    SQLCHAR msg1[ SQL_MAX_MESSAGE_LENGTH + 1 ];
     SQLCHAR sqlstate[ 6 ];
     SQLINTEGER native, len;
     SQLINTEGER rec_number;
@@ -4161,6 +4208,8 @@ static void extract_diag_error( int htype,
     rec_number = 1;
     do
     {
+        len = 0;
+
         ret = SQLGETDIAGREC( connection,
                 head -> handle_type,
                 handle,
@@ -4176,7 +4225,14 @@ static void extract_diag_error( int htype,
         {
             ERROR *e = malloc( sizeof( ERROR ));
             SQLWCHAR *tmp;
-            SQLINTEGER len;
+
+            /* 
+             * make sure we are truncated in the right place
+             */
+
+            if ( ret == SQL_SUCCESS_WITH_INFO || len >= SQL_MAX_MESSAGE_LENGTH ) {
+                msg1[ SQL_MAX_MESSAGE_LENGTH - 1 ] = '\0';
+            }
 
 #ifdef STRICT_ODBC_ERROR
             strcpy((char*) msg, (char*)msg1 );
@@ -4402,7 +4458,7 @@ static void extract_sql_error( DRV_SQLHANDLE henv,
 {
     SQLRETURN ret;
     SQLCHAR msg[ SQL_MAX_MESSAGE_LENGTH + 32 ];
-    SQLCHAR msg1[ SQL_MAX_MESSAGE_LENGTH ];
+    SQLCHAR msg1[ SQL_MAX_MESSAGE_LENGTH + 1 ];
     SQLCHAR sqlstate[ 6 ];
     SQLINTEGER native;
     SQLSMALLINT len;
@@ -4417,6 +4473,8 @@ static void extract_sql_error( DRV_SQLHANDLE henv,
 
     do
     {
+        len = 0;
+
         ret = SQLERROR( connection,
                 henv, 
                 hdbc,
@@ -4439,6 +4497,14 @@ static void extract_sql_error( DRV_SQLHANDLE henv,
             /*
              * add our prefix
              */
+
+            /* 
+             * make sure we are truncated in the right place
+             */
+
+            if ( ret == SQL_SUCCESS_WITH_INFO || len >= SQL_MAX_MESSAGE_LENGTH ) {
+                msg1[ SQL_MAX_MESSAGE_LENGTH ] = '\0';
+            }
 
 #ifdef STRICT_ODBC_ERROR
             strcpy((char*) msg, (char*)msg1 );
@@ -4503,7 +4569,7 @@ static void extract_diag_error_w( int htype,
 {
     SQLRETURN ret;
     SQLWCHAR msg[ SQL_MAX_MESSAGE_LENGTH + 32 ];
-    SQLWCHAR msg1[ SQL_MAX_MESSAGE_LENGTH ];
+    SQLWCHAR msg1[ SQL_MAX_MESSAGE_LENGTH + 1 ];
     SQLWCHAR sqlstate[ 6 ];
     SQLINTEGER native, len;
     SQLINTEGER rec_number;
@@ -4519,6 +4585,8 @@ static void extract_diag_error_w( int htype,
     rec_number = 1;
     do
     {
+        len = 0;
+
         ret = SQLGETDIAGRECW( connection,
                 head -> handle_type,
                 handle,
@@ -4533,6 +4601,14 @@ static void extract_diag_error_w( int htype,
         {
             ERROR *e = malloc( sizeof( ERROR ));
             SQLWCHAR *tmp;
+
+            /* 
+             * make sure we are truncated in the right place
+             */
+
+            if ( ret == SQL_SUCCESS_WITH_INFO || len >= SQL_MAX_MESSAGE_LENGTH ) {
+                msg1[ SQL_MAX_MESSAGE_LENGTH ] = 0;
+            }
 
 #ifdef STRICT_ODBC_ERROR
             wide_strcpy( msg, msg1 );
@@ -4737,7 +4813,7 @@ static void extract_sql_error_w( DRV_SQLHANDLE henv,
 {
     SQLRETURN ret;
     SQLWCHAR msg[ SQL_MAX_MESSAGE_LENGTH + 32 ];
-    SQLWCHAR msg1[ SQL_MAX_MESSAGE_LENGTH ];
+    SQLWCHAR msg1[ SQL_MAX_MESSAGE_LENGTH + 1 ];
     SQLWCHAR sqlstate[ 6 ];
     SQLINTEGER native;
     SQLSMALLINT len;
@@ -4746,6 +4822,8 @@ static void extract_sql_error_w( DRV_SQLHANDLE henv,
 
     do
     {
+        len = 0;
+
         ret = SQLERRORW( connection,
                 henv, 
                 hdbc,
@@ -4769,6 +4847,14 @@ static void extract_sql_error_w( DRV_SQLHANDLE henv,
             /*
              * add our prefix
              */
+
+            /* 
+             * make sure we are truncated in the right place
+             */
+
+            if ( ret == SQL_SUCCESS_WITH_INFO || len >= SQL_MAX_MESSAGE_LENGTH ) {
+                msg1[ SQL_MAX_MESSAGE_LENGTH ] = 0;
+            }
 
 #ifdef STRICT_ODBC_ERROR
             wide_strcpy( msg, msg1 );
@@ -4820,6 +4906,17 @@ static void extract_sql_error_w( DRV_SQLHANDLE henv,
         }
     }
     while( SQL_SUCCEEDED( ret ));
+}
+
+/* Return without collecting diag recs from the handle - to be called if the
+   DM function is returning before calling the driver function. */
+int function_return_nodrv( int level, void *handle, int ret_code) 
+{
+    if ( level != IGNORE_THREAD )
+    {
+        thread_release( level, handle );
+    }
+    return ret_code;
 }
 
 /*
@@ -5327,7 +5424,7 @@ void __post_internal_error_api( EHEAD *error_handle,
 
       case ERROR_08003:
         strcpy( sqlstate, "08003" );
-        message = "Connnection does not exist";
+        message = "Connection not open";
         break;
 
       case ERROR_24000:
@@ -5391,10 +5488,17 @@ void __post_internal_error_api( EHEAD *error_handle,
 
       case ERROR_HY003:
         if ( connection_mode >= SQL_OV_ODBC3 )
+        {
             strcpy( sqlstate, "HY003" );
+            /* Windows DM returns " Program type out of range" instead of 
+               "Invalid application buffer type" */
+            message = "Program type out of range";
+        }
         else
+        {
             strcpy( sqlstate, "S1003" );
         message = "Invalid application buffer type";
+        }
         break;
 
       case ERROR_HY004:
@@ -5482,6 +5586,14 @@ void __post_internal_error_api( EHEAD *error_handle,
         message = "Invalid attribute/option identifier";
         break;
 
+      case ERROR_HY095:
+        if ( connection_mode >= SQL_OV_ODBC3 )
+            strcpy( sqlstate, "HY095" );
+        else
+            strcpy( sqlstate, "S1095" );
+        message = "Function type out of range";
+        break;
+        
       case ERROR_HY097:
         if ( connection_mode >= SQL_OV_ODBC3 )
             strcpy( sqlstate, "HY097" );
@@ -5671,7 +5783,7 @@ void __post_internal_error_api( EHEAD *error_handle,
         message = txt;
 
     strcpy((char*) msg, DM_ERROR_PREFIX );
-    strcat((char*) msg, message );
+    strncat((char*) msg, message, sizeof(msg) - sizeof(DM_ERROR_PREFIX) );
 
     error_handle -> return_code = ret;
 

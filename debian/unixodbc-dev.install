@@ -4,4 +4,5 @@ usr/lib/*/libodbcinst.so
 usr/lib/*/libodbc.a
 usr/lib/*/libodbccr.a
 usr/lib/*/libodbcinst.a
+usr/lib/*/pkgconfig/*
 usr/include/*

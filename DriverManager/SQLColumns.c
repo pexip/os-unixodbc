@@ -220,10 +220,10 @@ SQLRETURN SQLColumns( SQLHSTMT statement_handle,
 
     thread_protect( SQL_HANDLE_STMT, statement );
 
-    if (( name_length1 < 0 && name_length1 != SQL_NTS ) ||
-            ( name_length2 < 0 && name_length2 != SQL_NTS ) ||
-            ( name_length3 < 0 && name_length3 != SQL_NTS ) ||
-            ( name_length4 < 0 && name_length4 != SQL_NTS ))
+    if (( catalog_name && name_length1 < 0 && name_length1 != SQL_NTS ) ||
+            ( schema_name && name_length2 < 0 && name_length2 != SQL_NTS ) ||
+            ( table_name && name_length3 < 0 && name_length3 != SQL_NTS ) ||
+            ( column_name && name_length4 < 0 && name_length4 != SQL_NTS ))
     {
         dm_log_write( __FILE__,
                 __LINE__,
@@ -235,7 +235,7 @@ SQLRETURN SQLColumns( SQLHSTMT statement_handle,
                 ERROR_HY090, NULL,
                 statement -> connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
 
     /*
@@ -261,7 +261,7 @@ SQLRETURN SQLColumns( SQLHSTMT statement_handle,
                 ERROR_24000, NULL,
                 statement -> connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
     else if ( statement -> state == STATE_S8 ||
             statement -> state == STATE_S9 ||
@@ -280,7 +280,7 @@ SQLRETURN SQLColumns( SQLHSTMT statement_handle,
                 ERROR_HY010, NULL,
                 statement -> connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
 
     if ( statement -> state == STATE_S11 ||
@@ -292,7 +292,7 @@ SQLRETURN SQLColumns( SQLHSTMT statement_handle,
                     ERROR_HY010, NULL,
                     statement -> connection -> environment -> requested_version );
 
-            return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+            return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
         }
     }
 
@@ -317,7 +317,7 @@ SQLRETURN SQLColumns( SQLHSTMT statement_handle,
                     ERROR_IM001, NULL,
                     statement -> connection -> environment -> requested_version );
 
-            return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+            return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
         }
 
         s1 = ansi_to_unicode_alloc( catalog_name, name_length1, statement -> connection, &wlen );
@@ -363,7 +363,7 @@ SQLRETURN SQLColumns( SQLHSTMT statement_handle,
                     ERROR_IM001, NULL,
                     statement -> connection -> environment -> requested_version );
 
-            return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+            return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
         }
 
         ret = SQLCOLUMNS( statement -> connection ,

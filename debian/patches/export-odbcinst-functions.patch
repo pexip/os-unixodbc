@@ -1,0 +1,29 @@
+Description: Export additional odbcinst functions.
+Author: Steve Langasek <vorlon@debian.org>
+Last-Update: 2018-04-09
+Forwarded: no
+
+--- unixodbc-2.3.6.orig/odbcinst/odbcinst.exp
++++ unixodbc-2.3.6/odbcinst/odbcinst.exp
+@@ -64,3 +64,21 @@ _odbcinst_UserINI
+ _odbcinst_FileINI
+ _SQLDriverConnectPrompt
+ inst_logPushMsg
++iniClose
++iniCommit
++iniElement
++iniObject
++iniObjectDelete
++iniObjectEOL
++iniObjectFirst
++iniObjectNext
++iniObjectSeek
++iniObjectSeekSure
++iniOpen
++iniProperty
++iniPropertyEOL
++iniPropertyFirst
++iniPropertyInsert
++iniPropertyNext
++iniToUpper
++iniValue

@@ -1,0 +1,18 @@
+Description: Create the destination directory before adding empty files to it.
+Author: Steve Langasek <vorlon@debian.org>
+Last-Update: 2018-04-09
+Forwarded: yes
+Origin: commit:b29f17259d941f211215fd26f11691c06c775a4b,
+        commit:3b550a7a6c827e0f2b87badbd95f7d3f20574ba6
+
+--- unixodbc-2.3.6.orig/Makefile.am
++++ unixodbc-2.3.6/Makefile.am
+@@ -46,7 +46,7 @@ EXTRA_DIST = \
+ 	Makefile.svn
+ 
+ install-data-am: install-pkgconfigDATA
++	-mkdir -p $(DESTDIR)${sysconfdir}/ODBCDataSources
+ 	-touch $(DESTDIR)${sysconfdir}/odbcinst.ini
+ 	-touch $(DESTDIR)${sysconfdir}/odbc.ini
+-	-mkdir -p $(DESTDIR)${sysconfdir}/ODBCDataSources
+ 	cp unixodbc_conf.h $(DESTDIR)${includedir}/unixodbc_conf.h

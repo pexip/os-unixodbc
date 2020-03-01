@@ -118,6 +118,7 @@ SQLRETURN SQLSetConnectOptionW( SQLHDBC connection_handle,
             if ( __validate_dbc( connection ))
             {
                 thread_protect( SQL_HANDLE_DBC, connection );
+                function_entry( connection );
                 dm_log_write( __FILE__, 
                         __LINE__, 
                         LOG_INFO, 
@@ -128,7 +129,7 @@ SQLRETURN SQLSetConnectOptionW( SQLHDBC connection_handle,
                     ERROR_HY024, NULL,
                     connection -> environment -> requested_version );
         
-                return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+                return function_return_nodrv( SQL_HANDLE_DBC, connection, SQL_ERROR );
             }
             else 
             {
@@ -156,6 +157,7 @@ SQLRETURN SQLSetConnectOptionW( SQLHDBC connection_handle,
                 if ( __validate_dbc( connection ))
                 {
                     thread_protect( SQL_HANDLE_DBC, connection );
+                    function_entry( connection );
                     dm_log_write( __FILE__, 
                             __LINE__, 
                             LOG_INFO, 
@@ -166,7 +168,7 @@ SQLRETURN SQLSetConnectOptionW( SQLHDBC connection_handle,
                         ERROR_HY024, NULL,
                         connection -> environment -> requested_version );
             
-                    return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+                    return function_return_nodrv( SQL_HANDLE_DBC, connection, SQL_ERROR );
                 }
                 else 
                 {
@@ -187,17 +189,18 @@ SQLRETURN SQLSetConnectOptionW( SQLHDBC connection_handle,
             if ( __validate_dbc( connection ))
             {
                 thread_protect( SQL_HANDLE_DBC, connection );
+                function_entry( connection );
                 dm_log_write( __FILE__, 
                         __LINE__, 
                         LOG_INFO, 
                         LOG_INFO, 
-                        "Error: HY009" );
+                        "Error: HY024" );
         
                 __post_internal_error( &connection -> error,
-                    ERROR_HY009, NULL,
+                    ERROR_HY024, NULL,
                     connection -> environment -> requested_version );
         
-                return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+                return function_return_nodrv( SQL_HANDLE_DBC, connection, SQL_ERROR );
             }
             else 
             {
@@ -287,7 +290,7 @@ SQLRETURN SQLSetConnectOptionW( SQLHDBC connection_handle,
                 ERROR_08003, NULL,
                 connection -> environment -> requested_version );
 
-            return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+            return function_return_nodrv( SQL_HANDLE_DBC, connection, SQL_ERROR );
         }
     }
     else if ( connection -> state == STATE_C3 )
@@ -302,7 +305,7 @@ SQLRETURN SQLSetConnectOptionW( SQLHDBC connection_handle,
             ERROR_HY010, NULL,
             connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_DBC, connection, SQL_ERROR );
     }
     else if ( connection -> state == STATE_C4 ||
             connection -> state == STATE_C5 )
@@ -319,7 +322,7 @@ SQLRETURN SQLSetConnectOptionW( SQLHDBC connection_handle,
                 ERROR_08002, NULL,
                 connection -> environment -> requested_version );
 
-            return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+            return function_return_nodrv( SQL_HANDLE_DBC, connection, SQL_ERROR );
         }
     }
     else if ( connection -> state == STATE_C6 )
@@ -336,7 +339,7 @@ SQLRETURN SQLSetConnectOptionW( SQLHDBC connection_handle,
                 ERROR_08002, NULL,
                 connection -> environment -> requested_version );
 
-            return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+            return function_return_nodrv( SQL_HANDLE_DBC, connection, SQL_ERROR );
         }
         else if ( option == SQL_TXN_ISOLATION )
         {
@@ -350,7 +353,7 @@ SQLRETURN SQLSetConnectOptionW( SQLHDBC connection_handle,
                 ERROR_S1011, NULL,
                 connection -> environment -> requested_version );
 
-            return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+            return function_return_nodrv( SQL_HANDLE_DBC, connection, SQL_ERROR );
         }
     }
 
@@ -371,7 +374,7 @@ SQLRETURN SQLSetConnectOptionW( SQLHDBC connection_handle,
                 ERROR_HY024, NULL,
                 connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_DBC, connection, SQL_ERROR );
     }
 
     /*
@@ -380,15 +383,26 @@ SQLRETURN SQLSetConnectOptionW( SQLHDBC connection_handle,
 
     value = (SQLULEN) __attr_override_wide( connection, SQL_HANDLE_DBC, option, (void*) value, NULL, buffer );
 
-    if ( option == SQL_ODBC_CURSORS )
-    {
-        connection -> cursors = value;
-        ret = SQL_SUCCESS;
-    }
-    else if ( option == SQL_LOGIN_TIMEOUT )
+    if ( option == SQL_LOGIN_TIMEOUT )
     {
         connection -> login_timeout_set = 1;
         connection -> login_timeout = value;
+        ret = SQL_SUCCESS;
+    }
+    else if ( option == SQL_ATTR_ACCESS_MODE )
+    {
+        connection -> access_mode = ( SQLLEN ) value;
+        connection -> access_mode_set = 1;
+    }
+    else if ( option == SQL_AUTOCOMMIT )
+    {
+        connection -> auto_commit = ( SQLINTEGER ) value;
+        connection -> auto_commit_set = 1;
+    }
+
+    if ( option == SQL_ODBC_CURSORS )
+    {
+        connection -> cursors = value;
         ret = SQL_SUCCESS;
     }
     else if ( connection -> state == STATE_C2 )
@@ -402,6 +416,11 @@ SQLRETURN SQLSetConnectOptionW( SQLHDBC connection_handle,
         {
             connection -> quite_mode = ( SQLLEN ) value;
             connection -> quite_mode_set = 1;
+        }
+        else if ( option == SQL_ATTR_ACCESS_MODE )
+        {
+            connection -> access_mode = ( SQLLEN ) value;
+            connection -> access_mode_set = 1;
         }
         else
         {
@@ -430,7 +449,7 @@ SQLRETURN SQLSetConnectOptionW( SQLHDBC connection_handle,
                     connection -> msg );
         }
 
-        return function_return( SQL_HANDLE_DBC, connection, SQL_SUCCESS );
+        return function_return_nodrv( SQL_HANDLE_DBC, connection, SQL_SUCCESS );
     }
     else
     {
@@ -478,7 +497,7 @@ SQLRETURN SQLSetConnectOptionW( SQLHDBC connection_handle,
                     ERROR_IM001, NULL,
                     connection -> environment -> requested_version );
 
-            return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+            return function_return_nodrv( SQL_HANDLE_DBC, connection, SQL_ERROR );
         }
 
         if ( log_info.log_flag )

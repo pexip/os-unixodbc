@@ -241,6 +241,7 @@ SQLRETURN SQLColAttributes( SQLHSTMT statement_handle,
     DMHSTMT statement = (DMHSTMT) statement_handle;
     SQLRETURN ret;
     SQLCHAR s1[ 100 + LOG_MESSAGE_LEN ];
+    int isStringAttr;
 
     /*
      * check statement
@@ -287,7 +288,7 @@ SQLRETURN SQLColAttributes( SQLHSTMT statement_handle,
 
     if ( column_number == 0 &&
             statement -> bookmarks_on == SQL_UB_OFF && statement -> connection -> bookmarks_on == SQL_UB_OFF &&
-            field_identifier != SQL_DESC_COUNT )
+            field_identifier != SQL_COLUMN_COUNT )
     {
         dm_log_write( __FILE__, 
                 __LINE__, 
@@ -298,9 +299,10 @@ SQLRETURN SQLColAttributes( SQLHSTMT statement_handle,
         __post_internal_error_api( &statement -> error,
                 ERROR_07009, NULL,
                 statement -> connection -> environment -> requested_version,
+                
                 SQL_API_SQLCOLATTRIBUTES );
 
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
 
 	/*
@@ -340,7 +342,7 @@ SQLRETURN SQLColAttributes( SQLHSTMT statement_handle,
                 ERROR_HY010, NULL,
                 statement -> connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
     /*
     else if ( statement -> state == STATE_S2 &&
@@ -371,7 +373,7 @@ SQLRETURN SQLColAttributes( SQLHSTMT statement_handle,
                 ERROR_24000, NULL,
                 statement -> connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
     else if ( statement -> state == STATE_S8 ||
             statement -> state == STATE_S9 ||
@@ -390,7 +392,7 @@ SQLRETURN SQLColAttributes( SQLHSTMT statement_handle,
                 ERROR_HY010, NULL,
                 statement -> connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
 
     if ( statement -> state == STATE_S11 ||
@@ -408,8 +410,44 @@ SQLRETURN SQLColAttributes( SQLHSTMT statement_handle,
                     ERROR_HY010, NULL,
                     statement -> connection -> environment -> requested_version );
 
-            return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+            return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
         }
+    }
+
+    switch( field_identifier )
+    {
+        case SQL_COLUMN_AUTO_INCREMENT:
+        case SQL_COLUMN_CASE_SENSITIVE:
+        case SQL_COLUMN_COUNT:
+        case SQL_COLUMN_DISPLAY_SIZE:
+        case SQL_COLUMN_LENGTH:
+        case SQL_COLUMN_MONEY:
+        case SQL_COLUMN_NULLABLE:
+        case SQL_COLUMN_PRECISION:
+        case SQL_COLUMN_SCALE:
+        case SQL_COLUMN_SEARCHABLE:
+        case SQL_COLUMN_TYPE:
+        case SQL_COLUMN_UNSIGNED:
+        case SQL_COLUMN_UPDATABLE:
+            isStringAttr = 0;
+            break;
+        case SQL_COLUMN_LABEL:
+        case SQL_COLUMN_NAME:
+        case SQL_COLUMN_OWNER_NAME:
+        case SQL_COLUMN_QUALIFIER_NAME:
+        case SQL_COLUMN_TABLE_NAME:
+        case SQL_COLUMN_TYPE_NAME:
+            if ( buffer_length < 0 )
+            {
+                __post_internal_error( &statement -> error,
+                    ERROR_HY090, NULL,
+                    statement -> connection -> environment -> requested_version );
+
+                return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
+            }
+        default:
+            isStringAttr = buffer_length >= 0;
+            break;
     }
 
     if ( statement -> connection -> unicode_driver )
@@ -419,16 +457,18 @@ SQLRETURN SQLColAttributes( SQLHSTMT statement_handle,
             if ( CHECK_SQLCOLATTRIBUTEW( statement -> connection ))
             {
                 SQLWCHAR *s1 = NULL;
-
+                SQLSMALLINT unibuf_len;
                 /*
                  * map to the ODBC3 function
                  */
 
                 field_identifier = map_ca_odbc2_to_3( field_identifier );
 
-                if ( character_attribute && buffer_length > 0 )
+                if ( isStringAttr && character_attribute && buffer_length > 0 )
                 {
                     s1 = calloc( sizeof( SQLWCHAR ) * ( buffer_length + 1 ), 1);
+                    /* Do not overflow, since SQLSMALLINT can only hold -32768 <= x <= 32767 */
+                    unibuf_len = buffer_length > 16383 ? buffer_length : sizeof( SQLWCHAR ) * buffer_length;
                 }
 
                 ret = SQLCOLATTRIBUTEW( statement -> connection,
@@ -436,18 +476,18 @@ SQLRETURN SQLColAttributes( SQLHSTMT statement_handle,
                     column_number,
                     field_identifier,
                     s1 ? s1 : character_attribute,
-                    buffer_length,
+                    s1 ? unibuf_len : buffer_length,
                     string_length,
                     numeric_attribute );
 
-                if ( SQL_SUCCEEDED( ret ) && character_attribute && s1 )
+                if ( SQL_SUCCEEDED( ret ) && isStringAttr && character_attribute && buffer_length > 0 && s1 )
                 {
+                    if ( string_length && ret == SQL_SUCCESS )
+                    {
+                        *string_length /= sizeof ( SQLWCHAR );
+                    }
                     unicode_to_ansi_copy( character_attribute, buffer_length, s1, SQL_NTS, statement -> connection, NULL );
                 }
-				if ( SQL_SUCCEEDED( ret ) && string_length && character_attribute ) 
-				{
-					*string_length = strlen(character_attribute);
-				}
 
                 if ( s1 )
                 {
@@ -466,7 +506,7 @@ SQLRETURN SQLColAttributes( SQLHSTMT statement_handle,
                         ERROR_IM001, NULL,
                         statement -> connection -> environment -> requested_version );
 
-                return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+                return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
             }
         }
         else
@@ -535,7 +575,7 @@ SQLRETURN SQLColAttributes( SQLHSTMT statement_handle,
                         ERROR_IM001, NULL,
                         statement -> connection -> environment -> requested_version );
 
-                return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+                return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
             }
         }
         else

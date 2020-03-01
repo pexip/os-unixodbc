@@ -333,10 +333,28 @@ char *tmp;
     cp = con_str -> list;
     while( cp )
     {
-        tmp = malloc( strlen( cp -> keyword ) + strlen( cp -> attribute ) + 10 );
-        if( strcasecmp( cp -> keyword, "DRIVER" ) == 0 )
+        size_t attrlen = strlen( cp -> attribute );
+        int use_esc = isspace( *(cp -> attribute ) ) || attrlen && isspace( cp->attribute[attrlen - 1] );
+        for ( tmp = cp -> attribute; *tmp; tmp++ )
         {
-            sprintf( tmp, "%s={%s};", cp -> keyword, cp -> attribute );
+            use_esc |= (*tmp == '{') || (*tmp == '}');
+            attrlen += (*tmp == '}');
+        }
+        tmp = malloc( strlen( cp -> keyword ) + attrlen + 10 );
+        if( use_esc )
+        {
+            char *tmp2 = tmp + sprintf( tmp, "%s={", cp -> keyword );
+            char *tmp3;
+            for( tmp3 = cp -> attribute; *tmp3 ; tmp3++ )
+            {
+                *tmp2++ = *tmp3;
+                if ( '}' == *tmp3++ )
+                {
+                    *tmp2++ = '}';
+                }
+            }
+            *tmp2++ = '}';
+            *tmp2++ = 0;
         }
         else
         {
@@ -364,17 +382,22 @@ int len;
 
     *keyword = *value = NULL;
 
-    ptr = *cp;
+    while ( isspace( **cp ) || **cp == ';' )
+    {
+        (*cp)++;
+    }
 
     if ( !**cp )
         return;
+
+    ptr = *cp;
 
     /* 
      * To handle the case attribute in which the attribute is of the form
      * "ATTR;" instead of "ATTR=VALUE;"
      */
 
-    while ( **cp && **cp != ';' && **cp != '=' )
+    while ( **cp && **cp != '=' )
     {
         (*cp)++;
     }
@@ -387,51 +410,48 @@ int len;
     memcpy( *keyword, ptr, len );
     (*keyword)[ len ] = '\0';
 
-    if (**cp != ';') {
 		(*cp)++;
-	}
 
-    ptr = *cp;
-
-    if ( strcasecmp( *keyword, "DRIVER" ) == 0 )
+    if ( **cp == '{' )
     {
-        if ( **cp && **cp == '{' )
+        /* escaped with '{' - all characters until next '}' not followed by '}', or
+           end of string, are part of the value */
+        int i = 0;
+        ptr = ++*cp;
+        while ( **cp && (**cp != '}' || (*cp)[1] == '}') )
         {
+            if ( **cp == '}' )
             (*cp)++;
-            ptr ++;
-            while ( **cp && **cp != '}' )
                 (*cp)++;
-
-            len = *cp - ptr;
-            *value = malloc( len + 1 );
-            memcpy( *value, ptr , len );
-            (*value)[ len ] = '\0';
-            (*cp)++;
         }
-        else
-        {
-            while ( **cp && **cp != ';' )
-                (*cp)++;
-
             len = *cp - ptr;
             *value = malloc( len + 1 );
-            memcpy( *value, ptr, len );
-            (*value)[ len ] = '\0';
+        while( ptr < *cp )
+        {
+            if ( ((*value)[i++] = *ptr++) == '}')
+            {
+                ptr++;
+        }
+        }
+        (*value)[i] = 0;
+        if ( **cp == '}' )
+        {
+                (*cp)++;
         }
     }
     else
     {
+        /* non-escaped: all characters until ';' or end of string are value */
+        ptr = *cp;
         while ( **cp && **cp != ';' )
+        {
             (*cp)++;
-
+        }
         len = *cp - ptr;
         *value = malloc( len + 1 );
         memcpy( *value, ptr, len );
-        (*value)[ len ] = '\0';
+        (*value)[ len ] = 0;
     }
-
-    if ( **cp )
-        (*cp)++;
 }
 
 struct con_pair * __get_pair( char ** cp )
@@ -831,7 +851,7 @@ SQLRETURN SQLDriverConnect(
 			!__get_attribute_value( &con_struct, "FILEDSN" ))
 		{
 			int ret;
-			SQLCHAR returned_dsn[ 128 ], *prefix, *target;
+			SQLCHAR returned_dsn[ 1025 ], *prefix, *target;
 
 			/*
 			 * try and call GUI to obtain a DSN
@@ -1123,6 +1143,7 @@ SQLRETURN SQLDriverConnect(
                                         ERROR_01004, NULL,
                                         connection -> environment -> requested_version );
                             }
+                            free( str1 );
                         }
                         cp = cp -> next;
                     }
@@ -1141,6 +1162,10 @@ SQLRETURN SQLDriverConnect(
 
             __parse_connection_string( &con_struct,
                     (char*)conn_str_in, len_conn_str_in );
+        }
+        else
+        {
+            save_filedsn = NULL;
         }
     }
     else
@@ -1387,7 +1412,7 @@ SQLRETURN SQLDriverConnect(
 
                     if ( SQL_SUCCEEDED( ret ))
                     {
-                        __post_internal_error_ex( &connection -> error,
+                        __post_internal_error_ex_noprefix( &connection -> error,
                                 sqlstate,
                                 native_error,
                                 message_text,
@@ -1420,7 +1445,7 @@ SQLRETURN SQLDriverConnect(
 
                     if ( SQL_SUCCEEDED( ret ))
                     {
-                        __post_internal_error_ex( &connection -> error,
+                        __post_internal_error_ex_noprefix( &connection -> error,
                                 sqlstate,
                                 native_error,
                                 message_text,
@@ -1534,7 +1559,7 @@ SQLRETURN SQLDriverConnect(
                     {
                         SQLCHAR *as1, *as2;
 
-                        __post_internal_error_ex_w( &connection -> error,
+                        __post_internal_error_ex_w_noprefix( &connection -> error,
                                 sqlstate,
                                 native_error,
                                 message_text,
@@ -1575,7 +1600,7 @@ SQLRETURN SQLDriverConnect(
                     {
                         SQLCHAR *as1, *as2;
 
-                        __post_internal_error_ex_w( &connection -> error,
+                        __post_internal_error_ex_w_noprefix( &connection -> error,
                                 sqlstate,
                                 native_error,
                                 message_text,
@@ -1618,6 +1643,11 @@ SQLRETURN SQLDriverConnect(
 
             if ( save_filedsn ) {
                 free( save_filedsn );
+            }
+
+            if ( s1 )
+            {
+                free( s1 );
             }
 
             return function_return( SQL_HANDLE_DBC, connection, ret_from_connect );
@@ -1812,5 +1842,5 @@ SQLRETURN SQLDriverConnect(
         ret_from_connect = SQL_SUCCESS_WITH_INFO;
     }
 
-    return function_return( SQL_HANDLE_DBC, connection, ret_from_connect );
+    return function_return_nodrv( SQL_HANDLE_DBC, connection, ret_from_connect );
 }

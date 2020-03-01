@@ -207,7 +207,7 @@ SQLRETURN SQLBindParam( SQLHSTMT statement_handle,
                 statement -> connection -> environment -> requested_version,
                 SQL_API_SQLBINDPARAM );
 
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
 
     if ( parameter_value == NULL &&
@@ -223,7 +223,7 @@ SQLRETURN SQLBindParam( SQLHSTMT statement_handle,
                 ERROR_HY009, NULL,
                 statement -> connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
 
     /*
@@ -249,14 +249,14 @@ SQLRETURN SQLBindParam( SQLHSTMT statement_handle,
                 ERROR_HY010, NULL,
                 statement -> connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
 
 	/*
 	 * check valid C_TYPE
 	 */
 
-	if ( !check_target_type( value_type ))
+	if ( !check_target_type( value_type, statement -> connection -> environment -> requested_version ))
 	{
         dm_log_write( __FILE__, 
                 __LINE__, 
@@ -268,7 +268,7 @@ SQLRETURN SQLBindParam( SQLHSTMT statement_handle,
                 ERROR_HY003, NULL,
                 statement -> connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
 	}
 
     if ( CHECK_SQLBINDPARAM( statement -> connection ))
@@ -301,7 +301,7 @@ SQLRETURN SQLBindParam( SQLHSTMT statement_handle,
                     ERROR_IM001, NULL,
                     statement -> connection -> environment -> requested_version );
 
-            return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+            return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
         }
 
         /*

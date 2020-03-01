@@ -177,10 +177,10 @@ SQLRETURN SQLProcedureColumnsW(
 
     thread_protect( SQL_HANDLE_STMT, statement );
 
-    if (( cb_catalog_name < 0 && cb_catalog_name != SQL_NTS ) ||
-            ( cb_schema_name < 0 && cb_schema_name != SQL_NTS ) ||
-            ( cb_proc_name < 0 && cb_proc_name != SQL_NTS ) ||
-            ( cb_column_name < 0 && cb_column_name != SQL_NTS ))
+    if (( sz_catalog_name && cb_catalog_name < 0 && cb_catalog_name != SQL_NTS ) ||
+            ( sz_schema_name && cb_schema_name < 0 && cb_schema_name != SQL_NTS ) ||
+            ( sz_proc_name && cb_proc_name < 0 && cb_proc_name != SQL_NTS ) ||
+            ( sz_column_name && cb_column_name < 0 && cb_column_name != SQL_NTS ))
     {
         dm_log_write( __FILE__, 
                 __LINE__, 
@@ -192,7 +192,7 @@ SQLRETURN SQLProcedureColumnsW(
                 ERROR_HY090, NULL,
                 statement -> connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
 
     /*
@@ -218,7 +218,7 @@ SQLRETURN SQLProcedureColumnsW(
                 ERROR_24000, NULL,
                 statement -> connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
     else if ( statement -> state == STATE_S8 ||
             statement -> state == STATE_S9 ||
@@ -237,7 +237,7 @@ SQLRETURN SQLProcedureColumnsW(
                 ERROR_HY010, NULL,
                 statement -> connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
 
     if ( statement -> state == STATE_S11 ||
@@ -255,7 +255,7 @@ SQLRETURN SQLProcedureColumnsW(
                     ERROR_HY010, NULL,
                     statement -> connection -> environment -> requested_version );
 
-            return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+            return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
         }
     }
 
@@ -278,7 +278,7 @@ SQLRETURN SQLProcedureColumnsW(
                     ERROR_IM001, NULL,
                     statement -> connection -> environment -> requested_version );
 
-            return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+            return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
         }
 
         ret = SQLPROCEDURECOLUMNSW( statement -> connection ,
@@ -309,7 +309,7 @@ SQLRETURN SQLProcedureColumnsW(
                     ERROR_IM001, NULL,
                     statement -> connection -> environment -> requested_version );
 
-            return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+            return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
         }
 
         as1 = (SQLCHAR*) unicode_to_ansi_alloc( sz_catalog_name, cb_catalog_name, statement -> connection, &clen );

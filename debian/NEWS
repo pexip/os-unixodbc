@@ -1,6 +1,6 @@
 unixodbc (2.2.14p2-3) unstable; urgency=low
 
-  * Multiarch directory added to search path
+    Multiarch directory added to search path
 
     In order to support installation of ODBC drivers for multiple
     architectures at once and to enable architecture-neutral odbcinst.ini to

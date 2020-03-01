@@ -76,9 +76,9 @@ char *_getUIPluginName( char *pszName, char *pszUI )
 char *_appendUIPluginExtension( char *pszNameAndExtension, char *pszName )
 {
     if ( strlen( SHLIBEXT ) > 0 )
-        sprintf( pszNameAndExtension, "%s%s.1", pszName, SHLIBEXT );
+        sprintf( pszNameAndExtension, "%s%s", pszName, SHLIBEXT );
     else
-        sprintf( pszNameAndExtension, "%s.so.1", pszName );
+        sprintf( pszNameAndExtension, "%s.so", pszName );
 
     return pszName;
 }
@@ -143,7 +143,6 @@ BOOL SQLManageDataSources( HWND hWnd )
         inst_logPushMsg( __FILE__, __FILE__, __LINE__, LOG_CRITICAL, ODBC_ERROR_GENERAL_ERR, "lt_dlinit() failed" );
 		return FALSE;
     }
-    lt_dlsetsearchpath(MODULEDIR);
 
     /* get plugin name */
     _appendUIPluginExtension( szNameAndExtension, _getUIPluginName( szName, hODBCInstWnd->szUI ) );

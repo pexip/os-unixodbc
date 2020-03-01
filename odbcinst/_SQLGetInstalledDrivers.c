@@ -55,9 +55,9 @@ int _SQLGetInstalledDrivers(    LPCSTR  pszSection,
 
     /* PROCESS ODBC INI FILE */
 #ifdef __OS2__
-    if ( iniOpen( &hIni, szIniName, "#;", '[', ']', '=', FALSE, 1L ) != INI_SUCCESS )
+    if ( iniOpen( &hIni, szIniName, "#;", '[', ']', '=', 1, 1L ) != INI_SUCCESS )
 #else
-    if ( iniOpen( &hIni, szIniName, "#;", '[', ']', '=', FALSE ) != INI_SUCCESS )
+    if ( iniOpen( &hIni, szIniName, "#;", '[', ']', '=', 1 ) != INI_SUCCESS )
 #endif
     {
         inst_logPushMsg( __FILE__, __FILE__, __LINE__, LOG_CRITICAL, ODBC_ERROR_COMPONENT_NOT_FOUND, "" );

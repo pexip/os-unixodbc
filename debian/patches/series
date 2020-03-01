@@ -1,0 +1,8 @@
+makefile-am-destdir.patch
+multiarch-libltdl.patch
+iniopen.patch
+apple-altivec-defined.patch
+export-odbcinst-functions.patch
+drvcfg-spelling.patch
+odbcinst.ini.5-spelling.patch
+fix-DriverManager-exports.patch

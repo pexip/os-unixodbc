@@ -235,10 +235,22 @@ SQLRETURN SQLBindParameter(
                 statement -> connection -> environment -> requested_version,
                 SQL_API_SQLBINDPARAMETER );
 
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
 
-    if ( cb_value_max < 0 && cb_value_max != SQL_NTS )
+    if ( ((f_c_type == SQL_C_CHAR || f_c_type == SQL_C_BINARY || f_c_type == SQL_C_WCHAR) ||
+            (f_c_type == SQL_C_DEFAULT &&
+                (f_sql_type == SQL_DEFAULT || 
+                 f_sql_type == SQL_CHAR ||
+                 f_sql_type == SQL_BINARY  ||
+                 f_sql_type == SQL_LONGVARCHAR  ||
+                 f_sql_type == SQL_LONGVARBINARY  ||
+                 f_sql_type == SQL_VARBINARY ||
+                 f_sql_type == SQL_VARCHAR ||
+                 f_sql_type == SQL_WCHAR ||
+                 f_sql_type == SQL_WLONGVARCHAR ||
+                 f_sql_type == SQL_WVARCHAR)))
+         && cb_value_max < 0 && cb_value_max != SQL_NTS )
     {
         dm_log_write( __FILE__, 
                 __LINE__, 
@@ -250,7 +262,7 @@ SQLRETURN SQLBindParameter(
                 ERROR_HY090, NULL, 
                 statement -> connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
 
     if ( rgb_value == NULL &&
@@ -267,7 +279,7 @@ SQLRETURN SQLBindParameter(
                 ERROR_HY009, NULL,
                 statement -> connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
 
     if ( statement -> connection -> environment -> requested_version == SQL_OV_ODBC3_80 ) {
@@ -287,7 +299,7 @@ SQLRETURN SQLBindParameter(
                     ERROR_HY105, NULL,
                     statement -> connection -> environment -> requested_version );
     
-            return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+            return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
         }
     }
     else {
@@ -305,7 +317,7 @@ SQLRETURN SQLBindParameter(
                     ERROR_HY105, NULL,
                     statement -> connection -> environment -> requested_version );
     
-            return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+            return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
         }
     }
 
@@ -347,14 +359,14 @@ SQLRETURN SQLBindParameter(
                 ERROR_HY010, NULL,
                 statement -> connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
 
 	/*
 	 * check valid C_TYPE
 	 */
 
-	if ( !check_target_type( f_c_type ))
+	if ( !check_target_type( f_c_type, statement -> connection -> environment -> requested_version ))
 	{
         dm_log_write( __FILE__, 
                 __LINE__, 
@@ -366,7 +378,7 @@ SQLRETURN SQLBindParameter(
                 ERROR_HY003, NULL,
                 statement -> connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
 	}
 
     if ( CHECK_SQLBINDPARAMETER( statement -> connection ))
@@ -407,7 +419,7 @@ SQLRETURN SQLBindParameter(
                 ERROR_IM001, NULL,
                 statement -> connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+        return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
 
     if ( log_info.log_flag )

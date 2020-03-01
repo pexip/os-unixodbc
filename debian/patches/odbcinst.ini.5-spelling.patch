@@ -1,0 +1,25 @@
+Description: Fix formatting and spelling in odbcinst.ini.5.
+Author: Hugh McMaster <hugh.mcmaster@outlook.com>
+Last-Update: 2018-04-12
+Forwarded: yes
+Origin: 161c7c9bcd36807b24bfc58f4a7e5dd1923d9a6e,
+        f2c283162ab77135fd99a8a5cf84110730dd069b,
+        0087b7ca16fa89826d239d7c4bcd11b0f73ee8b8
+
+--- unixodbc-2.3.6.orig/man/odbcinst.ini.5
++++ unixodbc-2.3.6/man/odbcinst.ini.5
+@@ -68,13 +68,11 @@ as follows:
+ 
+ .RS
+ .nf
+-...
+ Driver = PostgreSQL
+-...
+ .fi
+ .RE
+ 
+-The recommended way to add that driver is by creating template file containg:
++The recommended way to add that driver is by creating a template file containing:
+ 
+ .RS
+ .nf
