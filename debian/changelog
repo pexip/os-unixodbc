@@ -1,3 +1,9 @@
+unixodbc (2.3.6-0.1pexip2) pexip; urgency=medium
+
+  * Rebuild in buster environment
+
+ -- Steve McIntyre <steve.mcintyre@pexip.com>  Thu, 16 Jul 2020 07:14:33 +0000
+
 unixodbc (2.3.6-0.1pexip1) pexip; urgency=medium
 
   * Migrate to Buster
