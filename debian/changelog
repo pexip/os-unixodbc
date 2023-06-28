@@ -1,3 +1,142 @@
+unixodbc (2.3.11-2+deb12u1) bookworm; urgency=medium
+
+  * unixodbc-common, odbcinst: Add Breaks+Replaces against odbcinst1debian1
+    (Closes: #1037172).
+
+ -- Hugh McMaster <hugh.mcmaster@outlook.com>  Wed, 28 Jun 2023 21:20:32 +1000
+
+unixodbc (2.3.11-2) unstable; urgency=medium
+
+  * debian/control: Update Standards-Version to 4.6.1 (no changes needed).
+  * unixodbc-dev: Install unixodbc.h and unixODBC/unixodbc_conf.h into a
+    multi-arch include directory.
+
+ -- Hugh McMaster <hugh.mcmaster@outlook.com>  Mon, 23 May 2022 21:14:45 +1000
+
+unixodbc (2.3.11-1) unstable; urgency=medium
+
+  * New upstream version 2.3.11:
+    - Connection pooling via wide connection functions.
+    - Various bug fixes and improvements.
+  * debian/copyright: Update for unixODBC 2.3.11.
+  * debian/patches:
+    - Drop all patches (applied upstream).
+    - Add patch to prevent installation of config.h.
+  * debian/not-installed: Update excluded files list.
+  * debian/rules: Build with a multi-arch ODBC driver path.
+  * debian/watch: Switch to upstream's GitHub repository.
+  * unixodbc-dev: Install unixodbc.h and unixODBC/unixodbc_conf.h.
+  * Drop source Lintian overrides (no longer needed).
+
+ -- Hugh McMaster <hugh.mcmaster@outlook.com>  Fri, 13 May 2022 22:26:21 +1000
+
+unixodbc (2.3.9-5) unstable; urgency=medium
+
+  * debian/copyright: Extend copyright to 2022.
+  * debian/patches:
+    - unixodbc_conf.patch: Replace inclusion of unixodbc_conf.h with
+      minimal preprocessor definitions (Closes: #1005887).
+    - Remove sizeof_long_int.patch (superseded by unixodbc_conf.patch).
+
+ -- Hugh McMaster <hugh.mcmaster@outlook.com>  Tue, 22 Feb 2022 22:48:14 +1100
+
+unixodbc (2.3.9-4) unstable; urgency=medium
+
+  * debian/control:
+    - odbcinst1debian2 breaks odbc-postgresql (<< 1:13.02.0000-2).
+    - unixodbc-dev breaks libdbd-odbc-perl (<< 1.61-2).
+    - Add odbcinst as a dependency of odbcinst1debian2 for compatibility.
+
+ -- Hugh McMaster <hugh.mcmaster@outlook.com>  Tue, 30 Nov 2021 23:18:15 +1100
+
+unixodbc (2.3.9-3) unstable; urgency=medium
+
+  * debian/control: libodbc1 also depends on libodbccr2 (Closes: #1000465).
+  * debian/not-installed: Add upstream-generated odbcinst.ini file.
+  * unixodbc-common:
+    - Do not install odbcinst.ini as a conffile.
+    - Add maintscripts to manage the odbcinst.ini file.
+
+ -- Hugh McMaster <hugh.mcmaster@outlook.com>  Fri, 26 Nov 2021 22:59:37 +1100
+
+unixodbc (2.3.9-2) unstable; urgency=medium
+
+  * Release to unstable.
+  * debian/control:
+    - Raise Standards-Version to 4.6.0 (no changes needed).
+    - Reinstate libodbc1 and odbcinst1debian2 as transitional packages, and
+      install compatibility symlinks to the libodbc*2 libraries.
+    - Drop the libltdl-dev dependency from unixodbc-dev (Closes: #997870).
+  * debian/rules: Don't install the upstream ChangeLog.
+  * debian/source/lintian-overrides:
+    - Silence some 'very-long-line-length-in-source-file' messages.
+  * unixodbc: Don't install the upstream NEWS file.
+  * Remove legacy debian/NEWS file.
+
+ -- Hugh McMaster <hugh.mcmaster@outlook.com>  Tue, 23 Nov 2021 21:37:59 +1100
+
+unixodbc (2.3.9-1) experimental; urgency=medium
+
+  * New upstream version (Closes: #971900).
+    - Driver logging is now disabled by default (Closes: #740538).
+    - Prevent truncation of odbc.ini by only opening the file for writing when
+      it is safe to do so (Closes: #885463, #885472).
+  * New maintainer: Hugh McMaster.
+    - Thank you to Steve Langasek for maintaining unixODBC over the years.
+  * libodbc2 has replaced libodbc1:
+    - Update install and symbols files.
+    - Add Build-Depends-Package meta-information field to the symbols file.
+    - Remove legacy libodbc1 files (links, lintian-overrides, dirs, postrm).
+  * Split libodbccr2 from libodbc2.
+  * Split libodbcinst2 from odbcinst1debian2.
+  * ODBC drivers and driver config modules are no longer installed.
+    - Please switch to packages supplied by ODBC driver vendors.
+  * Move the ODBC configuration files/dirs to the new unixodbc-common package.
+  * unixodbc-dev: autotest.h and unixodbc_conf.h are no longer packaged.
+  * debian/changelog: Fix a typo in a function name.
+  * debian/control:
+    - Switch to debhelper-compat v13.
+    - Remove build-dependency on dh-exec.
+    - Update Maintainer field.
+    - Update package descriptions (Closes: #471900).
+    - Unify formatting of "Open Database Connectivity".
+    - Remove unneeded Breaks+Replaces fields on various packages.
+    - Remove unneeded Conflicts fields on various packages.
+    - Update package descriptions and dependencies.
+    - No longer Suggest libmyodbc or unixodbc-bin (packages not installable).
+    - New library packages: libodbc2, libodbccr2 and libodbcinst2.
+    - New package for configuration files: unixodbc-common.
+    - Update field order in Source stanza.
+    - Add Rules-Requires-Root: no.
+    - Add Vcs-* fields.
+    - Raise Standards-Version to 4.5.1 from 4.1.4.
+  * debian/copyright: Update for unixODBC 2.3.9 and 2021.
+  * debian/patches:
+    - Drop patches applied upstream: apple-altivec-defined.patch,
+      makefile-am-destdir.patch, fix-DriverManager-exports.patch,
+      odbcinst.ini.5-spelling.patch.
+    - Drop iniopen.patch to avoid breaking third-party applications that rely
+      on the unpatched file-creation behaviour.
+    - Refresh and forward drvcfg-spelling.patch and multiarch-libltdl.patch.
+    - Forward export-odbcinst-functions.patch upstream.
+    - Add a patch to fix spelling errors in the PostgreSQL ODBC driver.
+    - Add a patch to apply roman formatting instead of generating 'registered'
+      symbols throughout the upstream man pages.
+    - Add a patch to simplify the generation of ODBC driver config modules.
+    - Add a patch to #define SIZEOF_LONG_INT using a compiler macro extension.
+  * debian/rules:
+    - Remove copyright statement.
+    - Update configure flags so we use the system libltdl package.
+    - Remove configure flags enabling the build of legacy ODBC drivers
+      and driver config modules.
+    - Remove unneeded dh_auto_install, dh_makeshlibs and dh_link overrides.
+  * debian/watch: Point to upstream's FTP server.
+  * Add Debian helper files: gbp.conf, not-installed and upstream/metadata.
+  * Update symbols files and add Build-Depends-Package meta-information fields.
+  * Remove legacy shell script: update-manifest.sh.
+
+ -- Hugh McMaster <hugh.mcmaster@outlook.com>  Mon, 19 Apr 2021 23:25:30 +1000
+
 unixodbc (2.3.6-0.1) unstable; urgency=medium
 
   * Non-maintainer upload.
@@ -27,7 +166,7 @@ unixodbc (2.3.6-0.1) unstable; urgency=medium
      - Rename to unixodbc.docs.
   * debian/patches:
     - Convert unixodbc_2.3.4-1.1.diff into patches.
-    - Add a patch to prevent __post_inernal_error() from being exported.
+    - Add a patch to prevent __post_internal_error() from being exported.
     - Add a patch to fix spelling errors in DRVConfig/txt/drvcfg.c.
     - Add a patch to fix spelling and formatting in odbcinst.ini.5.
     - Forward some patches upstream.

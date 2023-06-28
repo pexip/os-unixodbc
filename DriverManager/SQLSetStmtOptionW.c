@@ -419,7 +419,7 @@ SQLRETURN SQLSetStmtOptionW( SQLHSTMT statement_handle,
             ret = SQLSETSTMTATTRW( statement -> connection,
                     statement -> driver_stmt,
                     option,
-                    value,
+                    (SQLPOINTER)(intptr_t) value,
                     SQL_NTS );
             break;
         }
@@ -461,5 +461,5 @@ SQLRETURN SQLSetStmtOptionW( SQLHSTMT statement_handle,
                 statement -> msg );
     }
 
-    return function_return( SQL_HANDLE_STMT, statement, ret );
+    return function_return( SQL_HANDLE_STMT, statement, ret, DEFER_R3 );
 }

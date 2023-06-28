@@ -208,10 +208,10 @@ SQLRETURN SQLSetScrollOptions(
         return function_return_nodrv( SQL_HANDLE_STMT, statement, SQL_ERROR );
     }
 
-    if ( crow_keyset != SQL_SCROLL_FORWARD_ONLY &&
+    if (( crow_keyset != SQL_SCROLL_FORWARD_ONLY &&
             crow_keyset != SQL_SCROLL_STATIC &&
             crow_keyset != SQL_SCROLL_KEYSET_DRIVEN &&
-            crow_keyset != SQL_SCROLL_DYNAMIC  ||
+            crow_keyset != SQL_SCROLL_DYNAMIC ) ||
             !crow_rowset)
     {
         dm_log_write( __FILE__, 
@@ -315,7 +315,7 @@ SQLRETURN SQLSetScrollOptions(
                 LOG_INFO, 
                 "Error: SQLGetInfo fails" );
             
-            return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+            return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR, DEFER_R3 );
         }
 
         if ( f_concurrency == SQL_CONCUR_READ_ONLY &&
@@ -331,7 +331,7 @@ SQLRETURN SQLSetScrollOptions(
                     ERROR_S1C00, NULL,
                     statement -> connection -> environment -> requested_version );
             
-            return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+            return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR, DEFER_R3 );
         }
         else if ( f_concurrency == SQL_CONCUR_LOCK &&
                 !( ivp & SQL_CA2_LOCK_CONCURRENCY ))
@@ -346,7 +346,7 @@ SQLRETURN SQLSetScrollOptions(
                     ERROR_S1C00, NULL,
                     statement -> connection -> environment -> requested_version );
             
-            return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+            return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR, DEFER_R3 );
         }
         else if ( f_concurrency == SQL_CONCUR_ROWVER &&
                 !( ivp & SQL_CA2_OPT_ROWVER_CONCURRENCY ))
@@ -361,7 +361,7 @@ SQLRETURN SQLSetScrollOptions(
                     ERROR_S1C00, NULL,
                     statement -> connection -> environment -> requested_version );
             
-            return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+            return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR, DEFER_R3 );
         }
         if ( f_concurrency == SQL_CONCUR_VALUES &&
                 !( ivp & SQL_CA2_OPT_VALUES_CONCURRENCY ))
@@ -376,7 +376,7 @@ SQLRETURN SQLSetScrollOptions(
                     ERROR_S1C00, NULL,
                     statement -> connection -> environment -> requested_version );
             
-            return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+            return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR, DEFER_R3 );
         }
         if ( f_concurrency != SQL_CONCUR_READ_ONLY &&
             f_concurrency != SQL_CONCUR_LOCK &&
@@ -393,7 +393,7 @@ SQLRETURN SQLSetScrollOptions(
                     ERROR_S1108, NULL,
                     statement -> connection -> environment -> requested_version );
             
-            return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+            return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR, DEFER_R3 );
         }
 
         if(CHECK_SQLSETSTMTATTR( statement -> connection ))
@@ -401,7 +401,7 @@ SQLRETURN SQLSetScrollOptions(
             ret = SQLSETSTMTATTR( statement -> connection,
                         statement -> driver_stmt,
                         SQL_ATTR_CONCURRENCY,
-                        f_concurrency,
+                        (SQLPOINTER)(intptr_t) f_concurrency,
                         0 );
         }
         else if ( CHECK_SQLSETSTMTATTRW( statement -> connection ))
@@ -409,7 +409,7 @@ SQLRETURN SQLSetScrollOptions(
             ret = SQLSETSTMTATTRW( statement -> connection,
                         statement -> driver_stmt,
                         SQL_ATTR_CONCURRENCY,
-                        f_concurrency,
+                        (SQLPOINTER)(intptr_t) f_concurrency,
                         0 );
         }
 
@@ -421,7 +421,7 @@ SQLRETURN SQLSetScrollOptions(
                 LOG_INFO, 
                 "Error: SQLSetStmtAttr fails" );
             
-            return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+            return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR, DEFER_R3 );
         }
 
 
@@ -460,7 +460,7 @@ SQLRETURN SQLSetScrollOptions(
                         ERROR_S1107, NULL,
                         statement -> connection -> environment -> requested_version );
 
-                return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+                return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR, DEFER_R3 );
             }
             break;
         }
@@ -470,7 +470,7 @@ SQLRETURN SQLSetScrollOptions(
              ret = SQLSETSTMTATTR( statement -> connection,
                                    statement -> driver_stmt,
                                    SQL_ATTR_CURSOR_TYPE,
-                                   info_type,
+                                   (SQLPOINTER)(intptr_t) info_type,
                                    0 );
         }
         else if(CHECK_SQLSETSTMTATTRW( statement -> connection ))
@@ -478,7 +478,7 @@ SQLRETURN SQLSetScrollOptions(
              ret = SQLSETSTMTATTRW( statement -> connection,
                                    statement -> driver_stmt,
                                    SQL_ATTR_CURSOR_TYPE,
-                                   info_type,
+                                   (SQLPOINTER)(intptr_t) info_type,
                                    0 );
         }
 
@@ -490,7 +490,7 @@ SQLRETURN SQLSetScrollOptions(
                 LOG_INFO, 
                 "Error: SQLSetStmtAttr fails" );
             
-            return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+            return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR, DEFER_R3 );
         }
 
         if ( crow_keyset > 0 )
@@ -500,7 +500,7 @@ SQLRETURN SQLSetScrollOptions(
                  ret = SQLSETSTMTATTR( statement -> connection,
                                        statement -> driver_stmt,
                                        SQL_ATTR_KEYSET_SIZE,
-                                       crow_keyset,
+                                       (SQLPOINTER)(intptr_t) crow_keyset,
                                        0 );
             }
             else if(CHECK_SQLSETSTMTATTRW( statement -> connection ))
@@ -508,7 +508,7 @@ SQLRETURN SQLSetScrollOptions(
                  ret = SQLSETSTMTATTRW( statement -> connection,
                                        statement -> driver_stmt,
                                        SQL_ATTR_KEYSET_SIZE,
-                                       crow_keyset,
+                                       (SQLPOINTER)(intptr_t) crow_keyset,
                                        0 );
             }
 
@@ -520,7 +520,7 @@ SQLRETURN SQLSetScrollOptions(
                     LOG_INFO, 
                     "Error: SQLSetStmtAttr fails" );
                 
-                return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR );
+                return function_return( SQL_HANDLE_STMT, statement, SQL_ERROR, DEFER_R3 );
             }
         }
         if(CHECK_SQLSETSTMTATTR( statement -> connection ))
@@ -528,7 +528,7 @@ SQLRETURN SQLSetScrollOptions(
              ret = SQLSETSTMTATTR( statement -> connection,
                                    statement -> driver_stmt,
                                    SQL_ROWSET_SIZE,
-                                   crow_rowset,
+                                   (SQLPOINTER)(intptr_t) crow_rowset,
                                    0 );
         }
         else if(CHECK_SQLSETSTMTATTRW( statement -> connection ))
@@ -536,7 +536,7 @@ SQLRETURN SQLSetScrollOptions(
              ret = SQLSETSTMTATTRW( statement -> connection,
                                    statement -> driver_stmt,
                                    SQL_ROWSET_SIZE,
-                                   crow_rowset,
+                                   (SQLPOINTER)(intptr_t) crow_rowset,
                                    0 );
         }
     }
@@ -568,5 +568,5 @@ SQLRETURN SQLSetScrollOptions(
                 statement -> msg );
     }
 
-    return function_return( SQL_HANDLE_STMT, statement, ret );
+    return function_return( SQL_HANDLE_STMT, statement, ret, DEFER_R3 );
 }
