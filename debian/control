@@ -7,7 +7,7 @@ Maintainer: Pexip AS <packaging@pexip.com>
 XSBC-Pexip-Original-Maintainer: Steve Langasek <vorlon@debian.org>
 Standards-Version: 4.1.4
 Homepage: http://www.unixodbc.org/
-XS-Pexip-Upstream: http://deb.debian.org/debian/ bullseye
+XS-Pexip-Upstream: http://deb.debian.org/debian/ bookworm
 
 Package: unixodbc
 Architecture: any
