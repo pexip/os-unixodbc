@@ -155,6 +155,7 @@ SQLRETURN SQLSetConnectAttrW( SQLHDBC connection_handle,
                         LOG_INFO, 
                         "Error: HY024" );
         
+                function_entry( connection );
                 __post_internal_error( &connection -> error,
                     ERROR_HY024, NULL,
                     connection -> environment -> requested_version );
@@ -223,7 +224,8 @@ SQLRETURN SQLSetConnectAttrW( SQLHDBC connection_handle,
                             LOG_INFO, 
                             LOG_INFO, 
                             "Error: HY024" );
-            
+
+                    function_entry( connection );
                     __post_internal_error( &connection -> error,
                         ERROR_HY024, NULL,
                         connection -> environment -> requested_version );
@@ -254,7 +256,8 @@ SQLRETURN SQLSetConnectAttrW( SQLHDBC connection_handle,
                         LOG_INFO, 
                         LOG_INFO, 
                         "Error: HY024" );
-        
+
+                function_entry( connection );
                 __post_internal_error( &connection -> error,
                     ERROR_HY024, NULL,
                     connection -> environment -> requested_version );
@@ -432,8 +435,8 @@ SQLRETURN SQLSetConnectAttrW( SQLHDBC connection_handle,
         /* ODBC 3.x statement attributes are not settable at the connection level */
         case SQL_ATTR_APP_PARAM_DESC:
         case SQL_ATTR_APP_ROW_DESC:
-      	case SQL_ATTR_CURSOR_SCROLLABLE:
-      	case SQL_ATTR_CURSOR_SENSITIVITY:
+        case SQL_ATTR_CURSOR_SCROLLABLE:
+        case SQL_ATTR_CURSOR_SENSITIVITY:
         case SQL_ATTR_ENABLE_AUTO_IPD:
         case SQL_ATTR_FETCH_BOOKMARK_PTR:
         case SQL_ATTR_IMP_PARAM_DESC:
@@ -580,17 +583,19 @@ SQLRETURN SQLSetConnectAttrW( SQLHDBC connection_handle,
         else if ( attribute != SQL_ATTR_LOGIN_TIMEOUT )
         {
             /*
-             * save any unknown attributes untill connect
+             * save any unknown attributes until connect
              */
 
-            struct save_attr *sa = calloc( 1, sizeof( struct save_attr ));
+            struct save_attr sa, *sap;
 
-            sa -> attr_type = attribute;
+            memset( &sa, 0, sizeof ( sa ));
+
+            sa.attr_type = attribute;
             if ( string_length > 0 )
             {
-                sa -> str_attr = malloc( string_length );
-                memcpy( sa -> str_attr, value, string_length );
-                sa -> str_len = string_length;
+                sa.str_attr = malloc( string_length );
+                memcpy( sa.str_attr, value, string_length );
+                sa.str_len = string_length;
             }
             else if ( string_length == SQL_NTS )
             {
@@ -603,16 +608,40 @@ SQLRETURN SQLSetConnectAttrW( SQLHDBC connection_handle,
                 }
                 else
                 {
-                sa -> str_attr = unicode_to_ansi_alloc( value, string_length, connection, NULL );
-                sa -> str_len = string_length;
-            }
+                    sa.str_attr = unicode_to_ansi_alloc( value, string_length, connection, NULL );
+                    sa.str_len = string_length;
+                }
             }
             else
             {
-                sa -> int_attr = ( SQLLEN ) value;
+                sa.intptr_attr = (intptr_t) value;
+                sa.str_len = string_length;
             }
-            sa -> next = connection -> save_attr;
-            connection -> save_attr = sa;
+            
+            sap = connection -> save_attr;
+            
+            while ( sap )
+            {
+                if ( sap -> attr_type == attribute )
+                {
+                    free ( sap -> str_attr );
+                    break;
+                }
+                sap = sap -> next;
+            }
+            
+            if ( sap ) /* replace existing attribute */
+            {
+                *sap = sa;
+            }
+            else
+            {
+                sap = malloc( sizeof( struct save_attr ));
+                *sap = sa;
+
+                sap -> next = connection -> save_attr;
+                connection -> save_attr = sap;
+            }
         }
 
         sprintf( connection -> msg, 
@@ -659,7 +688,7 @@ SQLRETURN SQLSetConnectAttrW( SQLHDBC connection_handle,
                     ret = SQLSETCONNECTOPTIONW( connection,
                             connection -> driver_dbc,
                             attribute,
-                            value );
+                            (SQLULEN) value );
                 }
                 else
                 {
@@ -728,7 +757,7 @@ SQLRETURN SQLSetConnectAttrW( SQLHDBC connection_handle,
                     ret = SQLSETCONNECTOPTION( connection,
                             connection -> driver_dbc,
                             attribute,
-                            as1 ? as1 : value );
+                            (SQLULEN) (as1 ? as1 : value) );
 
                     if ( as1 ) free( as1 );
                 }
@@ -814,5 +843,5 @@ SQLRETURN SQLSetConnectAttrW( SQLHDBC connection_handle,
         connection -> bookmarks_on = (SQLULEN) value;
     }
 
-    return function_return( SQL_HANDLE_DBC, connection, ret );
+    return function_return( SQL_HANDLE_DBC, connection, ret, DEFER_R3 );
 }

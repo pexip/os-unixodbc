@@ -259,6 +259,9 @@ static char const rcsid[]= "$RCSfile: SQLAllocHandle.c,v $ $Revision: 1.13 $";
  */
 
 extern int pooling_enabled;
+extern int pool_max_size;
+extern int pool_wait_timeout;
+
 
 /*
  * this is used so that it can be called without falling
@@ -277,6 +280,8 @@ SQLRETURN __SQLAllocHandle( SQLSMALLINT handle_type,
         {
             DMHENV environment;
             char pooling_string[ 128 ];
+            char pool_max_size_string [ 128 ];
+            char pool_wait_timeout_string [ 128 ];
 
             if ( !output_handle ) 
             {
@@ -306,6 +311,19 @@ SQLRETURN __SQLAllocHandle( SQLSMALLINT handle_type,
             else
             {
                 pooling_enabled = 0;
+            }
+
+            if ( pooling_enabled )
+            {
+                SQLGetPrivateProfileString( "ODBC", "PoolMaxSize", "0",
+                    pool_max_size_string, sizeof( pool_max_size_string ),
+                    "ODBCINST.INI" );
+                pool_max_size = atoi( pool_max_size_string );
+
+                SQLGetPrivateProfileString( "ODBC", "PoolWaitTimeout", "30",
+                    pool_wait_timeout_string, sizeof( pool_wait_timeout_string ),
+                    "ODBCINST.INI" );
+                pool_wait_timeout = atoi( pool_wait_timeout_string );
             }
 
             if ( !( environment = __alloc_env()))
@@ -482,6 +500,26 @@ SQLRETURN __SQLAllocHandle( SQLSMALLINT handle_type,
 #endif
 
             *output_handle = (SQLHANDLE) connection;
+
+#ifndef ENABLE_DRIVER_ICONV
+
+            /*
+             * initialize unicode
+             */
+
+            if ( !unicode_setup( connection ))
+            {
+                char txt[ 256 ];
+
+                sprintf( txt, "Can't initiate unicode conversion" );
+
+                dm_log_write( __FILE__,
+                        __LINE__,
+                        LOG_INFO,
+                        LOG_INFO,
+                        txt );
+            }
+#endif
 
             if ( log_info.log_flag )
             {
@@ -743,7 +781,7 @@ SQLRETURN __SQLAllocHandle( SQLSMALLINT handle_type,
 
                             __release_stmt( statement );
 
-                            return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+                            return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR, DEFER_R1 );
                         }
                         statement -> implicit_ard = statement -> ard;
                         statement -> ard -> implicit = 1;
@@ -787,7 +825,7 @@ SQLRETURN __SQLAllocHandle( SQLSMALLINT handle_type,
 
                             *output_handle = SQL_NULL_HSTMT;
 
-                            return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+                            return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR, DEFER_R1 );
                         }
                         statement -> implicit_apd = statement -> apd;
                         statement -> apd -> implicit = 1;
@@ -831,7 +869,7 @@ SQLRETURN __SQLAllocHandle( SQLSMALLINT handle_type,
 
                             *output_handle = SQL_NULL_HSTMT;
 
-                            return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+                            return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR, DEFER_R1 );
                         }
                         statement -> implicit_ird = statement -> ird;
                         statement -> ird -> implicit = 1;
@@ -875,7 +913,7 @@ SQLRETURN __SQLAllocHandle( SQLSMALLINT handle_type,
 
                             *output_handle = SQL_NULL_HSTMT;
 
-                            return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+                            return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR, DEFER_R1 );
                         }
                         statement -> implicit_ipd = statement -> ipd;
                         statement -> ipd -> implicit = 1;
@@ -922,7 +960,7 @@ SQLRETURN __SQLAllocHandle( SQLSMALLINT handle_type,
 
                             __release_stmt( statement );
 
-                            return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+                            return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR, DEFER_R1 );
                         }
                         statement -> implicit_ard = statement -> ard;
                         statement -> ard -> implicit = 1;
@@ -966,7 +1004,7 @@ SQLRETURN __SQLAllocHandle( SQLSMALLINT handle_type,
 
                             *output_handle = SQL_NULL_HSTMT;
 
-                            return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+                            return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR, DEFER_R1 );
                         }
                         statement -> implicit_apd = statement -> apd;
                         statement -> apd -> implicit = 1;
@@ -1010,7 +1048,7 @@ SQLRETURN __SQLAllocHandle( SQLSMALLINT handle_type,
 
                             *output_handle = SQL_NULL_HSTMT;
 
-                            return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+                            return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR, DEFER_R1 );
                         }
                         statement -> implicit_ird = statement -> ird;
                         statement -> ird -> implicit = 1;
@@ -1054,7 +1092,7 @@ SQLRETURN __SQLAllocHandle( SQLSMALLINT handle_type,
 
                             *output_handle = SQL_NULL_HSTMT;
 
-                            return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+                            return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR, DEFER_R1 );
                         }
                         statement -> implicit_ipd = statement -> ipd;
                         statement -> ipd -> implicit = 1;
@@ -1092,7 +1130,7 @@ SQLRETURN __SQLAllocHandle( SQLSMALLINT handle_type,
                                UODBC_STATS_TYPE_HSTMT, (void *)1);
 #endif
 
-            return function_return( SQL_HANDLE_DBC, connection, ret );
+            return function_return( SQL_HANDLE_DBC, connection, ret, DEFER_R1 );
         }
         break;
 
@@ -1254,7 +1292,7 @@ SQLRETURN __SQLAllocHandle( SQLSMALLINT handle_type,
                            (void *)1);
 #endif
 
-        return function_return( SQL_HANDLE_DBC, connection, ret );
+        return function_return( SQL_HANDLE_DBC, connection, ret, DEFER_R1 );
         }
         break;
 
