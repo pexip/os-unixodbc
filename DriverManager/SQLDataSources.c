@@ -190,7 +190,12 @@ SQLRETURN SQLDataSources( SQLHENV environment_handle,
 
     if ( log_info.log_flag )
     {
-        sprintf( environment -> msg, "\n\t\tEntry:\
+#ifdef HAVE_SNPRINTF
+            snprintf( environment -> msg, sizeof(  environment -> msg ),
+#else
+            sprintf( environment -> msg, 
+#endif
+                "\n\t\tEntry:\
 \n\t\t\tEnvironment = %p",
                 environment );
 
@@ -364,7 +369,7 @@ SQLRETURN SQLDataSources( SQLHENV environment_handle,
             if ( buffer_length2 <= strlen( property ))
             {
                 memcpy( description, property, buffer_length2 );
-                description[ buffer_length1 - 1 ] = '\0';
+                description[ buffer_length2 - 1 ] = '\0';
             }
             else
             {
@@ -387,7 +392,11 @@ SQLRETURN SQLDataSources( SQLHENV environment_handle,
 
     if ( log_info.log_flag )
     {
+#ifdef HAVE_SNPRINTF
+        snprintf( environment -> msg, sizeof(  environment -> msg ),
+#else
         sprintf( environment -> msg, 
+#endif
                 "\n\t\tExit:[%s]",
                     __get_return_status( SQL_SUCCESS, s1 ));
 

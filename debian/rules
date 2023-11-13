@@ -1,5 +1,4 @@
 #!/usr/bin/make -f
-# Copyright 2009 Steve Langasek <vorlon@debian.org>
 
 # build should fail if anything at all is wrong with the library symbols
 export DPKG_GENSYMBOLS_CHECK_LEVEL = 4
@@ -8,25 +7,13 @@ export DEB_LDFLAGS_MAINT_APPEND = -Wl,-z,defs
 
 export DEB_BUILD_MAINT_OPTIONS = hardening=+all
 
-DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
-
 %:
 	dh $@
 
 override_dh_auto_configure:
-	dh_auto_configure -- --enable-static --enable-ltdllib --without-pth \
-		--enable-drivers --enable-driverc --enable-fastvalidate
+	dh_auto_configure -- --enable-static --enable-fastvalidate \
+	    --with-pth=no --with-included-ltdl=no \
+	    --with-odbc-driver-path=\$${prefix}/lib/$(DEB_HOST_MULTIARCH)/odbc
 
-override_dh_auto_install:
-	dh_auto_install
-	mkdir -p $(CURDIR)/debian/tmp/usr/lib/$(DEB_HOST_MULTIARCH)/odbc
-	cp -L $(CURDIR)/debian/tmp/usr/lib/$(DEB_HOST_MULTIARCH)/lib*S.so $(CURDIR)/debian/tmp/usr/lib/$(DEB_HOST_MULTIARCH)/libnn.so $(CURDIR)/debian/tmp/usr/lib/$(DEB_HOST_MULTIARCH)/odbc
-	mkdir -p $(CURDIR)/debian/tmp/usr/include/$(DEB_HOST_MULTIARCH)
-	mv $(CURDIR)/debian/tmp/usr/include/unixodbc_conf.h $(CURDIR)/debian/tmp/usr/include/$(DEB_HOST_MULTIARCH)
-
-override_dh_makeshlibs:
-	dh_makeshlibs -X lib/$(DEB_HOST_MULTIARCH)/odbc/lib
-
-override_dh_link:
-	chmod a+x debian/libodbc1.links debian/odbcinst1debian2.links
-	dh_link
+override_dh_installchangelogs:
+	dh_installchangelogs -XChangeLog

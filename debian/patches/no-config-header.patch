@@ -1,0 +1,16 @@
+Description: Do not install config.h
+Author: Hugh McMaster <hugh.mcmaster@outlook.com>
+Forwarded: https://github.com/lurcher/unixODBC/pull/108
+Last-Update: 2022-05-13
+
+--- a/Makefile.am
++++ b/Makefile.am
+@@ -47,7 +47,7 @@
+ 
+ include_HEADERS = unixodbc.h
+ 
+-pkginclude_HEADERS = unixodbc_conf.h config.h
++pkginclude_HEADERS = unixodbc_conf.h
+ 
+ install-data-hook:
+ 	-$(MKDIR_P) $(DESTDIR)$(sysconfdir)/ODBCDataSources

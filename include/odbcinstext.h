@@ -14,7 +14,6 @@
 
 #ifdef UNIXODBC_SOURCE
 
-#include <ltdl.h>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
@@ -24,7 +23,6 @@
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
-#include <stdio.h>
 
 #ifndef ODBCVER
 #define ODBCVER 0x0380
@@ -203,6 +201,11 @@ BOOL _SQLDriverConnectPrompt(
 	SQLCHAR *dsn, 
 	SQLSMALLINT len_dsn );
 
+BOOL _SQLDriverConnectPromptW( 
+	HWND hwnd, 
+	SQLWCHAR *dsn, 
+	SQLSMALLINT len_dsn );
+
 void __set_config_mode( int mode );
 int __get_config_mode( void );
 
@@ -315,6 +318,12 @@ typedef struct	tODBCINSTPROPERTY
 } ODBCINSTPROPERTY, *HODBCINSTPROPERTY;
 
 /*
+ * Plugin name
+ */
+
+#define ODBCINSTPLUGIN          "odbcinstQ5"
+
+/*
  * Conversion routines for wide interface
  */
 
@@ -326,6 +335,7 @@ void _single_copy_to_wide( SQLWCHAR *out, LPCSTR in, int len );
 SQLWCHAR* _multi_string_alloc_and_expand( LPCSTR in );
 SQLWCHAR* _single_string_alloc_and_expand( LPCSTR in );
 void _single_copy_from_wide( SQLCHAR *out, LPCWSTR in, int len );
+int _multi_string_length( LPCSTR in );
 
 /*
  * To support finding UI plugin

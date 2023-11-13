@@ -10,6 +10,11 @@
  * Peter Harvey		- pharvey@codebydesign.com
  **************************************************/
 #include <config.h>
+
+#ifdef UNIXODBC_SOURCE
+#include <ltdl.h>
+#endif
+
 #include <odbcinstext.h>
 
 /*! 
@@ -58,7 +63,7 @@ char *_getUIPluginName( char *pszName, char *pszUI )
     }
 
     /* default to qt4 */
-    strcpy( pszName, "libodbcinstQ4" );
+    strcpy( pszName, ODBCINSTPLUGIN );
 
     return pszName;
 }
@@ -143,6 +148,9 @@ BOOL SQLManageDataSources( HWND hWnd )
         inst_logPushMsg( __FILE__, __FILE__, __LINE__, LOG_CRITICAL, ODBC_ERROR_GENERAL_ERR, "lt_dlinit() failed" );
 		return FALSE;
     }
+#ifdef MODULEDIR
+    lt_dlsetsearchpath(MODULEDIR);
+#endif
 
     /* get plugin name */
     _appendUIPluginExtension( szNameAndExtension, _getUIPluginName( szName, hODBCInstWnd->szUI ) );
@@ -153,10 +161,17 @@ BOOL SQLManageDataSources( HWND hWnd )
     {
         /* change the name (SQLManageDataSources to ODBCManageDataSources) to prevent us from calling ourself */
         pSQLManageDataSources = (BOOL (*)(HWND))lt_dlsym( hDLL, "ODBCManageDataSources" );
-        if ( pSQLManageDataSources )
-            return pSQLManageDataSources( ( *(hODBCInstWnd->szUI) ? hODBCInstWnd->hWnd : NULL ) );
+        if ( pSQLManageDataSources ) {
+            BOOL ret;
+            ret = pSQLManageDataSources( ( *(hODBCInstWnd->szUI) ? hODBCInstWnd->hWnd : NULL ) );
+
+            lt_dlclose( hDLL );
+            return ret;
+        }
         else
             inst_logPushMsg( __FILE__, __FILE__, __LINE__, LOG_CRITICAL, ODBC_ERROR_GENERAL_ERR, (char*)lt_dlerror() );
+
+        lt_dlclose( hDLL );
     }
     else
     {
@@ -169,10 +184,18 @@ BOOL SQLManageDataSources( HWND hWnd )
             /* change the name (SQLManageDataSources to ODBCManageDataSources) to prevent us from calling ourself   */
             /* its only safe to use hWnd if szUI was specified by the caller                                        */
             pSQLManageDataSources = (BOOL (*)(HWND))lt_dlsym( hDLL, "ODBCManageDataSources" );
-            if ( pSQLManageDataSources )
-                return pSQLManageDataSources( ( *(hODBCInstWnd->szUI) ? hODBCInstWnd->hWnd : NULL ) );
+            if ( pSQLManageDataSources ) {
+                BOOL ret;
+
+                ret = pSQLManageDataSources( ( *(hODBCInstWnd->szUI) ? hODBCInstWnd->hWnd : NULL ) );
+
+                lt_dlclose( hDLL );
+                return ret;
+            }
             else
                 inst_logPushMsg( __FILE__, __FILE__, __LINE__, LOG_CRITICAL, ODBC_ERROR_GENERAL_ERR, (char*)lt_dlerror() );
+
+            lt_dlclose( hDLL );
         }
         else
             inst_logPushMsg( __FILE__, __FILE__, __LINE__, LOG_CRITICAL, ODBC_ERROR_GENERAL_ERR, (char*)lt_dlerror() );

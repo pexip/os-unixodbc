@@ -317,6 +317,7 @@ static char const rcsid[]= "$RCSfile: SQLDriverConnect.c,v $ $Revision: 1.28 $";
  */
 
 extern int pooling_enabled;
+extern int pool_wait_timeout;
 
 void __generate_connection_string( struct con_struct *con_str, char *str, int str_len )
 {
@@ -334,7 +335,7 @@ char *tmp;
     while( cp )
     {
         size_t attrlen = strlen( cp -> attribute );
-        int use_esc = isspace( *(cp -> attribute ) ) || attrlen && isspace( cp->attribute[attrlen - 1] );
+        int use_esc = isspace( *(cp -> attribute ) ) || ( attrlen && isspace( cp->attribute[attrlen - 1] ));
         for ( tmp = cp -> attribute; *tmp; tmp++ )
         {
             use_esc |= (*tmp == '{') || (*tmp == '}');
@@ -363,6 +364,7 @@ char *tmp;
 
         if ( strlen( str ) + strlen( tmp ) > str_len )
         {
+            free( tmp );
             break;
         }
         else
@@ -410,7 +412,7 @@ int len;
     memcpy( *keyword, ptr, len );
     (*keyword)[ len ] = '\0';
 
-		(*cp)++;
+    (*cp)++;
 
     if ( **cp == '{' )
     {
@@ -421,22 +423,22 @@ int len;
         while ( **cp && (**cp != '}' || (*cp)[1] == '}') )
         {
             if ( **cp == '}' )
-            (*cp)++;
                 (*cp)++;
+            (*cp)++;
         }
-            len = *cp - ptr;
-            *value = malloc( len + 1 );
+        len = *cp - ptr;
+        *value = malloc( len + 1 );
         while( ptr < *cp )
         {
             if ( ((*value)[i++] = *ptr++) == '}')
             {
                 ptr++;
-        }
+            }
         }
         (*value)[i] = 0;
         if ( **cp == '}' )
         {
-                (*cp)++;
+            (*cp)++;
         }
     }
     else
@@ -695,6 +697,7 @@ SQLRETURN SQLDriverConnect(
     SQLCHAR local_out_conection[ 2048 ];
     char *save_filedsn;
     int warnings = 0;
+    CPOOLHEAD *pooh = 0;
 
     /*
      * check connection
@@ -765,7 +768,7 @@ SQLRETURN SQLDriverConnect(
                 ERROR_HY090, NULL,
                 connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+        return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR, DEFER_R0 );
     }
 
     if ( driver_completion == SQL_DRIVER_PROMPT &&
@@ -781,7 +784,7 @@ SQLRETURN SQLDriverConnect(
                 ERROR_HY092, NULL,
                 connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+        return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR, DEFER_R0 );
     }
 
     if ( driver_completion != SQL_DRIVER_PROMPT &&
@@ -799,7 +802,7 @@ SQLRETURN SQLDriverConnect(
                 ERROR_HY110, NULL,
                 connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+        return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR, DEFER_R0 );
     }
 
     /*
@@ -818,7 +821,7 @@ SQLRETURN SQLDriverConnect(
                 ERROR_08002, NULL,
                 connection -> environment -> requested_version );
 
-        return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+        return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR, DEFER_R0 );
     }
 
     /*
@@ -892,73 +895,123 @@ SQLRETURN SQLDriverConnect(
 
     connection -> pooled_connection = NULL;
 
-    if ( pooling_enabled && search_for_pool( connection, 
-                                                NULL, 0,
-                                                NULL, 0,
-                                                NULL, 0,
-                                                conn_str_in, len_conn_str_in ))
+    if ( pooling_enabled )
     {
+        int retpool;
+        int retrying = 0;
+        time_t wait_begin = time( NULL );
+
+retry:
+        retpool = search_for_pool(  connection,
+                                NULL, 0,
+                                NULL, 0,
+                                NULL, 0,
+                                conn_str_in, len_conn_str_in, &pooh, retrying );
         /*
-         * copy the in string to the out string
+         * found usable existing connection from pool
          */
-
-        ret_from_connect = SQL_SUCCESS;
-
-        if ( conn_str_out )
+        if ( retpool == 1 )
         {
-            if ( len_conn_str_in < 0 )
+            /*
+             * copy the in string to the out string
+             */
+
+            ret_from_connect = SQL_SUCCESS;
+
+            if ( conn_str_out )
             {
-                len_conn_str_in = strlen((char*) conn_str_in );
+                if ( len_conn_str_in < 0 )
+                {
+                    len_conn_str_in = strlen((char*) conn_str_in );
+                }
+
+                if ( len_conn_str_in >= conn_str_out_max )
+                {
+                    memcpy( conn_str_out, conn_str_in, conn_str_out_max - 1 );
+                    conn_str_out[ conn_str_out_max - 1 ] = '\0';
+                    if ( ptr_conn_str_out )
+                    {
+                        *ptr_conn_str_out = len_conn_str_in;
+                    }
+
+                    __post_internal_error( &connection -> error,
+                        ERROR_01004, NULL,
+                        connection -> environment -> requested_version );
+
+                    ret_from_connect = SQL_SUCCESS_WITH_INFO;
+                }
+                else
+                {
+                    memcpy( conn_str_out, conn_str_in, len_conn_str_in );
+                    conn_str_out[ len_conn_str_in ] = '\0';
+                    if ( ptr_conn_str_out )
+                    {
+                        *ptr_conn_str_out = len_conn_str_in;
+                    }
+                }
             }
 
-            if ( len_conn_str_in >= conn_str_out_max )
+            if ( log_info.log_flag )
             {
-                memcpy( conn_str_out, conn_str_in, conn_str_out_max - 1 );
-                conn_str_out[ conn_str_out_max - 1 ] = '\0';
-                if ( ptr_conn_str_out )
-                {
-                    *ptr_conn_str_out = len_conn_str_in;
-                }
+                sprintf( connection -> msg,
+                        "\n\t\tExit:[%s]",
+                            __get_return_status( ret_from_connect, s1 ));
+
+                dm_log_write( __FILE__,
+                            __LINE__,
+                        LOG_INFO,
+                        LOG_INFO,
+                        connection -> msg );
+            }
+
+            connection -> state = STATE_C4;
+
+            __release_conn( &con_struct );
+
+            return function_return( SQL_HANDLE_DBC, connection, ret_from_connect, DEFER_R0 );
+        }
+
+        /*
+         * pool is at capacity
+         */
+        if ( retpool == 2 )
+        {
+            /*
+             * either no timeout or exceeded the timeout
+             */
+            if ( ! pool_wait_timeout || time( NULL ) - wait_begin > pool_wait_timeout )
+            {
+                mutex_pool_exit();
+                dm_log_write( __FILE__,
+                    __LINE__,
+                    LOG_INFO,
+                    LOG_INFO,
+                    "Error: HYT02" );
 
                 __post_internal_error( &connection -> error,
-                    ERROR_01004, NULL,
+                    ERROR_HYT02, NULL,
                     connection -> environment -> requested_version );
 
-                ret_from_connect = SQL_SUCCESS_WITH_INFO;
+                __release_conn( &con_struct );
+
+                return function_return_nodrv( SQL_HANDLE_DBC, connection, SQL_ERROR );
             }
-            else
-            {
-                memcpy( conn_str_out, conn_str_in, len_conn_str_in );
-                conn_str_out[ len_conn_str_in ] = '\0';
-                if ( ptr_conn_str_out )
-                {
-                    *ptr_conn_str_out = len_conn_str_in;
-                }
-            }
+
+            /*
+             * wait up to 1 second for a signal and try again
+             */
+            pool_timedwait( connection );
+            retrying = 1;
+            goto retry;
         }
 
-        if ( log_info.log_flag )
-        {
-            sprintf( connection -> msg,
-                    "\n\t\tExit:[%s]",
-                        __get_return_status( ret_from_connect, s1 ));
-
-            dm_log_write( __FILE__,
-                        __LINE__,
-                    LOG_INFO,
-                    LOG_INFO,
-                    connection -> msg );
-        }
-
-        connection -> state = STATE_C4;
-
-        __release_conn( &con_struct );
-
-        return function_return( SQL_HANDLE_DBC, connection, ret_from_connect );
+        /*
+         * 1 pool entry has been reserved. Early exits henceforth need to unreserve.
+         */
     }
 
     /*
-     * else safe the info for later
+     * else save the info for later
      */
 
     if ( pooling_enabled )
@@ -1066,23 +1119,30 @@ SQLRETURN SQLDriverConnect(
                                 if ( save_filedsn ) {
                                     free( save_filedsn );
                                 }
+
+                                pool_unreserve( pooh );
                         
-                                return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+                                __release_conn( &con_struct );
+                                __release_conn( &con_struct1 );
+
+                                return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR, DEFER_R0 );
                             }
 
-							if ( strlen((char*) conn_str_in ) > 0 )
-							{
-                				sprintf( str1, ";%s=%s", cp -> keyword, cp -> attribute );
-							}
-							else
-							{
-                   				sprintf( str1, "%s=%s", cp -> keyword, cp -> attribute );
-							}
-
-                            if ( strlen( (char*)conn_str_in ) + strlen( str1 ) < conn_str_out_max ) {
-                			    strcat((char*) conn_str_in, str1 );
+                            if ( strlen((char*) conn_str_in ) > 0 )
+                            {
+                                sprintf( str1, ";%s=%s", cp -> keyword, cp -> attribute );
                             }
-                            else {
+                            else
+                            {
+                                sprintf( str1, "%s=%s", cp -> keyword, cp -> attribute );
+                            }
+
+                            if ( strlen( (char*)conn_str_in ) + strlen( str1 ) < conn_str_out_max )
+                            {
+                                strcat((char*) conn_str_in, str1 );
+                            }
+                            else
+                            {
                                 warnings = 1;
                                 __post_internal_error( &connection -> error,
                                         ERROR_01004, NULL,
@@ -1090,7 +1150,7 @@ SQLRETURN SQLDriverConnect(
                             }
 
                             free( str1 );
-						}
+                        }
 
                         cp = cp -> next;
                     }
@@ -1122,16 +1182,20 @@ SQLRETURN SQLDriverConnect(
                                 if ( save_filedsn ) {
                                     free( save_filedsn );
                                 }
-                        
-                                return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+
+                                pool_unreserve( pooh );
+
+                                __release_conn( &con_struct1 );
+
+                                return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR, DEFER_R0 );
                             }
 
-							if ( strlen((char*) conn_str_in ) > 0 )
-							{
+                            if ( strlen((char*) conn_str_in ) > 0 )
+                            {
                             	sprintf( str1, ";%s=%s", cp -> keyword, cp -> attribute );
-							}
-							else
-							{
+                            }
+                            else
+                            {
                             	sprintf( str1, "%s=%s", cp -> keyword, cp -> attribute );
 							}
                             if ( strlen( (char*)conn_str_in ) + strlen( str1 ) < conn_str_out_max ) {
@@ -1199,8 +1263,12 @@ SQLRETURN SQLDriverConnect(
             if ( save_filedsn ) {
                 free( save_filedsn );
             }
-                        
-            return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+
+            pool_unreserve( pooh );
+
+            __release_conn( &con_struct );
+
+            return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR, DEFER_R0 );
         }
 
         strcpy( driver_name, driver );
@@ -1251,7 +1319,9 @@ SQLRETURN SQLDriverConnect(
                 free( save_filedsn );
             }
 
-            return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+            pool_unreserve( pooh );
+
+            return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR, DEFER_R0 );
         }
 
         if ( strlen( dsn ) > SQL_MAX_DSN_LENGTH )
@@ -1272,7 +1342,9 @@ SQLRETURN SQLDriverConnect(
                 free( save_filedsn );
             }
 
-            return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+            pool_unreserve( pooh );
+
+            return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR, DEFER_R0 );
         }
 
         /*
@@ -1297,7 +1369,9 @@ SQLRETURN SQLDriverConnect(
                 free( save_filedsn );
             }
 
-            return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+            pool_unreserve( pooh );
+
+            return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR, DEFER_R0 );
         }
 
         strcpy( connection -> dsn, dsn );
@@ -1333,7 +1407,9 @@ SQLRETURN SQLDriverConnect(
 
         __disconnect_part_four( connection );       /* release unicode handles */
 
-        return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+        pool_unreserve( pooh );
+
+        return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR, DEFER_R0 );
     }
 
     if ( !CHECK_SQLDRIVERCONNECT( connection ) &&
@@ -1355,7 +1431,9 @@ SQLRETURN SQLDriverConnect(
             free( save_filedsn );
         }
 
-        return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+        pool_unreserve( pooh );
+
+        return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR, DEFER_R0 );
     }
 
     if ( CHECK_SQLDRIVERCONNECT( connection ))
@@ -1485,9 +1563,11 @@ SQLRETURN SQLDriverConnect(
                 free( save_filedsn );
             }
 
-            return function_return( SQL_HANDLE_DBC, connection, ret_from_connect );
+            pool_unreserve( pooh );
+
+            return function_return( SQL_HANDLE_DBC, connection, ret_from_connect, DEFER_R0 );
         }
-		connection -> unicode_driver = 0;
+        connection -> unicode_driver = 0;
     }
     else
     {
@@ -1500,9 +1580,7 @@ SQLRETURN SQLDriverConnect(
 
         if ( CHECK_SQLSETCONNECTATTR( connection ))
         {
-            int lret;
-                
-            lret = SQLSETCONNECTATTR( connection,
+            SQLSETCONNECTATTR( connection,
                     connection -> driver_dbc,
                     SQL_ATTR_ANSI_APP,
                     SQL_AA_FALSE,
@@ -1551,7 +1629,7 @@ SQLRETURN SQLDriverConnect(
                             sqlstate,
                             &native_error,
                             message_text,
-                            sizeof( message_text ),
+                            sizeof( message_text ) / sizeof( SQLWCHAR ),
                             &ind );
 
 
@@ -1592,7 +1670,7 @@ SQLRETURN SQLDriverConnect(
                             sqlstate,
                             &native_error,
                             message_text,
-                            sizeof( message_text ),
+                            sizeof( message_text ) / sizeof( SQLWCHAR ),
                             &ind );
 
 
@@ -1650,7 +1728,9 @@ SQLRETURN SQLDriverConnect(
                 free( s1 );
             }
 
-            return function_return( SQL_HANDLE_DBC, connection, ret_from_connect );
+            pool_unreserve( pooh );
+
+            return function_return( SQL_HANDLE_DBC, connection, ret_from_connect, DEFER_R0 );
         }
         else
         {
@@ -1700,7 +1780,9 @@ SQLRETURN SQLDriverConnect(
             free( save_filedsn );
         }
 
-        return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR );
+        pool_unreserve( pooh );
+
+        return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR, DEFER_R0 );
     }
 
     if ( log_info.log_flag )
@@ -1840,6 +1922,11 @@ SQLRETURN SQLDriverConnect(
     if ( warnings && ret_from_connect == SQL_SUCCESS )
     {
         ret_from_connect = SQL_SUCCESS_WITH_INFO;
+    }
+
+    if ( pooling_enabled  && !add_to_pool( connection, pooh ) )
+    {
+        pool_unreserve( pooh );
     }
 
     return function_return_nodrv( SQL_HANDLE_DBC, connection, ret_from_connect );
