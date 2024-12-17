@@ -299,6 +299,7 @@ typedef struct environment
     int             fetch_mode;         /* for SQLDataSources */
     int             entry;
     void            *sh;                /* statistics handle */
+    int             released;           /* Catch a race condition in SQLAPI lib */
     struct env_lib_struct *env_lib_list;/* use this to avoid multiple AllocEnv in the driver */
 } *DMHENV;
 
@@ -381,7 +382,7 @@ typedef struct connection
     void            *pooled_connection; /* points to t connection pool structure */
     int             pooling_timeout;
     int             ttl;
-    char            driver_connect_string[ 1024 ];
+    char            *_driver_connect_string;
     int             dsn_length;
     char            server[ 128 ];
     int             server_length;
@@ -425,7 +426,7 @@ typedef struct connection_pool_head
 {
     struct connection_pool_head *next;
 
-    char    driver_connect_string[ 1024 ];
+    char    *_driver_connect_string;
     int     dsn_length;
     char    server[ 128 ];
     int     server_length;
@@ -434,7 +435,7 @@ typedef struct connection_pool_head
     char    password[ 128 ];
     int     password_length;
 
-    int     num_entries;                /* always at least 1 */
+    volatile int num_entries;                /* always at least 1 */
     CPOOLENT *entries;
 } CPOOLHEAD;
 
@@ -547,9 +548,11 @@ void __handle_attr_extensions( DMHDBC connection, char *dsn, char *driver_name )
  * handle allocation functions
  */
 
+DMHENV __share_env( int *first );
 DMHENV __alloc_env( void );
 int __validate_env( DMHENV );
 void __release_env( DMHENV environment );
+int __validate_env_mark_released( DMHENV env );
 
 DMHDBC __alloc_dbc( void );
 int __validate_dbc( DMHDBC );
@@ -808,6 +811,8 @@ void pool_signal();
 
 #define thread_protect(a,b)
 #define thread_release(a,b)
+#define pool_timedwait(a)
+#define pool_signal()
 
 #endif
 

@@ -11,7 +11,8 @@ export DEB_BUILD_MAINT_OPTIONS = hardening=+all
 	dh $@
 
 override_dh_auto_configure:
-	dh_auto_configure -- --enable-static --enable-fastvalidate \
+	dh_auto_configure -- \
+            --enable-static --enable-fastvalidate --enable-cursor-ver \
 	    --with-pth=no --with-included-ltdl=no \
 	    --with-odbc-driver-path=\$${prefix}/lib/$(DEB_HOST_MULTIARCH)/odbc
 

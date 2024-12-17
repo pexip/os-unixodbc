@@ -1,10 +1,10 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: unixODBC
 Upstream-Contact: Nick Gorham <nick.gorham@easysoft.com>
-Source: http://www.unixodbc.org/
+Source: https://www.unixodbc.org
 
 Files: *
-Copyright: 1999-2022 Nick Gorham
+Copyright: 1999-2023 Nick Gorham
            1999-2007 Peter Harvey, et al.
 License: LGPL-2.1+
 
@@ -42,7 +42,7 @@ Copyright: 2001 Holger Schurig
 License: LGPL-2+
 
 Files: exe/*
-Copyright: 1999-2022 Nick Gorham, Peter Harvey, et al.
+Copyright: 1999-2023 Nick Gorham, Peter Harvey, et al.
 License: GPL-2+
 
 Files: extras/snprintf.c
@@ -59,7 +59,7 @@ Copyright: 2000-2001 Ivan E. Moore II
            2001 LaMont Jones
            2001-2016 Steve Langasek
            2016 John Paul Adrian Glaubitz
-           2017-2018, 2020-2022 Hugh McMaster
+           2017-2018, 2020-2024 Hugh McMaster
 License: GPL-2+
 
 License: LGPL-2.1+
