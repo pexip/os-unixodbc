@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT([unixODBC], [2.3.11], nick@unixodbc.org, [unixODBC])
+AC_INIT([unixODBC], [2.3.12], nick@unixodbc.org, [unixODBC])
 AM_INIT_AUTOMAKE
 
 dnl Checks for programs.
@@ -93,6 +93,22 @@ AC_ARG_ENABLE( iconv,
     no) iconv=false ;;
     *) AC_MSG_ERROR(bad value ${enableval} for --enable-iconv) ;;
     esac],[iconv=true])
+
+AC_ARG_ENABLE( utf8ini, 
+[AS_HELP_STRING([--enable-utf8ini], [build with basic support for utf8 encoding in ini file support [default=no]])],
+[ case "${enableval}" in
+    yes) utf8ini=true ;;
+    no) utf8ini=false ;;
+    *) AC_MSG_ERROR(bad value ${enableval} for --enable-utf8ini) ;;
+    esac],[utf8ini=false])
+
+AC_ARG_ENABLE( singleenv, 
+[AS_HELP_STRING([--enable-singleenv], [When using connection pooling, use a shared envorionment handle [default=no]])],
+[ case "${enableval}" in
+    yes) singleenv=true ;;
+    no) singleenv=false ;;
+    *) AC_MSG_ERROR(bad value ${enableval} for --enable-singleenv) ;;
+    esac],[singleenv=false])
 
 dnl Check for sys/sem.h
 
@@ -329,6 +345,22 @@ else
 	AC_MSG_RESULT( no );
 fi
 
+AC_MSG_CHECKING( Are we using utf8 ini encoding )
+if test "x$utf8ini" = "xtrue"; then
+	AC_DEFINE([WITH_UTF8_INI],[],[Using utf8 ini encoding])
+	AC_MSG_RESULT( yes );
+else
+	AC_MSG_RESULT( no );
+fi
+
+AC_MSG_CHECKING( Are we using single shared env handle )
+if test "x$singleenv" = "xtrue"; then
+	AC_DEFINE([WITH_SHARDENV],[],[Using shared env handle])
+	AC_MSG_RESULT( yes );
+else
+	AC_MSG_RESULT( no );
+fi
+
 dnl Are we using flex
 if test "x$drivers" = "xtrue"; then
 AC_MSG_CHECKING( Are we using flex )
@@ -375,7 +407,7 @@ AC_CHECK_TYPES([ptrdiff_t])
 AC_SYS_LARGEFILE
 AC_FUNC_FSEEKO
 
-AC_CHECK_FUNCS( strcasecmp strncasecmp snprintf vsnprintf strtol atoll strtoll endpwent gettimeofday ftime time stricmp strnicmp getuid getpwuid getpwuid_r nl_langinfo fseeko setvbuf )
+AC_CHECK_FUNCS( strcasecmp strncasecmp snprintf vsnprintf strtol atoll strtoll endpwent gettimeofday ftime time stricmp strnicmp getuid getpwuid getpwuid_r nl_langinfo fseeko setvbuf clock_gettime )
 
 AM_LANGINFO_CODESET
 
@@ -508,7 +540,7 @@ case $host_os in
 esac
 
 if test "x$stats" = "xtrue"; then
-  AC_CHECK_FUNCS( ftok semget shmget semop [],[stats=false])
+  AC_CHECK_FUNCS( ftok semget shmget semop,[],[stats=false])
 fi
 
 if test "x$stats" = "xtrue"; then

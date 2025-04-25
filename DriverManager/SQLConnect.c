@@ -965,6 +965,7 @@ int __connect_part_one( DMHDBC connection, char *driver_lib, char *driver_name, 
     int fake_unicode;
     char *err;
     struct env_lib_struct *env_lib_list, *env_lib_prev;
+    char txt[ 256 ];
 
     /*
      * check to see if we want to alter the default threading level
@@ -982,6 +983,9 @@ int __connect_part_one( DMHDBC connection, char *driver_lib, char *driver_name, 
 					threading_string, sizeof( threading_string ), 
                 	"ODBCINST.INI" );
     	threading_level = atoi( threading_string );
+
+        sprintf( txt, "\t\tThreading Level set from Driver Entry in ODBCINST.INI %d from '%s'", threading_level, threading_string );
+        dm_log_write_diag( txt );
     }
     else 
 	{
@@ -999,6 +1003,10 @@ int __connect_part_one( DMHDBC connection, char *driver_lib, char *driver_name, 
                 		"ODBCINST.INI" );
 
     	threading_level = atoi( threading_string );
+
+
+        sprintf( txt, "\t\tThreading Level set from [ODBC] Section in ODBCINST.INI %d from '%s'", threading_level, threading_string );
+        dm_log_write_diag( txt );
 	}
 
     if ( threading_level >= 0 && threading_level <= 3 )
@@ -1019,6 +1027,11 @@ int __connect_part_one( DMHDBC connection, char *driver_lib, char *driver_name, 
 
     connection -> ex_fetch_mapping = atoi( mapping_string );
 
+    if ( connection -> ex_fetch_mapping != 1 ) {
+        sprintf( txt, "\t\tExFetchMapping set to %d from '%s'", connection -> ex_fetch_mapping, mapping_string );
+        dm_log_write_diag( txt );
+    }
+
     /*
      * Does the driver have support for SQLGetFunctions ?
      */
@@ -1028,6 +1041,11 @@ int __connect_part_one( DMHDBC connection, char *driver_lib, char *driver_name, 
                 "ODBCINST.INI" );
 
     connection -> disable_gf = atoi( disable_gf );
+
+    if ( connection -> disable_gf != 0 ) {
+        sprintf( txt, "\t\tDisableGetFunctions set to %d from '%s'", connection -> disable_gf, disable_gf );
+        dm_log_write_diag( txt );
+    }
 
     /*
      * do we want to keep hold of the lib handle, DB2 fails if we close
@@ -1039,6 +1057,11 @@ int __connect_part_one( DMHDBC connection, char *driver_lib, char *driver_name, 
 
     connection -> dont_dlclose = atoi( mapping_string ) != 0;
 
+    if ( connection -> dont_dlclose != 1 ) {
+        sprintf( txt, "\t\tDisableGetFunctions set to %d from '%s'", connection -> dont_dlclose, mapping_string );
+        dm_log_write_diag( txt );
+    }
+
     /*
      * can we pool this one
      */
@@ -1048,6 +1071,11 @@ int __connect_part_one( DMHDBC connection, char *driver_lib, char *driver_name, 
                 "ODBCINST.INI" );
 
     connection -> pooling_timeout = atoi( mapping_string );
+
+    if ( connection -> pooling_timeout != 0 ) {
+        sprintf( txt, "\t\tCPTimeout set to %d from '%s'", connection -> pooling_timeout, mapping_string );
+        dm_log_write_diag( txt );
+    }
 
     /*
      * have we got a time-to-live value for the pooling
@@ -1059,6 +1087,11 @@ int __connect_part_one( DMHDBC connection, char *driver_lib, char *driver_name, 
 
     connection -> ttl = atoi( mapping_string );
 
+    if ( connection -> ttl != 0 ) {
+        sprintf( txt, "\t\tCPTimeToLive set to %d from '%s'", connection -> ttl, mapping_string );
+        dm_log_write_diag( txt );
+    }
+
     /*
      * Is there a check SQL statement
      */
@@ -1066,6 +1099,12 @@ int __connect_part_one( DMHDBC connection, char *driver_lib, char *driver_name, 
     SQLGetPrivateProfileString( driver_name, "CPProbe", "",
 				connection -> probe_sql, sizeof( connection -> probe_sql ), 
                 "ODBCINST.INI" );
+
+
+    if ( strlen( connection -> probe_sql ) != 0 ) {
+        sprintf( txt, "\t\tCPProbe set to '%s'", connection -> probe_sql );
+        dm_log_write_diag( txt );
+    }
 
     /*
      * if pooling then leave the dlopen
@@ -1082,11 +1121,18 @@ int __connect_part_one( DMHDBC connection, char *driver_lib, char *driver_name, 
 
     fake_unicode = atoi( fake_string );
 
-#ifdef ENABLE_DRIVER_ICONV
+    if ( fake_unicode != 0 ) {
+        sprintf( txt, "\t\tFakeUnicode set to %d from '%s'", fake_unicode, fake_string );
+        dm_log_write_diag( txt );
+    }
+
+
 #ifdef HAVE_ICONV
+#ifdef ENABLE_DRIVER_ICONV
     SQLGetPrivateProfileString( driver_name, "IconvEncoding", DEFAULT_ICONV_ENCODING,
 				connection->unicode_string, sizeof( connection->unicode_string ), 
                 "ODBCINST.INI" );
+#endif
 #endif
 
     /*
@@ -1111,7 +1157,6 @@ int __connect_part_one( DMHDBC connection, char *driver_lib, char *driver_name, 
 
         *warnings = TRUE;
     }
-#endif
 
     /*
      * initialize libtool
@@ -2400,10 +2445,15 @@ int __connect_part_two( DMHDBC connection )
 #endif
             if ( !(connection -> cl_handle = odbc_dlopen( name, &err )))
             {
-                char txt[ 256 ];
+                char txt[ 1024 ];
 
+#ifdef HAVE_SNPRINTF
+                snprintf( txt, sizeof( txt ), "Can't open cursor lib '%s' : %s", 
+                    name, err ? err : "NULL ERROR RETURN" );
+#else
                 sprintf( txt, "Can't open cursor lib '%s' : %s", 
                     name, err ? err : "NULL ERROR RETURN" );
+#endif
 
                 dm_log_write( __FILE__,
                         __LINE__,
@@ -2850,6 +2900,10 @@ static void close_pooled_connection( CPOOLENT *ptr )
     SQLRETURN ret;
     DMHDBC conn = &ptr -> connection;
 
+    if ( conn -> driver_dbc == NULL ) {
+        return;
+    }
+
     /*
      * disconnect from the driver
      */
@@ -3025,7 +3079,7 @@ static void close_pooled_connection( CPOOLENT *ptr )
 
 /*
  * if a environment gets released from the application, we need to remove any referenvce to that environment 
- * in pooled connections that belong to that environment
+ * in pooled connections that belong to that environment. Also if needed call the release in the driver itself
  */
 
 void __strip_from_pool( DMHENV env )
@@ -3034,10 +3088,6 @@ void __strip_from_pool( DMHENV env )
 
     mutex_pool_entry();
 
-    /*
-     * look in the list of connections for one that matches
-     */
-
     for( ptrh = pool_head; ptrh; ptrh = ptrh -> next )
     {
         CPOOLENT *ptre;
@@ -3045,6 +3095,11 @@ void __strip_from_pool( DMHENV env )
         {
             if ( ptre -> connection.environment == env )
             {
+                /*
+                 * disconnect driver side connection, and when the last the driver side env
+                 */
+                close_pooled_connection( ptre );
+
                 ptre -> connection.environment = NULL;
             }
         }
@@ -3073,6 +3128,7 @@ void pool_unreserve( CPOOLHEAD *pooh )
                     {
                         pool_head = pooh -> next;
                     }
+                    free( pooh -> _driver_connect_string );
                     free( pooh );
                     break;
                 }
@@ -3150,7 +3206,7 @@ static int pool_match( CPOOLHEAD *pooh,
             match = 0;
         }
         if ( pooh -> dsn_length != connect_string_length ||
-                sql_strcmp( connect_string, (SQLCHAR*)pooh -> driver_connect_string,
+                sql_strcmp( connect_string, (SQLCHAR*)pooh -> _driver_connect_string,
                     connect_string_length, pooh -> dsn_length ))
         {
             match = 0;
@@ -3158,6 +3214,49 @@ static int pool_match( CPOOLHEAD *pooh,
     }
     return match;
 }
+
+/*
+
+int display_pool( void )
+{
+    printf( "pool_head: %p\n", pool_head );
+    if ( pool_head ) {
+        CPOOLHEAD *pptr;
+        CPOOLENT *pent;
+
+        pptr = pool_head;
+
+        while( pptr ) {
+
+            printf( "\tpptr: %p\n", pptr );
+            printf( "\t\tdsn: %s\n", pptr -> _driver_connect_string );
+            printf( "\t\tnum_entries: %d\n", pptr -> num_entries );
+            printf( "\t\tentries: %p\n", pptr -> entries );
+            printf( "\t\tnext: %p\n", pptr -> next );
+
+            pent = pptr -> entries;
+            while( pent ) {
+                printf( "\t\t\tpent: %p\n", pent );
+                printf( "\t\t\texpiry_time: %d\n", pent -> expiry_time );
+                printf( "\t\t\tttl: %d\n", pent -> ttl );
+                printf( "\t\t\tin_use: %d\n", pent -> in_use );
+                printf( "\t\t\thead: %p\n", pent -> head );
+                printf( "\t\t\tcursors: %d\n", pent -> cursors );
+                printf( "\t\t\tconnection -> env: %p\n", pent -> connection.environment );
+                printf( "\t\t\tconnection -> driver_env: %p\n", pent -> connection.driver_env );
+                printf( "\t\t\tnext: %p\n", pent -> next );
+                printf( "\n" );
+
+                pent = pent -> next;
+            }
+
+            pptr = pptr -> next;
+            printf( "\n" );
+        }
+    }
+}
+
+*/
 
 /*
  * Search for a matching connection from the pool
@@ -3227,6 +3326,40 @@ restart:;
             }
 
             /*
+             * has it been previously stripped
+             */
+
+            if ( ptre -> connection.environment == NULL ) 
+            {
+                if ( ptre == ptrh -> entries ) /* head of the list ? */
+                {
+                    ptrh -> entries = ptre -> next;
+                }
+                else
+                {
+                    preve -> next = ptre -> next;
+                }
+                free( ptre );
+                ptrh -> num_entries --;
+                pool_signal();
+
+                if ( ! ptrh -> num_entries ) /* free the head too */
+                {
+                    if ( prevh )
+                    {
+                        prevh -> next = ptrh -> next;
+                    }
+                    else
+                    {
+                        pool_head = ptrh -> next;
+                    }
+                    free( ptrh -> _driver_connect_string );
+                    free( ptrh );
+                }
+                goto restart;
+            }
+
+            /*
              * has it expired ? Do some cleaning up first
              */
 
@@ -3260,6 +3393,7 @@ disconnect_and_remove:
                     {
                         pool_head = ptrh -> next;
                     }
+                    free( ptrh -> _driver_connect_string );
                     free( ptrh );
                 }
                 goto restart;
@@ -3291,6 +3425,15 @@ disconnect_and_remove:
              */
 
             if ( ptre -> cursors != connection -> cursors )
+            {
+                continue;
+            }
+
+            /*
+             * we are spanning env's
+             */
+
+            if ( ptre -> connection.environment && ptre -> connection.environment != connection -> environment )
             {
                 continue;
             }
@@ -3572,7 +3715,16 @@ disconnect_and_remove:
             copy_nts( newhead -> server, server_name, &newhead -> server_length, name_length1 );
             copy_nts( newhead -> user, user_name, &newhead -> user_length, name_length2 );
             copy_nts( newhead -> password, authentication, &newhead -> password_length, name_length3 );
-            copy_nts( newhead -> driver_connect_string, connect_string, &newhead -> dsn_length, connect_string_length );
+            if ( connect_string == NULL ) {
+                newhead -> _driver_connect_string = calloc( 1, 1 );
+            }
+            else if ( connect_string_length < 0 ) {
+                newhead -> _driver_connect_string = calloc( strlen( connect_string ) + 1, 1 );
+            }
+            else {
+                newhead -> _driver_connect_string = calloc( connect_string_length + 1, 1 );
+            }
+            copy_nts( newhead -> _driver_connect_string, connect_string, &newhead -> dsn_length, connect_string_length );
 
             newhead -> num_entries = 1; /* reserve an entry */
 
@@ -4293,7 +4445,7 @@ retry:
             return function_return( SQL_HANDLE_DBC, connection, ret_from_connect, DEFER_R0 );
         }
 
-	connection -> unicode_driver = 0;
+	    connection -> unicode_driver = 0;
     }
     else
     {
