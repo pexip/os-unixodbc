@@ -59,6 +59,7 @@ libodbcinst.so.2 libodbcinst2 #MINVER#
  SQLWritePrivateProfileStringW@Base 2.3.1
  _SQLDriverConnectPrompt@Base 2.3.1
  _SQLDriverConnectPromptW@Base 2.3.9
+ __clear_ini_cache@Base 2.3.12
  _odbcinst_FileINI@Base 2.3.1
  _odbcinst_SystemINI@Base 2.3.1
  _odbcinst_UserINI@Base 2.3.1

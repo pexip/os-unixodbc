@@ -1,3 +1,51 @@
+unixodbc (2.3.12-2) unstable; urgency=medium
+
+  * debian/control:
+    + libodbc2 now Recommends libodbccr2.
+    + libodbccr2 no longer Depends on libodbc2.
+    + libodbccr2 Enhances libodbc2.
+    + Raise Standards-Version to 4.7.0 from 4.6.2 (no changes needed).
+  * debian/copyright: Update for 2024.
+  * debian/patches: Add 0001-configure-ac-cursor-lib.patch to enable a
+    versioned cursor library (Closes: #1089695, LP: #2085815).
+  * debian/rules: Pass --enable-cursor-ver to configure.
+
+ -- Hugh McMaster <hmc@debian.org>  Tue, 17 Dec 2024 22:34:56 +1100
+
+unixodbc (2.3.12-1) unstable; urgency=medium
+
+  * New upstream version 2.3.12:
+    + iusql now supports connection strings and passwords containing
+      semicolons. Refer to the man page for syntax (Closes: #1014603).
+  * debian/copyright: Update upstream copyright for 2023.
+  * debian/patches: Drop no-config-header.patch (merged upstream).
+  * libodbcinst2: Update symbols file.
+  * unixodbc-common: Remove legacy rm_conffile handling.
+
+ -- Hugh McMaster <hmc@debian.org>  Wed, 09 Aug 2023 22:22:15 +1000
+
+unixodbc (2.3.11-4) unstable; urgency=medium
+
+  * unixodbc-common.{preinst|postinst}: Fix maintscript breakage on systems
+    where /etc/odbcinst.ini is not present on upgrade (Closes: #1038122).
+
+ -- Hugh McMaster <hmc@debian.org>  Fri, 16 Jun 2023 22:44:16 +1000
+
+unixodbc (2.3.11-3) unstable; urgency=medium
+
+  * debian/control:
+    + Update Maintainer email address.
+    + Raise Standards-Version to 4.6.2 (no changes needed).
+    + Update Homepage field.
+    + Drop transitional packages (libodbc1, odbcinst1debian2).
+    + unixodbc-common, odbcinst: Add Breaks+Replaces against odbcinst1debian1
+      (Closes: #1037172).
+  * debian/copyright: Update Source field and update for 2023.
+  * unixodbc-common: Remove obsolete conffile (Closes: #1009152).
+  * debian/upstream/metadata: Update Documentation field.
+
+ -- Hugh McMaster <hmc@debian.org>  Thu, 15 Jun 2023 18:00:48 +1000
+
 unixodbc (2.3.11-2+deb12u1+pexip24u3) pexip-bookworm; urgency=medium
 
   * New versioning scheme
@@ -15,13 +63,6 @@ unixodbc (2.3.11-2+deb12u1pexip1) pexip-bookworm; urgency=medium
   * Initial bookworm build
 
  -- Mark Hymers <mark.hymers@pexip.com>  Thu, 16 Nov 2023 10:34:58 +0000
-
-unixodbc (2.3.11-2+deb12u1) bookworm; urgency=medium
-
-  * unixodbc-common, odbcinst: Add Breaks+Replaces against odbcinst1debian1
-    (Closes: #1037172).
-
- -- Hugh McMaster <hugh.mcmaster@outlook.com>  Wed, 28 Jun 2023 21:20:32 +1000
 
 unixodbc (2.3.11-2) unstable; urgency=medium
 
