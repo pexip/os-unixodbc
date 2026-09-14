@@ -1,0 +1,76 @@
+Description: Clear cached allocations on dlclose() in libodbcinst2
+ * Declare destructors at configure time.
+ * New libodbcinst2 symbol inst_logClose.
+ * Add inst_logClose() to close and clear ODBCINSTLog.
+ * Call inst_logClose() and __clear_ini_cache() on shared library closure.
+ 
+ Patch derived from upstream commits:
+   * e545d3dd29c7290a70992c1b2b1de4f6219e1a6f
+   * a2cecd22d0509bf550053e8b7d654936af4c7540
+
+ See also: https://github.com/lurcher/unixODBC/pull/234
+Author: Daniel Black, Nick Gorham
+Bug: https://github.com/lurcher/unixODBC/issues/130
+Bug: https://github.com/lurcher/unixODBC/issues/207
+Bug-Debian: https://bugs.debian.org/1136221
+Last-Updated: 2026-05-14
+
+--- a/configure.ac
++++ b/configure.ac
+@@ -590,6 +590,20 @@
+    done
+ ])
+ 
++dnl see if we can declare a destructor
++AC_MSG_CHECKING([if __attribute__((destructor)) works])
++AC_COMPILE_IFELSE(
++    [AC_LANG_PROGRAM([__attribute__((destructor))], [int x = 0;])],
++    [
++        AC_MSG_RESULT( yes )
++        AC_DEFINE([PORTABLE_DESTRUCTOR],[__attribute__((destructor))],[Declare function as a destructor])
++    ],
++    [
++        AC_MSG_RESULT( no )
++        AC_DEFINE([PORTABLE_DESTRUCTOR],[],[Declare function as a destructor])
++    ]
++)
++
+ dnl AC_SUBST(all_includes)
+ dnl AC_SUBST(all_libraries)
+ 
+--- a/odbcinst/SQLGetPrivateProfileString.c
++++ b/odbcinst/SQLGetPrivateProfileString.c
+@@ -327,6 +327,7 @@
+ 	mutex_exit( &mutex_ini );
+ }
+ 
++PORTABLE_DESTRUCTOR
+ void __clear_ini_cache( void ) 
+ {
+ 	mutex_entry( &mutex_ini );
+--- a/odbcinst/_logging.c
++++ b/odbcinst/_logging.c
+@@ -201,3 +201,15 @@
+     return ret;
+ }
+ 
++PORTABLE_DESTRUCTOR
++void inst_logClose( void )
++{
++
++    local_mutex_entry();
++
++    if ( hODBCINSTLog ) {
++        logClose( hODBCINSTLog );
++    }
++
++    local_mutex_exit();
++}
+--- a/odbcinst/odbcinst.exp
++++ b/odbcinst/odbcinst.exp
+@@ -83,4 +83,5 @@
+ iniToUpper
+ iniValue
+ inst_logPushMsg
++inst_logClose
+ __clear_ini_cache

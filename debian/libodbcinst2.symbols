@@ -81,6 +81,7 @@ libodbcinst.so.2 libodbcinst2 #MINVER#
  iniPropertyNext@Base 2.3.1
  iniToUpper@Base 2.3.1
  iniValue@Base 2.3.1
+ inst_logClose@Base 2.3.12
  inst_logPushMsg@Base 2.3.1
  odbcinst_system_file_name@Base 2.3.1
  odbcinst_system_file_path@Base 2.3.1

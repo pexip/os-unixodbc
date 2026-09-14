@@ -1,3 +1,17 @@
+unixodbc (2.3.12-2+pexip25u3+deb13u1) pexip-trixie; urgency=medium
+
+  * New upstream release
+
+ -- Steve McIntyre <steve.mcintyre@pexip.com>  Mon, 14 Sep 2026 12:47:00 +0100
+
+unixodbc (2.3.12-2+deb13u1) trixie; urgency=medium
+
+  * debian/libodbcinst2.symbols: Add inst_logClose@Base.
+  * debian/patches: Clear cached allocations on dlclose() in libodbcinst2
+    (Closes: #1136221).
+
+ -- Hugh McMaster <hmc@debian.org>  Tue, 07 Jul 2026 22:00:05 +1000
+
 unixodbc (2.3.12-2+pexip25u2) pexip-trixie; urgency=medium
 
   * Trixie build for product distribution
